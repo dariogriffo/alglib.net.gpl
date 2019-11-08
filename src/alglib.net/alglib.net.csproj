@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net45;net47;net48</TargetFrameworks>
+    <Version>3.15.0</Version>
+    <Authors>https://www.alglib.net/</Authors>
+    <Title>alglib.net</Title>
+    <Company>ALGLIB Project</Company>
+    <Copyright>ALGLIB Project</Copyright>
+    <Description>ALGLIB is a cross-platform numerical analysis and data processing library</Description>
+    <LicenseUrl>https://www.gnu.org/licenses/gpl-3.0.en.html</LicenseUrl>
+    <PackageProjectUrl>https://www.alglib.net/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/griffo-io/alglib.net.gpl</RepositoryUrl>
+    <Product>ALGLIB for C# (managed)</Product>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageTags>numerical-analysis data-processing</PackageTags>
+    <PackageReleaseNotes>Do not include multithreading functionality, SIMD optimizations, native HPC kernels for C# apps and integration with Intel MKL.</PackageReleaseNotes>
+    <PackageLicenseFile>license.txt</PackageLicenseFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="license\license.txt" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+    <None Include="images\icon.png" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <!-- .NET 4.5 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+  </ItemGroup>
+
+  <!-- .NET 4.7 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net47'">
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="license.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

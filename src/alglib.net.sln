@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.902
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "alglib.net", "alglib.net\alglib.net.csproj", "{5950FCD7-4E68-43F7-ACE1-06C7DAE0C6FF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5950FCD7-4E68-43F7-ACE1-06C7DAE0C6FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5950FCD7-4E68-43F7-ACE1-06C7DAE0C6FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5950FCD7-4E68-43F7-ACE1-06C7DAE0C6FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5950FCD7-4E68-43F7-ACE1-06C7DAE0C6FF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DCE15598-5877-417F-ABFE-8D5E1640A981}
+	EndGlobalSection
+EndGlobal
