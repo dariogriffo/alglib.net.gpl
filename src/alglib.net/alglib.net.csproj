@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45;net47;net48</TargetFrameworks>
-    <Version>3.15.0</Version>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net45;net47;net48</TargetFrameworks>
+    <Version>3.15.1</Version>
     <Authors>https://www.alglib.net/</Authors>
     <Title>alglib.net</Title>
     <Company>ALGLIB Project</Company>
@@ -17,7 +17,7 @@
   <PropertyGroup>
     <PackageIcon>icon.png</PackageIcon>
     <PackageTags>numerical-analysis data-processing</PackageTags>
-    <PackageReleaseNotes>Do not include multithreading functionality, SIMD optimizations, native HPC kernels for C# apps and integration with Intel MKL.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added support for net standard 2.1</PackageReleaseNotes>
     <PackageLicenseFile>license.txt</PackageLicenseFile>
   </PropertyGroup>
   <ItemGroup>
@@ -40,4 +40,14 @@
     </None>
   </ItemGroup>
 
+<!-- .NET 4.7 -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="license.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
 </Project>
