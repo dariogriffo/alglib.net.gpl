@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.15.0 (source code generated 2019-02-20)
+ALGLIB 3.16.0 (source code generated 2019-12-19)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -806,6 +806,67 @@ public partial class alglib
     {
     
         sparse.sparsemtv(s.innerobj, x, ref y, _params);
+    }
+    
+    /*************************************************************************
+    This function calculates generalized sparse matrix-vector product
+
+        y := alpha*op(S)*x + beta*y
+
+    Matrix S must be stored in CRS or SKS format (exception  will  be  thrown
+    otherwise). op(S) can be either S or S^T.
+
+    NOTE: this  function  expects  Y  to  be  large enough to store result. No
+          automatic preallocation happens for smaller arrays.
+
+    INPUT PARAMETERS
+        S           -   sparse matrix in CRS or SKS format.
+        Alpha       -   source coefficient
+        OpS         -   operation type:
+                        * OpS=0     =>  op(S) = S
+                        * OpS=1     =>  op(S) = S^T
+        X           -   input vector, must have at least Cols(op(S))+IX elements
+        IX          -   subvector offset
+        Beta        -   destination coefficient
+        Y           -   preallocated output array, must have at least Rows(op(S))+IY elements
+        IY          -   subvector offset
+
+    OUTPUT PARAMETERS
+        Y           -   elements [IY...IY+Rows(op(S))-1] are replaced by result,
+                        other elements are not modified
+
+    HANDLING OF SPECIAL CASES:
+    * below M=Rows(op(S)) and N=Cols(op(S)). Although current  ALGLIB  version
+      does not allow you to  create  zero-sized  sparse  matrices,  internally
+      ALGLIB  can  deal  with  such matrices. So, comments for M or N equal to
+      zero are for internal use only.
+    * if M=0, then subroutine does nothing. It does not even touch arrays.
+    * if N=0 or Alpha=0.0, then:
+      * if Beta=0, then Y is filled by zeros. S and X are  not  referenced  at
+        all. Initial values of Y are ignored (we do not  multiply  Y by  zero,
+        we just rewrite it by zeros)
+      * if Beta<>0, then Y is replaced by Beta*Y
+    * if M>0, N>0, Alpha<>0, but  Beta=0, then  Y is replaced by alpha*op(S)*x
+      initial state of Y  is ignored (rewritten without initial multiplication
+      by zeros).
+
+    NOTE: this function throws exception when called for non-CRS/SKS  matrix.
+    You must convert your matrix with SparseConvertToCRS/SKS()  before  using
+    this function.
+
+      -- ALGLIB PROJECT --
+         Copyright 10.12.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void sparsegemv(sparsematrix s, double alpha, int ops, double[] x, int ix, double beta, ref double[] y, int iy)
+    {
+    
+        sparse.sparsegemv(s.innerobj, alpha, ops, x, ix, beta, y, iy, null);
+    }
+    
+    public static void sparsegemv(sparsematrix s, double alpha, int ops, double[] x, int ix, double beta, ref double[] y, int iy, alglib.xparams _params)
+    {
+    
+        sparse.sparsegemv(s.innerobj, alpha, ops, x, ix, beta, y, iy, _params);
     }
     
     /*************************************************************************
@@ -2187,6 +2248,28 @@ public partial class alglib
     Copy
 
     Input parameters:
+        N   -   subvector size
+        A   -   source vector, N elements are copied
+        IA  -   source offset (first element index)
+        B   -   destination vector, must be large enough to store result
+        IB  -   destination offset (first element index)
+    *************************************************************************/
+    public static void rvectorcopy(int n, double[] a, int ia, ref double[] b, int ib)
+    {
+    
+        ablas.rvectorcopy(n, a, ia, b, ib, null);
+    }
+    
+    public static void rvectorcopy(int n, double[] a, int ia, ref double[] b, int ib, alglib.xparams _params)
+    {
+    
+        ablas.rvectorcopy(n, a, ia, b, ib, _params);
+    }
+    
+    /*************************************************************************
+    Copy
+
+    Input parameters:
         M   -   number of rows
         N   -   number of columns
         A   -   source matrix, MxN submatrix is copied and transposed
@@ -2206,6 +2289,37 @@ public partial class alglib
     {
     
         ablas.rmatrixcopy(m, n, a, ia, ja, b, ib, jb, _params);
+    }
+    
+    /*************************************************************************
+    Performs generalized copy: B := Beta*B + Alpha*A.
+
+    If Beta=0, then previous contents of B is simply ignored. If Alpha=0, then
+    A is ignored and not referenced. If both Alpha and Beta  are  zero,  B  is
+    filled by zeros.
+
+    Input parameters:
+        M   -   number of rows
+        N   -   number of columns
+        Alpha-  coefficient
+        A   -   source matrix, MxN submatrix is copied and transposed
+        IA  -   submatrix offset (row index)
+        JA  -   submatrix offset (column index)
+        Beta-   coefficient
+        B   -   destination matrix, must be large enough to store result
+        IB  -   submatrix offset (row index)
+        JB  -   submatrix offset (column index)
+    *************************************************************************/
+    public static void rmatrixgencopy(int m, int n, double alpha, double[,] a, int ia, int ja, double beta, ref double[,] b, int ib, int jb)
+    {
+    
+        ablas.rmatrixgencopy(m, n, alpha, a, ia, ja, beta, b, ib, jb, null);
+    }
+    
+    public static void rmatrixgencopy(int m, int n, double alpha, double[,] a, int ia, int ja, double beta, ref double[,] b, int ib, int jb, alglib.xparams _params)
+    {
+    
+        ablas.rmatrixgencopy(m, n, alpha, a, ia, ja, beta, b, ib, jb, _params);
     }
     
     /*************************************************************************
@@ -10317,6 +10431,308 @@ public partial class alglib
 
 
         /*************************************************************************
+        This function calculates generalized sparse matrix-vector product
+
+            y := alpha*op(S)*x + beta*y
+
+        Matrix S must be stored in CRS or SKS format (exception  will  be  thrown
+        otherwise). op(S) can be either S or S^T.
+
+        NOTE: this  function  expects  Y  to  be  large enough to store result. No
+              automatic preallocation happens for smaller arrays.
+
+        INPUT PARAMETERS
+            S           -   sparse matrix in CRS or SKS format.
+            Alpha       -   source coefficient
+            OpS         -   operation type:
+                            * OpS=0     =>  op(S) = S
+                            * OpS=1     =>  op(S) = S^T
+            X           -   input vector, must have at least Cols(op(S))+IX elements
+            IX          -   subvector offset
+            Beta        -   destination coefficient
+            Y           -   preallocated output array, must have at least Rows(op(S))+IY elements
+            IY          -   subvector offset
+            
+        OUTPUT PARAMETERS
+            Y           -   elements [IY...IY+Rows(op(S))-1] are replaced by result,
+                            other elements are not modified
+
+        HANDLING OF SPECIAL CASES:
+        * below M=Rows(op(S)) and N=Cols(op(S)). Although current  ALGLIB  version
+          does not allow you to  create  zero-sized  sparse  matrices,  internally
+          ALGLIB  can  deal  with  such matrices. So, comments for M or N equal to
+          zero are for internal use only.
+        * if M=0, then subroutine does nothing. It does not even touch arrays.
+        * if N=0 or Alpha=0.0, then:
+          * if Beta=0, then Y is filled by zeros. S and X are  not  referenced  at
+            all. Initial values of Y are ignored (we do not  multiply  Y by  zero,
+            we just rewrite it by zeros)
+          * if Beta<>0, then Y is replaced by Beta*Y
+        * if M>0, N>0, Alpha<>0, but  Beta=0, then  Y is replaced by alpha*op(S)*x
+          initial state of Y  is ignored (rewritten without initial multiplication
+          by zeros).
+            
+        NOTE: this function throws exception when called for non-CRS/SKS  matrix.
+        You must convert your matrix with SparseConvertToCRS/SKS()  before  using
+        this function.
+             
+          -- ALGLIB PROJECT --
+             Copyright 10.12.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void sparsegemv(sparsematrix s,
+            double alpha,
+            int ops,
+            double[] x,
+            int ix,
+            double beta,
+            double[] y,
+            int iy,
+            alglib.xparams _params)
+        {
+            int opm = 0;
+            int opn = 0;
+            int rawm = 0;
+            int rawn = 0;
+            int i = 0;
+            int j = 0;
+            double tval = 0;
+            int lt = 0;
+            int rt = 0;
+            int ct = 0;
+            int d = 0;
+            int u = 0;
+            int ri = 0;
+            int ri1 = 0;
+            double v = 0;
+            double vv = 0;
+            int lt1 = 0;
+            int rt1 = 0;
+            int i_ = 0;
+            int i1_ = 0;
+
+            alglib.ap.assert(ops==0 || ops==1, "SparseGEMV: incorrect OpS");
+            alglib.ap.assert(s.matrixtype==1 || s.matrixtype==2, "SparseGEMV: incorrect matrix type (convert your matrix to CRS/SKS)");
+            if( ops==0 )
+            {
+                opm = s.m;
+                opn = s.n;
+            }
+            else
+            {
+                opm = s.n;
+                opn = s.m;
+            }
+            alglib.ap.assert(opm>=0 && opn>=0, "SparseGEMV: op(S) has negative size");
+            alglib.ap.assert(opn==0 || alglib.ap.len(x)+ix>=opn, "SparseGEMV: X is too short");
+            alglib.ap.assert(opm==0 || alglib.ap.len(y)+iy>=opm, "SparseGEMV: X is too short");
+            rawm = s.m;
+            rawn = s.n;
+            
+            //
+            // Quick exit strategies
+            //
+            if( opm==0 )
+            {
+                return;
+            }
+            if( (double)(beta)!=(double)(0) )
+            {
+                for(i=0; i<=opm-1; i++)
+                {
+                    y[iy+i] = beta*y[iy+i];
+                }
+            }
+            else
+            {
+                for(i=0; i<=opm-1; i++)
+                {
+                    y[iy+i] = 0.0;
+                }
+            }
+            if( opn==0 || (double)(alpha)==(double)(0) )
+            {
+                return;
+            }
+            
+            //
+            // Now we have OpM>=1, OpN>=1, Alpha<>0
+            //
+            if( ops==0 )
+            {
+                
+                //
+                // Compute generalized product y := alpha*S*x + beta*y
+                // (with "beta*y" part already computed).
+                //
+                if( s.matrixtype==1 )
+                {
+                    
+                    //
+                    // CRS format.
+                    // Perform integrity check.
+                    //
+                    alglib.ap.assert(s.ninitialized==s.ridx[s.m], "SparseGEMV: some rows/elements of the CRS matrix were not initialized (you must initialize everything you promised to SparseCreateCRS)");
+                    
+                    //
+                    // Try vendor kernels
+                    //
+                    if( ablasmkl.sparsegemvcrsmkl(0, s.m, s.n, alpha, s.vals, s.idx, s.ridx, x, ix, 1.0, y, iy, _params) )
+                    {
+                        return;
+                    }
+                    
+                    //
+                    // Our own implementation
+                    //
+                    for(i=0; i<=rawm-1; i++)
+                    {
+                        tval = 0;
+                        lt = s.ridx[i];
+                        rt = s.ridx[i+1]-1;
+                        for(j=lt; j<=rt; j++)
+                        {
+                            tval = tval+x[s.idx[j]+ix]*s.vals[j];
+                        }
+                        y[i+iy] = alpha*tval+y[i+iy];
+                    }
+                    return;
+                }
+                if( s.matrixtype==2 )
+                {
+                    
+                    //
+                    // SKS format
+                    //
+                    alglib.ap.assert(s.m==s.n, "SparseMV: non-square SKS matrices are not supported");
+                    for(i=0; i<=rawn-1; i++)
+                    {
+                        ri = s.ridx[i];
+                        ri1 = s.ridx[i+1];
+                        d = s.didx[i];
+                        u = s.uidx[i];
+                        v = s.vals[ri+d]*x[i+ix];
+                        if( d>0 )
+                        {
+                            lt = ri;
+                            rt = ri+d-1;
+                            lt1 = i-d+ix;
+                            rt1 = i-1+ix;
+                            i1_ = (lt1)-(lt);
+                            vv = 0.0;
+                            for(i_=lt; i_<=rt;i_++)
+                            {
+                                vv += s.vals[i_]*x[i_+i1_];
+                            }
+                            v = v+vv;
+                        }
+                        y[i+iy] = alpha*v+y[i+iy];
+                        if( u>0 )
+                        {
+                            lt = ri1-u;
+                            rt = ri1-1;
+                            lt1 = i-u+iy;
+                            rt1 = i-1+iy;
+                            v = alpha*x[i+ix];
+                            i1_ = (lt) - (lt1);
+                            for(i_=lt1; i_<=rt1;i_++)
+                            {
+                                y[i_] = y[i_] + v*s.vals[i_+i1_];
+                            }
+                        }
+                    }
+                    return;
+                }
+            }
+            else
+            {
+                
+                //
+                // Compute generalized product y := alpha*S^T*x + beta*y
+                // (with "beta*y" part already computed).
+                //
+                if( s.matrixtype==1 )
+                {
+                    
+                    //
+                    // CRS format
+                    // Perform integrity check.
+                    //
+                    alglib.ap.assert(s.ninitialized==s.ridx[s.m], "SparseGEMV: some rows/elements of the CRS matrix were not initialized (you must initialize everything you promised to SparseCreateCRS)");
+                    
+                    //
+                    // Try vendor kernels
+                    //
+                    if( ablasmkl.sparsegemvcrsmkl(1, s.m, s.n, alpha, s.vals, s.idx, s.ridx, x, ix, 1.0, y, iy, _params) )
+                    {
+                        return;
+                    }
+                    
+                    //
+                    // Our own implementation
+                    //
+                    for(i=0; i<=rawm-1; i++)
+                    {
+                        lt = s.ridx[i];
+                        rt = s.ridx[i+1];
+                        v = alpha*x[i+ix];
+                        for(j=lt; j<=rt-1; j++)
+                        {
+                            ct = s.idx[j]+iy;
+                            y[ct] = y[ct]+v*s.vals[j];
+                        }
+                    }
+                    return;
+                }
+                if( s.matrixtype==2 )
+                {
+                    
+                    //
+                    // SKS format
+                    //
+                    alglib.ap.assert(s.m==s.n, "SparseGEMV: non-square SKS matrices are not supported");
+                    for(i=0; i<=rawn-1; i++)
+                    {
+                        ri = s.ridx[i];
+                        ri1 = s.ridx[i+1];
+                        d = s.didx[i];
+                        u = s.uidx[i];
+                        if( d>0 )
+                        {
+                            lt = ri;
+                            rt = ri+d-1;
+                            lt1 = i-d+iy;
+                            rt1 = i-1+iy;
+                            v = alpha*x[i+ix];
+                            i1_ = (lt) - (lt1);
+                            for(i_=lt1; i_<=rt1;i_++)
+                            {
+                                y[i_] = y[i_] + v*s.vals[i_+i1_];
+                            }
+                        }
+                        v = alpha*s.vals[ri+d]*x[i+ix];
+                        if( u>0 )
+                        {
+                            lt = ri1-u;
+                            rt = ri1-1;
+                            lt1 = i-u+ix;
+                            rt1 = i-1+ix;
+                            i1_ = (lt1)-(lt);
+                            vv = 0.0;
+                            for(i_=lt; i_<=rt;i_++)
+                            {
+                                vv += s.vals[i_]*x[i_+i1_];
+                            }
+                            v = v+alpha*vv;
+                        }
+                        y[i+iy] = v+y[i+iy];
+                    }
+                    return;
+                }
+            }
+        }
+
+
+        /*************************************************************************
         This function simultaneously calculates two matrix-vector products:
             S*x and S^T*x.
         S must be square (non-rectangular) matrix stored in  CRS  or  SKS  format
@@ -14407,6 +14823,28 @@ public partial class alglib
             n = s.n;
             
             //
+            // Quick exit for M=0 or N=0
+            //
+            alglib.ap.assert(s.m>=0, "SparseCreateCRSInplace: integrity check failed");
+            alglib.ap.assert(s.n>=0, "SparseCreateCRSInplace: integrity check failed");
+            if( m==0 || n==0 )
+            {
+                s.matrixtype = 1;
+                s.ninitialized = 0;
+                apserv.ivectorsetlengthatleast(ref s.ridx, s.m+1, _params);
+                apserv.ivectorsetlengthatleast(ref s.didx, s.m, _params);
+                apserv.ivectorsetlengthatleast(ref s.uidx, s.m, _params);
+                for(i=0; i<=s.m-1; i++)
+                {
+                    s.ridx[i] = 0;
+                    s.uidx[i] = 0;
+                    s.didx[i] = 0;
+                }
+                s.ridx[s.m] = 0;
+                return;
+            }
+            
+            //
             // Perform integrity check
             //
             alglib.ap.assert(s.m>0, "SparseCreateCRSInplace: integrity check failed");
@@ -15384,6 +15822,36 @@ public partial class alglib
         Copy
 
         Input parameters:
+            N   -   subvector size
+            A   -   source vector, N elements are copied
+            IA  -   source offset (first element index)
+            B   -   destination vector, must be large enough to store result
+            IB  -   destination offset (first element index)
+        *************************************************************************/
+        public static void rvectorcopy(int n,
+            double[] a,
+            int ia,
+            double[] b,
+            int ib,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            if( n==0 )
+            {
+                return;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                b[ib+i] = a[ia+i];
+            }
+        }
+
+
+        /*************************************************************************
+        Copy
+
+        Input parameters:
             M   -   number of rows
             N   -   number of columns
             A   -   source matrix, MxN submatrix is copied and transposed
@@ -15417,6 +15885,103 @@ public partial class alglib
                 for(i_=jb; i_<=jb+n-1;i_++)
                 {
                     b[ib+i,i_] = a[ia+i,i_+i1_];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Performs generalized copy: B := Beta*B + Alpha*A.
+
+        If Beta=0, then previous contents of B is simply ignored. If Alpha=0, then
+        A is ignored and not referenced. If both Alpha and Beta  are  zero,  B  is
+        filled by zeros.
+
+        Input parameters:
+            M   -   number of rows
+            N   -   number of columns
+            Alpha-  coefficient
+            A   -   source matrix, MxN submatrix is copied and transposed
+            IA  -   submatrix offset (row index)
+            JA  -   submatrix offset (column index)
+            Beta-   coefficient
+            B   -   destination matrix, must be large enough to store result
+            IB  -   submatrix offset (row index)
+            JB  -   submatrix offset (column index)
+        *************************************************************************/
+        public static void rmatrixgencopy(int m,
+            int n,
+            double alpha,
+            double[,] a,
+            int ia,
+            int ja,
+            double beta,
+            double[,] b,
+            int ib,
+            int jb,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+
+            if( m==0 || n==0 )
+            {
+                return;
+            }
+            
+            //
+            // Zero-fill
+            //
+            if( (double)(alpha)==(double)(0) && (double)(beta)==(double)(0) )
+            {
+                for(i=0; i<=m-1; i++)
+                {
+                    for(j=0; j<=n-1; j++)
+                    {
+                        b[ib+i,jb+j] = 0;
+                    }
+                }
+                return;
+            }
+            
+            //
+            // Inplace multiply
+            //
+            if( (double)(alpha)==(double)(0) )
+            {
+                for(i=0; i<=m-1; i++)
+                {
+                    for(j=0; j<=n-1; j++)
+                    {
+                        b[ib+i,jb+j] = beta*b[ib+i,jb+j];
+                    }
+                }
+                return;
+            }
+            
+            //
+            // Multiply and copy
+            //
+            if( (double)(beta)==(double)(0) )
+            {
+                for(i=0; i<=m-1; i++)
+                {
+                    for(j=0; j<=n-1; j++)
+                    {
+                        b[ib+i,jb+j] = alpha*a[ia+i,ja+j];
+                    }
+                }
+                return;
+            }
+            
+            //
+            // Generic
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    b[ib+i,jb+j] = alpha*a[ia+i,ja+j]+beta*b[ib+i,jb+j];
                 }
             }
         }

@@ -1,3 +1,8 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/xr1b6um13ox74o5r?svg=true)](https://ci.appveyor.com/project/dariogriffo/alglib-net-gpl)
+[![NuGet](https://img.shields.io/nuget/v/alglib.net.svg?style=flat)](https://www.nuget.org/packages/alglib.net/) 
+[![GitHub license](https://img.shields.io/github/license/griffo-io/alglib.net.svg)](https://github.com/griffo-io/alglib.net/blob/master/LICENSE)
+
+
 # alglib.net.gpl
 A public mirror for https://www.alglib.net/
 

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net45;net47;net48</TargetFrameworks>
-    <Version>3.15.1</Version>
+    <Version>3.16.0</Version>
     <Authors>https://www.alglib.net/</Authors>
     <Title>alglib.net</Title>
     <Company>ALGLIB Project</Company>
@@ -17,7 +17,7 @@
   <PropertyGroup>
     <PackageIcon>icon.png</PackageIcon>
     <PackageTags>numerical-analysis data-processing</PackageTags>
-    <PackageReleaseNotes>Added support for net standard 2.1</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated to latest version of algblib</PackageReleaseNotes>
     <PackageLicenseFile>license.txt</PackageLicenseFile>
   </PropertyGroup>
   <ItemGroup>

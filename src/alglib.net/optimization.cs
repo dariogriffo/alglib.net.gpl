@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.15.0 (source code generated 2019-02-20)
+ALGLIB 3.16.0 (source code generated 2019-12-19)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -170,6 +170,88 @@ public partial class alglib
         private optguardapi.optguardreport _innerobj;
         public optguardapi.optguardreport innerobj { get { return _innerobj; } }
         public optguardreport(optguardapi.optguardreport obj)
+        {
+            _innerobj = obj;
+        }
+    }
+
+
+    /*************************************************************************
+    This  structure  is  used  for  detailed   reporting  about  suspected  C0
+    continuity violation.
+
+    === WHAT IS TESTED =======================================================
+
+    C0 test  studies  function  values (not gradient!)  obtained  during  line
+    searches and monitors estimate of the Lipschitz  constant.  Sudden  spikes
+    usually indicate that discontinuity was detected.
+
+
+    === WHAT IS REPORTED =====================================================
+
+    Actually, report retrieval function returns TWO report structures:
+
+    * one for most suspicious point found so far (one with highest  change  in
+      the function value), so called "strongest" report
+    * another one for most detailed line search (more function  evaluations  =
+      easier to understand what's going on) which triggered  test #0 criteria,
+      so called "longest" report
+
+    In both cases following fields are returned:
+
+    * positive - is TRUE  when test flagged suspicious point;  FALSE  if  test
+      did not notice anything (in the latter cases fields below are empty).
+    * fidx - is an index of the function (0 for  target  function, 1 or higher
+      for nonlinear constraints) which is suspected of being "non-C1"
+    * x0[], d[] - arrays of length N which store initial point  and  direction
+      for line search (d[] can be normalized, but does not have to)
+    * stp[], f[] - arrays of length CNT which store step lengths and  function
+      values at these points; f[i] is evaluated in x0+stp[i]*d.
+    * stpidxa, stpidxb - we  suspect  that  function  violates  C1  continuity
+      between steps #stpidxa and #stpidxb (usually we have  stpidxb=stpidxa+3,
+      with  most  likely  position  of  the  violation  between  stpidxa+1 and
+      stpidxa+2.
+
+    You can plot function values stored in stp[]  and  f[]  arrays  and  study
+    behavior of your function by your own eyes, just  to  be  sure  that  test
+    correctly reported C1 violation.
+
+      -- ALGLIB --
+         Copyright 19.11.2018 by Bochkanov Sergey
+    *************************************************************************/
+    public class optguardnonc0report : alglibobject
+    {
+        //
+        // Public declarations
+        //
+        public bool positive { get { return _innerobj.positive; } set { _innerobj.positive = value; } }
+        public int fidx { get { return _innerobj.fidx; } set { _innerobj.fidx = value; } }
+        public double[] x0 { get { return _innerobj.x0; } set { _innerobj.x0 = value; } }
+        public double[] d { get { return _innerobj.d; } set { _innerobj.d = value; } }
+        public int n { get { return _innerobj.n; } set { _innerobj.n = value; } }
+        public double[] stp { get { return _innerobj.stp; } set { _innerobj.stp = value; } }
+        public double[] f { get { return _innerobj.f; } set { _innerobj.f = value; } }
+        public int cnt { get { return _innerobj.cnt; } set { _innerobj.cnt = value; } }
+        public int stpidxa { get { return _innerobj.stpidxa; } set { _innerobj.stpidxa = value; } }
+        public int stpidxb { get { return _innerobj.stpidxb; } set { _innerobj.stpidxb = value; } }
+    
+        public optguardnonc0report()
+        {
+            _innerobj = new optguardapi.optguardnonc0report();
+        }
+        
+        public override alglib.alglibobject make_copy()
+        {
+            return new optguardnonc0report((optguardapi.optguardnonc0report)_innerobj.make_copy());
+        }
+    
+        //
+        // Although some of declarations below are public, you should not use them
+        // They are intended for internal use only
+        //
+        private optguardapi.optguardnonc0report _innerobj;
+        public optguardapi.optguardnonc0report innerobj { get { return _innerobj; } }
+        public optguardnonc0report(optguardapi.optguardnonc0report obj)
         {
             _innerobj = obj;
         }
@@ -356,6 +438,24 @@ public partial class alglib
             _innerobj = obj;
         }
     }
+
+
+}
+public partial class alglib
+{
+
+
+
+}
+public partial class alglib
+{
+
+
+
+}
+public partial class alglib
+{
+
 
 
 }
@@ -2875,6 +2975,12 @@ public partial class alglib
                                 (only products calculated as part of iterative
                                 process are counted)
     * TerminationType           completion code (see below)
+    * LagBC                     Lagrange multipliers for box constraints,
+                                array[N], not filled by QP-BLEIC solver
+    * LagLC                     Lagrange multipliers for linear constraints,
+                                array[MSparse+MDense], ignored by QP-BLEIC solver
+
+    === COMPLETION CODES =====================================================
 
     Completion codes:
     * -9    failure of the automatic scale evaluation:  one  of  the  diagonal
@@ -2895,6 +3001,38 @@ public partial class alglib
     *  7    stopping conditions are too stringent,
             further improvement is impossible,
             X contains best point found so far.
+
+    === LAGRANGE MULTIPLIERS =================================================
+
+    Some  optimizers  report  values of  Lagrange  multipliers  on  successful
+    completion (positive completion code):
+    * DENSE-IPM-QP and SPARSE-IPM-QP return very precise Lagrange  multipliers
+      as determined during solution process.
+    * DENSE-AUL-QP returns approximate Lagrange multipliers  (which  are  very
+      close to "true"  Lagrange  multipliers  except  for  overconstrained  or
+      degenerate problems)
+
+    Two arrays of multipliers are returned:
+    * LagBC is array[N] which is loaded with multipliers from box constraints;
+      LagBC[i]>0 means that I-th constraint is at the  upper bound, LagBC[I]<0
+      means that I-th constraint is at the lower bound, LagBC[I]=0 means  that
+      I-th box constraint is inactive.
+    * LagLC is array[MSparse+MDense] which is  loaded  with  multipliers  from
+      general  linear  constraints  (former  MSparse  elements  corresponds to
+      sparse part of the constraint matrix, latter MDense are  for  the  dense
+      constraints, as was specified by user).
+      LagLC[i]>0 means that I-th constraint at  the  upper  bound,  LagLC[i]<0
+      means that I-th constraint is at the lower bound, LagLC[i]=0 means  that
+      I-th linear constraint is inactive.
+
+    On failure (or when optimizer does not support Lagrange multipliers) these
+    arrays are zero-filled.
+
+    NOTE: methods  from  IPM  family  may  also  return  meaningful   Lagrange
+          multipliers on completion with codes -3 (infeasibility detected) and
+          -4  (unboundedness  detected).   It   is   possible   that   seeming
+          infeasibility/unboundedness of the problem is due to rounding errors
+          In this case last values of Lagrange multipliers are returned.
     *************************************************************************/
     public class minqpreport : alglibobject
     {
@@ -2906,6 +3044,8 @@ public partial class alglib
         public int nmv { get { return _innerobj.nmv; } set { _innerobj.nmv = value; } }
         public int ncholesky { get { return _innerobj.ncholesky; } set { _innerobj.ncholesky = value; } }
         public int terminationtype { get { return _innerobj.terminationtype; } set { _innerobj.terminationtype = value; } }
+        public double[] lagbc { get { return _innerobj.lagbc; } set { _innerobj.lagbc = value; } }
+        public double[] laglc { get { return _innerobj.laglc; } set { _innerobj.laglc = value; } }
     
         public minqpreport()
         {
@@ -2934,21 +3074,47 @@ public partial class alglib
 
     The subroutine creates QP optimizer. After initial creation,  it  contains
     default optimization problem with zero quadratic and linear terms  and  no
-    constraints. You should set quadratic/linear terms with calls to functions
-    provided by MinQP subpackage.
+    constraints.
 
-    You should also choose appropriate QP solver and set it  and  its stopping
-    criteria by means of MinQPSetAlgo??????() function. Then, you should start
-    solution process by means of MinQPOptimize() call. Solution itself can  be
-    obtained with MinQPResults() function.
+    In order to actually solve something you should:
+    * set cost vector with minqpsetlinearterm()
+    * set variable bounds with minqpsetbc() or minqpsetbcall()
+    * specify constraint matrix with one of the following functions:
+      * modern API:
+        * minqpsetlc2()       for sparse two-sided constraints AL <= A*x <= AU
+        * minqpsetlc2dense()  for dense  two-sided constraints AL <= A*x <= AU
+        * minqpsetlc2mixed()  for mixed  two-sided constraints AL <= A*x <= AU
+        * minqpaddlc2dense()  to add one dense row to dense constraint submatrix
+        * minqpaddlc2()       to add one sparse row to sparse constraint submatrix
+      * legacy API:
+        * minqpsetlc()        for dense one-sided equality/inequality constraints
+        * minqpsetlcsparse()  for sparse one-sided equality/inequality constraints
+        * minqpsetlcmixed()   for mixed dense/sparse one-sided equality/inequality constraints
+    * choose appropriate QP solver and set it  and  its stopping  criteria  by
+      means of minqpsetalgo??????() function
+    * call minqpoptimize() to run the solver and  minqpresults()  to  get  the
+      solution vector and additional information.
 
-    Following solvers are recommended:
+    Following solvers are recommended for convex and semidefinite problems:
     * QuickQP for dense problems with box-only constraints (or no constraints
       at all)
-    * QP-BLEIC for dense/sparse problems with moderate (up to 50) number of
-      general linear constraints
-    * DENSE-AUL-QP for dense problems with any (small or large) number of
-      general linear constraints
+    * DENSE-IPM-QP for  convex  or  semidefinite  problems  with   medium  (up
+      to several thousands) variable count, dense/sparse  quadratic  term  and
+      any number  (up  to  many  thousands)  of  dense/sparse  general  linear
+      constraints
+    * SPARSE-IPM-QP for convex  or  semidefinite  problems  with   large (many
+      thousands) variable count, sparse quadratic term AND linear constraints.
+
+    If your problem happens to be nonconvex,  but  either  (a) is  effectively
+    convexified under constraints,  or  (b)  has  unique  solution  even  with
+    nonconvex target, then you can use:
+    * QuickQP for dense nonconvex problems with box-only constraints
+    * DENSE-AUL-QP  for   dense   nonconvex   problems  which  are effectively
+      convexified under constraints with up to several thousands of  variables
+      and any (small or large) number of general linear constraints
+    * QP-BLEIC for dense/sparse problems with small (up to  several  hundreds)
+      number of general linear  constraints  and  arbitrarily  large  variable
+      count.
 
     INPUT PARAMETERS:
         N       -   problem size
@@ -2999,13 +3165,6 @@ public partial class alglib
     /*************************************************************************
     This  function  sets  dense  quadratic  term  for  QP solver. By  default,
     quadratic term is zero.
-
-    SUPPORT BY QP SOLVERS:
-
-    Dense quadratic term can be handled by following QP solvers:
-    * QuickQP
-    * BLEIC-QP
-    * Dense-AUL-QP
 
     IMPORTANT:
 
@@ -3072,12 +3231,8 @@ public partial class alglib
     quadratic  term  is  zero.  This  function  overrides  previous  calls  to
     minqpsetquadraticterm() or minqpsetquadratictermsparse().
 
-    SUPPORT BY QP SOLVERS:
-
-    Sparse quadratic term can be handled by following QP solvers:
-    * QuickQP
-    * BLEIC-QP
-    * Dense-AUL-QP (internally converts sparse matrix to dense format)
+    NOTE: dense solvers like DENSE-AUL-QP or DENSE-IPM-QP  will  convert  this
+          matrix to dense storage anyway.
 
     IMPORTANT:
 
@@ -3116,9 +3271,11 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This function sets starting point for QP solver. It is useful to have
-    good initial approximation to the solution, because it will increase
-    speed of convergence and identification of active constraints.
+    This function sets starting point for QP solver. It is useful to have good
+    initial approximation to the solution, because it will increase  speed  of
+    convergence and identification of active constraints.
+
+    NOTE: interior point solvers ignore initial point provided by user.
 
     INPUT PARAMETERS:
         State   -   structure which stores algorithm state
@@ -3254,16 +3411,15 @@ public partial class alglib
     This function tells solver to use BLEIC-based algorithm and sets  stopping
     criteria for the algorithm.
 
-    This algorithm is fast  enough  for large-scale  problems  with  following
-    properties:
-    a) feasible initial point, moderate amount of general linear constraints
-    b) arbitrary (can be infeasible) initial point, small  amount  of  general
-       linear constraints (say, hundred or less)
+    This algorithm is intended for large-scale  problems,  possibly nonconvex,
+    with small number of general linear constraints. Feasible initial point is
+    essential for good performance.
 
-    If you solve large-scale QP problem with many inequality  constraints  and
-    without initial feasibility guarantees, consider  using  DENSE-AUL  solver
-    instead. Initial feasibility detection stage by BLEIC may take too long on
-    such problems.
+    IMPORTANT: when DENSE-IPM (or DENSE-AUL for  nonconvex  problems)  solvers
+               are applicable, their performance is much better than  that  of
+               BLEIC-QP.
+               We recommend  you to use BLEIC only when other solvers can  not
+               be used.
 
     ALGORITHM FEATURES:
 
@@ -3287,7 +3443,7 @@ public partial class alglib
     * This algorithm is inefficient on  problems with hundreds  and  thousands
       of general inequality constraints and infeasible initial point.  Initial
       feasibility detection stage may take too long on such constraint sets.
-      Consider using DENSE-AUL instead.
+      Consider using DENSE-IPM or DENSE-AUL instead.
     * unlike QuickQP solver, this algorithm does not perform Newton steps  and
       does not use Level 3 BLAS. Being general-purpose active set  method,  it
       can activate constraints only one-by-one. Thus, its performance is lower
@@ -3348,8 +3504,18 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This function tells QP solver to use Dense-AUL algorithm and sets stopping
+    This function tells QP solver to use DENSE-AUL algorithm and sets stopping
     criteria for the algorithm.
+
+    This  algorithm  is  intended  for  non-convex problems with moderate  (up
+    to several thousands) variable count and arbitrary number  of  constraints
+    which are either (a) effectively convexified under constraints or (b) have
+    unique solution even with nonconvex target.
+
+    IMPORTANT: when DENSE-IPM solver is applicable, its performance is usually
+               much better than that of DENSE-AUL.
+               We recommend  you to use DENSE-AUL only when other solvers  can
+               not be used.
 
     ALGORITHM FEATURES:
 
@@ -3359,14 +3525,11 @@ public partial class alglib
       problems. Semidefinite and non-convex problems can be solved as long  as
       they  are   bounded  from  below  under  constraints,  although  without
       theoretical guarantees.
-    * this solver is better than QP-BLEIC on problems  with  large  number  of
-      general linear constraints. It better handles infeasible initial points.
 
     ALGORITHM OUTLINE:
 
     * this  algorithm   is   an   augmented   Lagrangian   method  with  dense
-      preconditioner (hence  its  name).  It  is  similar  to  barrier/penalty
-      methods, but much more precise and faster.
+      preconditioner (hence  its  name).
     * it performs several outer iterations in order to refine  values  of  the
       Lagrange multipliers. Single outer  iteration  is  a  solution  of  some
       unconstrained optimization problem: first  it  performs  dense  Cholesky
@@ -3432,13 +3595,184 @@ public partial class alglib
     }
     
     /*************************************************************************
+    This function tells QP solver to  use  DENSE-IPM  QP  algorithm  and  sets
+    stopping criteria for the algorithm.
+
+    This  algorithm  is  intended  for convex and semidefinite  problems  with
+    moderate (up to several thousands) variable count and arbitrary number  of
+    constraints.
+
+    IMPORTANT: this algorithm won't work for nonconvex problems, use DENSE-AUL
+               or BLEIC-QP instead. If you try to  run  DENSE-IPM  on  problem
+               with  indefinite  matrix  (matrix having  at least one negative
+               eigenvalue) then depending on circumstances it may  either  (a)
+               stall at some  arbitrary  point,  or  (b)  throw  exception  on
+               failure of Cholesky decomposition.
+
+    ALGORITHM FEATURES:
+
+    * supports  box  and  dense/sparse  general   linear   equality/inequality
+      constraints
+
+    ALGORITHM OUTLINE:
+
+    * this  algorithm  is  an  implementation  of  interior  point  method  as
+      formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
+      (damped Newton directions are extensively used)
+    * like all interior point methods, this algorithm  tends  to  converge  in
+      roughly same number of iterations (between 15 and 30) independently from
+      the problem dimensionality
+
+    ALGORITHM LIMITATIONS:
+
+    * because dense Cholesky driver is used, for  N-dimensional  problem  with
+      M dense constaints this algorithm has O(N^2+N*M) memory requirements and
+      O(N^3+N*M^2) running time.
+      Having sparse constraints with Z nonzeros per row  relaxes  storage  and
+      running time down to O(N^2+M*Z) and O(N^3+N*Z^2)
+      From the practical  point  of  view,  it  limits  its  applicability  by
+      several thousands of variables.
+      From  the  other  side,  variables  count  is  the most limiting factor,
+      and dependence on constraint count is  much  more  lower. Assuming  that
+      constraint matrix is sparse, it may handle tens of thousands  of general
+      linear constraints.
+
+    INPUT PARAMETERS:
+        State   -   structure which stores algorithm state
+        Eps     -   >=0, stopping criteria. The algorithm stops  when   primal
+                    and dual infeasiblities as well as complementarity gap are
+                    less than Eps.
+
+    IT IS VERY IMPORTANT TO CALL minqpsetscale() WHEN YOU USE THIS  ALGORITHM
+    BECAUSE ITS CONVERGENCE PROPERTIES AND STOPPING CRITERIA ARE SCALE-DEPENDENT!
+
+    NOTE: Passing EpsX=0 will lead to automatic selection of small epsilon.
+
+    ===== TRACING IPM SOLVER =================================================
+
+    IPM solver supports advanced tracing capabilities. You can trace algorithm
+    output by specifying following trace symbols (case-insensitive)  by  means
+    of trace_file() call:
+    * 'IPM'         - for basic trace of algorithm  steps and decisions.  Only
+                      short scalars (function values and deltas) are  printed.
+                      N-dimensional quantities like search directions are  NOT
+                      printed.
+    * 'IPM.DETAILED'- for output of points being visited and search directions
+                      This  symbol  also  implicitly  defines  'IPM'. You  can
+                      control output format by additionally specifying:
+                      * nothing     to output in  6-digit exponential format
+                      * 'PREC.E15'  to output in 15-digit exponential format
+                      * 'PREC.F6'   to output in  6-digit fixed-point format
+
+    By default trace is disabled and adds  no  overhead  to  the  optimization
+    process. However, specifying any of the symbols adds some  formatting  and
+    output-related overhead.
+
+    You may specify multiple symbols by separating them with commas:
+    >
+    > alglib::trace_file("IPM.DETAILED,PREC.F6", "path/to/trace.log")
+    >
+
+      -- ALGLIB --
+         Copyright 01.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetalgodenseipm(minqpstate state, double eps)
+    {
+    
+        minqp.minqpsetalgodenseipm(state.innerobj, eps, null);
+    }
+    
+    public static void minqpsetalgodenseipm(minqpstate state, double eps, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetalgodenseipm(state.innerobj, eps, _params);
+    }
+    
+    /*************************************************************************
+    This function tells QP solver to  use  SPARSE-IPM  QP algorithm  and  sets
+    stopping criteria for the algorithm.
+
+    This  algorithm  is  intended  for convex and semidefinite  problems  with
+    large  variable  and  constraint  count  and  sparse  quadratic  term  and
+    constraints. It is possible to have  some  limited  set  of  dense  linear
+    constraints - they will be handled separately by dense BLAS - but the more
+    dense constraints you have, the more time solver needs.
+
+    IMPORTANT: internally this solver performs large  and  sparse  (N+M)x(N+M)
+               triangular factorization. So it expects both quadratic term and
+               constraints to be highly sparse. However, its  running  time is
+               influenced by BOTH fill factor and sparsity pattern.
+
+               Generally we expect that no more than few nonzero  elements per
+               row are present. However different sparsity patterns may result
+               in completely different running  times  even  given  same  fill
+               factor.
+
+               In many cases this algorithm outperforms DENSE-IPM by order  of
+               magnitude. However, in some cases you may  get  better  results
+               with DENSE-IPM even when solving sparse task.
+
+    IMPORTANT: this algorithm won't work for nonconvex problems, use DENSE-AUL
+               or BLEIC-QP instead. If you try to  run  DENSE-IPM  on  problem
+               with  indefinite  matrix  (matrix having  at least one negative
+               eigenvalue) then depending on circumstances it may  either  (a)
+               stall at some  arbitrary  point,  or  (b)  throw  exception  on
+               failure of Cholesky decomposition.
+
+    ALGORITHM FEATURES:
+
+    * supports  box  and  dense/sparse  general   linear   equality/inequality
+      constraints
+    * specializes on large-scale sparse problems
+
+    ALGORITHM OUTLINE:
+
+    * this  algorithm  is  an  implementation  of  interior  point  method  as
+      formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
+      (damped Newton directions are extensively used)
+    * like all interior point methods, this algorithm  tends  to  converge  in
+      roughly same number of iterations (between 15 and 30) independently from
+      the problem dimensionality
+
+    ALGORITHM LIMITATIONS:
+
+    * this algorithm may handle moderate number  of dense constraints, usually
+      no more than a thousand of dense ones without losing its efficiency.
+
+    INPUT PARAMETERS:
+        State   -   structure which stores algorithm state
+        Eps     -   >=0, stopping criteria. The algorithm stops  when   primal
+                    and dual infeasiblities as well as complementarity gap are
+                    less than Eps.
+
+    IT IS VERY IMPORTANT TO CALL minqpsetscale() WHEN YOU USE THIS  ALGORITHM
+    BECAUSE ITS CONVERGENCE PROPERTIES AND STOPPING CRITERIA ARE SCALE-DEPENDENT!
+
+    NOTE: Passing EpsX=0 will lead to automatic selection of small epsilon.
+
+      -- ALGLIB --
+         Copyright 01.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetalgosparseipm(minqpstate state, double eps)
+    {
+    
+        minqp.minqpsetalgosparseipm(state.innerobj, eps, null);
+    }
+    
+    public static void minqpsetalgosparseipm(minqpstate state, double eps, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetalgosparseipm(state.innerobj, eps, _params);
+    }
+    
+    /*************************************************************************
     This function tells solver to use QuickQP  algorithm:  special  extra-fast
     algorithm for problems with box-only constrants. It may  solve  non-convex
     problems as long as they are bounded from below under constraints.
 
     ALGORITHM FEATURES:
-    * many times (from 5x to 50x!) faster than BLEIC-based QP solver; utilizes
-      accelerated methods for activation of constraints.
+    * several times faster than DENSE-IPM when running on box-only problem
+    * utilizes accelerated methods for activation of constraints.
     * supports dense and sparse QP problems
     * supports ONLY box constraints; general linear constraints are NOT
       supported by this solver
@@ -3547,10 +3881,18 @@ public partial class alglib
     This function sets box constraints for QP solver
 
     Box constraints are inactive by default (after  initial  creation).  After
-    being  set,  they  are  preserved until explicitly turned off with another
-    SetBC() call.
+    being  set,  they are  preserved until explicitly overwritten with another
+    minqpsetbc()  or  minqpsetbcall()  call,  or  partially  overwritten  with
+    minqpsetbci() call.
 
-    All QP solvers may handle box constraints.
+    Following types of constraints are supported:
+
+        DESCRIPTION         CONSTRAINT              HOW TO SPECIFY
+        fixed variable      x[i]=Bnd[i]             BndL[i]=BndU[i]
+        lower bound         BndL[i]<=x[i]           BndU[i]=+INF
+        upper bound         x[i]<=BndU[i]           BndL[i]=-INF
+        range               BndL[i]<=x[i]<=BndU[i]  ...
+        free variable       -                       BndL[I]=-INF, BndU[I]+INF
 
     INPUT PARAMETERS:
         State   -   structure stores algorithm state
@@ -3563,8 +3905,18 @@ public partial class alglib
                     very large number or +INF (latter is recommended because
                     it will allow solver to use better algorithm).
 
-    NOTE: it is possible to specify BndL[i]=BndU[i]. In this case I-th
-    variable will be "frozen" at X[i]=BndL[i]=BndU[i].
+    NOTE: infinite values can be specified by means of Double.PositiveInfinity
+          and  Double.NegativeInfinity  (in  C#)  and  alglib::fp_posinf   and
+          alglib::fp_neginf (in C++).
+
+    NOTE: you may replace infinities by very small/very large values,  but  it
+          is not recommended because large numbers may introduce large numerical
+          errors in the algorithm.
+
+    NOTE: if constraints for all variables are same you may use minqpsetbcall()
+          which allows to specify constraints without using arrays.
+
+    NOTE: BndL>BndU will result in QP problem being recognized as infeasible.
 
       -- ALGLIB --
          Copyright 11.01.2011 by Bochkanov Sergey
@@ -3582,26 +3934,106 @@ public partial class alglib
     }
     
     /*************************************************************************
+    This function sets box constraints for QP solver (all variables  at  once,
+    same constraints for all variables)
+
+    Box constraints are inactive by default (after  initial  creation).  After
+    being  set,  they are  preserved until explicitly overwritten with another
+    minqpsetbc()  or  minqpsetbcall()  call,  or  partially  overwritten  with
+    minqpsetbci() call.
+
+    Following types of constraints are supported:
+
+        DESCRIPTION         CONSTRAINT              HOW TO SPECIFY
+        fixed variable      x[i]=Bnd                BndL=BndU
+        lower bound         BndL<=x[i]              BndU=+INF
+        upper bound         x[i]<=BndU              BndL=-INF
+        range               BndL<=x[i]<=BndU        ...
+        free variable       -                       BndL=-INF, BndU+INF
+
+    INPUT PARAMETERS:
+        State   -   structure stores algorithm state
+        BndL    -   lower bound, same for all variables
+        BndU    -   upper bound, same for all variables
+
+    NOTE: infinite values can be specified by means of Double.PositiveInfinity
+          and  Double.NegativeInfinity  (in  C#)  and  alglib::fp_posinf   and
+          alglib::fp_neginf (in C++).
+
+    NOTE: you may replace infinities by very small/very large values,  but  it
+          is not recommended because large numbers may introduce large numerical
+          errors in the algorithm.
+
+    NOTE: BndL>BndU will result in QP problem being recognized as infeasible.
+
+      -- ALGLIB --
+         Copyright 11.01.2011 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetbcall(minqpstate state, double bndl, double bndu)
+    {
+    
+        minqp.minqpsetbcall(state.innerobj, bndl, bndu, null);
+    }
+    
+    public static void minqpsetbcall(minqpstate state, double bndl, double bndu, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetbcall(state.innerobj, bndl, bndu, _params);
+    }
+    
+    /*************************************************************************
+    This function sets box constraints for I-th variable (other variables are
+    not modified).
+
+    Following types of constraints are supported:
+
+        DESCRIPTION         CONSTRAINT              HOW TO SPECIFY
+        fixed variable      x[i]=Bnd                BndL=BndU
+        lower bound         BndL<=x[i]              BndU=+INF
+        upper bound         x[i]<=BndU              BndL=-INF
+        range               BndL<=x[i]<=BndU        ...
+        free variable       -                       BndL=-INF, BndU+INF
+
+    INPUT PARAMETERS:
+        State   -   structure stores algorithm state
+        BndL    -   lower bound
+        BndU    -   upper bound
+
+    NOTE: infinite values can be specified by means of Double.PositiveInfinity
+          and  Double.NegativeInfinity  (in  C#)  and  alglib::fp_posinf   and
+          alglib::fp_neginf (in C++).
+
+    NOTE: you may replace infinities by very small/very large values,  but  it
+          is not recommended because large numbers may introduce large numerical
+          errors in the algorithm.
+
+    NOTE: BndL>BndU will result in QP problem being recognized as infeasible.
+
+      -- ALGLIB --
+         Copyright 11.01.2011 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetbci(minqpstate state, int i, double bndl, double bndu)
+    {
+    
+        minqp.minqpsetbci(state.innerobj, i, bndl, bndu, null);
+    }
+    
+    public static void minqpsetbci(minqpstate state, int i, double bndl, double bndu, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetbci(state.innerobj, i, bndl, bndu, _params);
+    }
+    
+    /*************************************************************************
     This function sets dense linear constraints for QP optimizer.
 
     This  function  overrides  results  of  previous  calls  to  minqpsetlc(),
     minqpsetlcsparse() and minqpsetlcmixed().  After  call  to  this  function
-    sparse constraints are dropped, and you have only those constraints  which
-    were specified in the present call.
+    all non-box constraints are dropped, and you have only  those  constraints
+    which were specified in the present call.
 
     If you want  to  specify  mixed  (with  dense  and  sparse  terms)  linear
     constraints, you should call minqpsetlcmixed().
-
-    SUPPORT BY QP SOLVERS:
-
-    Following QP solvers can handle dense linear constraints:
-    * BLEIC-QP          -   handles them  with  high  precision,  but  may  be
-                            inefficient for problems with hundreds of constraints
-    * Dense-AUL-QP      -   handles them with moderate precision (approx. 10^-6),
-                            may efficiently handle thousands of constraints.
-
-    Following QP solvers can NOT handle dense linear constraints:
-    * QuickQP           -   can not handle general linear constraints
 
     INPUT PARAMETERS:
         State   -   structure previously allocated with MinQPCreate call.
@@ -3668,30 +4100,11 @@ public partial class alglib
 
     This  function  overrides  results  of  previous  calls  to  minqpsetlc(),
     minqpsetlcsparse() and minqpsetlcmixed().  After  call  to  this  function
-    dense constraints are dropped, and you have only those  constraints  which
-    were specified in the present call.
+    all non-box constraints are dropped, and you have only  those  constraints
+    which were specified in the present call.
 
     If you want  to  specify  mixed  (with  dense  and  sparse  terms)  linear
     constraints, you should call minqpsetlcmixed().
-
-    SUPPORT BY QP SOLVERS:
-
-    Following QP solvers can handle sparse linear constraints:
-    * BLEIC-QP          -   handles them  with  high  precision,  but can  not
-                            utilize their sparsity - sparse constraint  matrix
-                            is silently converted to dense  format.  Thus,  it
-                            may be inefficient for problems with  hundreds  of
-                            constraints.
-    * Dense-AUL-QP      -   although this solver uses dense linear algebra  to
-                            calculate   Cholesky   preconditioner,   it    may
-                            efficiently  handle  sparse  constraints.  It  may
-                            solve problems  with  hundreds  and  thousands  of
-                            constraints. The only drawback is  that  precision
-                            of constraint handling is typically within 1E-4...
-                            ..1E-6 range.
-
-    Following QP solvers can NOT handle sparse linear constraints:
-    * QuickQP           -   can not handle general linear constraints
 
     INPUT PARAMETERS:
         State   -   structure previously allocated with MinQPCreate call.
@@ -3742,27 +4155,19 @@ public partial class alglib
     Similarly, if you have just a few dense rows, you may store them in sparse
     format with almost same performance.
 
-    SUPPORT BY QP SOLVERS:
-
-    Following QP solvers can handle mixed dense/sparse linear constraints:
-    * BLEIC-QP          -   handles them  with  high  precision,  but can  not
-                            utilize their sparsity - sparse constraint  matrix
-                            is silently converted to dense  format.  Thus,  it
-                            may be inefficient for problems with  hundreds  of
-                            constraints.
-    * Dense-AUL-QP      -   although this solver uses dense linear algebra  to
-                            calculate   Cholesky   preconditioner,   it    may
-                            efficiently  handle  sparse  constraints.  It  may
-                            solve problems  with  hundreds  and  thousands  of
-                            constraints. The only drawback is  that  precision
-                            of constraint handling is typically within 1E-4...
-                            ..1E-6 range.
-
-    Following QP solvers can NOT handle mixed linear constraints:
-    * QuickQP           -   can not handle general linear constraints at all
-
     INPUT PARAMETERS:
         State   -   structure previously allocated with MinQPCreate call.
+        SparseC -   linear constraints, sparse  matrix with dimensions EXACTLY
+                    EQUAL TO [SparseK,N+1].  Each  row  of  C  represents  one
+                    constraint, either equality or inequality (see below):
+                    * first N elements correspond to coefficients,
+                    * last element corresponds to the right part.
+                    All elements of C (including right part) must be finite.
+        SparseCT-   type of sparse constraints, array[K]:
+                    * if SparseCT[i]>0, then I-th constraint is SparseC[i,*]*x >= SparseC[i,n+1]
+                    * if SparseCT[i]=0, then I-th constraint is SparseC[i,*]*x  = SparseC[i,n+1]
+                    * if SparseCT[i]<0, then I-th constraint is SparseC[i,*]*x <= SparseC[i,n+1]
+        SparseK -   number of sparse equality/inequality constraints, K>=0
         DenseC  -   dense linear constraints, array[K,N+1].
                     Each row of DenseC represents one constraint, either equality
                     or inequality (see below):
@@ -3774,38 +4179,278 @@ public partial class alglib
                     * if DenseCT[i]=0, then I-th constraint is DenseC[i,*]*x  = DenseC[i,n+1]
                     * if DenseCT[i]<0, then I-th constraint is DenseC[i,*]*x <= DenseC[i,n+1]
         DenseK  -   number of equality/inequality constraints, DenseK>=0
-        SparseC -   linear  constraints,  sparse  matrix  with  dimensions  at
-                    least [SparseK,N+1]. If matrix has  larger  size,  only  leading
-                    SPARSEKx(N+1) rectangle is used.
-                    Each row of C represents one constraint, either equality
-                    or inequality (see below):
-                    * first N elements correspond to coefficients,
-                    * last element corresponds to the right part.
-                    All elements of C (including right part) must be finite.
-        SparseCT-   type of sparse constraints, array[K]:
-                    * if SparseCT[i]>0, then I-th constraint is SparseC[i,*]*x >= SparseC[i,n+1]
-                    * if SparseCT[i]=0, then I-th constraint is SparseC[i,*]*x  = SparseC[i,n+1]
-                    * if SparseCT[i]<0, then I-th constraint is SparseC[i,*]*x <= SparseC[i,n+1]
-        SparseK -   number of sparse equality/inequality constraints, K>=0
 
-    NOTE 1: linear (non-bound) constraints are satisfied only approximately  -
+    NOTE 1: linear (non-box) constraints  are  satisfied only approximately  -
             there always exists some violation due  to  numerical  errors  and
             algorithmic limitations (BLEIC-QP solver is most  precise,  AUL-QP
             solver is less precise).
 
+    NOTE 2: due to backward compatibility reasons SparseC can be  larger  than
+            [SparseK,N+1]. In this case only leading  [SparseK,N+1]  submatrix
+            will be  used.  However,  the  rest  of  ALGLIB  has  more  strict
+            requirements on the input size, so we recommend you to pass sparse
+            term whose size exactly matches algorithm expectations.
+
       -- ALGLIB --
          Copyright 22.08.2016 by Bochkanov Sergey
     *************************************************************************/
-    public static void minqpsetlcmixed(minqpstate state, double[,] densec, int[] densect, int densek, sparsematrix sparsec, int[] sparsect, int sparsek)
+    public static void minqpsetlcmixed(minqpstate state, sparsematrix sparsec, int[] sparsect, int sparsek, double[,] densec, int[] densect, int densek)
     {
     
-        minqp.minqpsetlcmixed(state.innerobj, densec, densect, densek, sparsec.innerobj, sparsect, sparsek, null);
+        minqp.minqpsetlcmixed(state.innerobj, sparsec.innerobj, sparsect, sparsek, densec, densect, densek, null);
     }
     
-    public static void minqpsetlcmixed(minqpstate state, double[,] densec, int[] densect, int densek, sparsematrix sparsec, int[] sparsect, int sparsek, alglib.xparams _params)
+    public static void minqpsetlcmixed(minqpstate state, sparsematrix sparsec, int[] sparsect, int sparsek, double[,] densec, int[] densect, int densek, alglib.xparams _params)
     {
     
-        minqp.minqpsetlcmixed(state.innerobj, densec, densect, densek, sparsec.innerobj, sparsect, sparsek, _params);
+        minqp.minqpsetlcmixed(state.innerobj, sparsec.innerobj, sparsect, sparsek, densec, densect, densek, _params);
+    }
+    
+    /*************************************************************************
+    This function provides legacy API for specification of mixed  dense/sparse
+    linear constraints.
+
+    New conventions used by ALGLIB since release  3.16.0  state  that  set  of
+    sparse constraints comes first,  followed  by  set  of  dense  ones.  This
+    convention is essential when you talk about things like order of  Lagrange
+    multipliers.
+
+    However, legacy API accepted mixed  constraints  in  reverse  order.  This
+    function is here to simplify situation with code relying on legacy API. It
+    simply accepts constraints in one order (old) and passes them to new  API,
+    now in correct order.
+
+      -- ALGLIB --
+         Copyright 01.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetlcmixedlegacy(minqpstate state, double[,] densec, int[] densect, int densek, sparsematrix sparsec, int[] sparsect, int sparsek)
+    {
+    
+        minqp.minqpsetlcmixedlegacy(state.innerobj, densec, densect, densek, sparsec.innerobj, sparsect, sparsek, null);
+    }
+    
+    public static void minqpsetlcmixedlegacy(minqpstate state, double[,] densec, int[] densect, int densek, sparsematrix sparsec, int[] sparsect, int sparsek, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetlcmixedlegacy(state.innerobj, densec, densect, densek, sparsec.innerobj, sparsect, sparsek, _params);
+    }
+    
+    /*************************************************************************
+    This function sets two-sided linear constraints AL <= A*x <= AU with dense
+    constraint matrix A.
+
+    NOTE: knowing  that  constraint  matrix  is  dense  helps  some QP solvers
+          (especially modern IPM method) to utilize efficient  dense  Level  3
+          BLAS for dense parts of the problem. If your problem has both  dense
+          and sparse constraints, you  can  use  minqpsetlc2mixed()  function,
+          which will result in dense algebra being applied to dense terms, and
+          sparse sparse linear algebra applied to sparse terms.
+
+    INPUT PARAMETERS:
+        State   -   structure previously allocated with minqpcreate() call.
+        A       -   linear constraints, array[K,N]. Each row of  A  represents
+                    one  constraint. One-sided  inequality   constraints, two-
+                    sided inequality  constraints,  equality  constraints  are
+                    supported (see below)
+        AL, AU  -   lower and upper bounds, array[K];
+                    * AL[i]=AU[i] => equality constraint Ai*x
+                    * AL[i]<AU[i] => two-sided constraint AL[i]<=Ai*x<=AU[i]
+                    * AL[i]=-INF  => one-sided constraint Ai*x<=AU[i]
+                    * AU[i]=+INF  => one-sided constraint AL[i]<=Ai*x
+                    * AL[i]=-INF, AU[i]=+INF => constraint is ignored
+        K       -   number of equality/inequality constraints,  K>=0;  if  not
+                    given, inferred from sizes of A, AL, AU.
+
+      -- ALGLIB --
+         Copyright 01.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetlc2dense(minqpstate state, double[,] a, double[] al, double[] au, int k)
+    {
+    
+        minqp.minqpsetlc2dense(state.innerobj, a, al, au, k, null);
+    }
+    
+    public static void minqpsetlc2dense(minqpstate state, double[,] a, double[] al, double[] au, int k, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetlc2dense(state.innerobj, a, al, au, k, _params);
+    }
+            
+    public static void minqpsetlc2dense(minqpstate state, double[,] a, double[] al, double[] au)
+    {
+        int k;
+        if( (ap.rows(a)!=ap.len(al)) || (ap.rows(a)!=ap.len(au)))
+            throw new alglibexception("Error while calling 'minqpsetlc2dense': looks like one of arguments has wrong size");
+    
+        k = ap.rows(a);
+        minqp.minqpsetlc2dense(state.innerobj, a, al, au, k, null);
+    
+        return;
+    }
+            
+    public static void minqpsetlc2dense(minqpstate state, double[,] a, double[] al, double[] au, alglib.xparams _params)
+    {
+        int k;
+        if( (ap.rows(a)!=ap.len(al)) || (ap.rows(a)!=ap.len(au)))
+            throw new alglibexception("Error while calling 'minqpsetlc2dense': looks like one of arguments has wrong size");
+    
+        k = ap.rows(a);
+        minqp.minqpsetlc2dense(state.innerobj, a, al, au, k, _params);
+    
+        return;
+    }
+    
+    /*************************************************************************
+    This  function  sets  two-sided linear  constraints  AL <= A*x <= AU  with
+    sparse constraining matrix A. Recommended for large-scale problems.
+
+    This  function  overwrites  linear  (non-box)  constraints set by previous
+    calls (if such calls were made).
+
+    INPUT PARAMETERS:
+        State   -   structure previously allocated with minqpcreate() call.
+        A       -   sparse matrix with size [K,N] (exactly!).
+                    Each row of A represents one general linear constraint.
+                    A can be stored in any sparse storage format.
+        AL, AU  -   lower and upper bounds, array[K];
+                    * AL[i]=AU[i] => equality constraint Ai*x
+                    * AL[i]<AU[i] => two-sided constraint AL[i]<=Ai*x<=AU[i]
+                    * AL[i]=-INF  => one-sided constraint Ai*x<=AU[i]
+                    * AU[i]=+INF  => one-sided constraint AL[i]<=Ai*x
+                    * AL[i]=-INF, AU[i]=+INF => constraint is ignored
+        K       -   number  of equality/inequality constraints, K>=0.  If  K=0
+                    is specified, A, AL, AU are ignored.
+
+      -- ALGLIB --
+         Copyright 01.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetlc2(minqpstate state, sparsematrix a, double[] al, double[] au, int k)
+    {
+    
+        minqp.minqpsetlc2(state.innerobj, a.innerobj, al, au, k, null);
+    }
+    
+    public static void minqpsetlc2(minqpstate state, sparsematrix a, double[] al, double[] au, int k, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetlc2(state.innerobj, a.innerobj, al, au, k, _params);
+    }
+    
+    /*************************************************************************
+    This  function  sets  two-sided linear  constraints  AL <= A*x <= AU  with
+    mixed constraining matrix A including sparse part (first SparseK rows) and
+    dense part (last DenseK rows). Recommended for large-scale problems.
+
+    This  function  overwrites  linear  (non-box)  constraints set by previous
+    calls (if such calls were made).
+
+    This function may be useful if constraint matrix includes large number  of
+    both types of rows - dense and sparse. If you have just a few sparse rows,
+    you  may  represent  them  in  dense  format  without loosing performance.
+    Similarly, if you have just a few dense rows, you may store them in sparse
+    format with almost same performance.
+
+    INPUT PARAMETERS:
+        State   -   structure previously allocated with minqpcreate() call.
+        SparseA -   sparse matrix with size [K,N] (exactly!).
+                    Each row of A represents one general linear constraint.
+                    A can be stored in any sparse storage format.
+        SparseK -   number of sparse constraints, SparseK>=0
+        DenseA  -   linear constraints, array[K,N], set of dense constraints.
+                    Each row of A represents one general linear constraint.
+        DenseK  -   number of dense constraints, DenseK>=0
+        AL, AU  -   lower and upper bounds, array[SparseK+DenseK], with former
+                    SparseK elements corresponding to sparse constraints,  and
+                    latter DenseK elements corresponding to dense constraints;
+                    * AL[i]=AU[i] => equality constraint Ai*x
+                    * AL[i]<AU[i] => two-sided constraint AL[i]<=Ai*x<=AU[i]
+                    * AL[i]=-INF  => one-sided constraint Ai*x<=AU[i]
+                    * AU[i]=+INF  => one-sided constraint AL[i]<=Ai*x
+                    * AL[i]=-INF, AU[i]=+INF => constraint is ignored
+        K       -   number  of equality/inequality constraints, K>=0.  If  K=0
+                    is specified, A, AL, AU are ignored.
+
+      -- ALGLIB --
+         Copyright 01.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpsetlc2mixed(minqpstate state, sparsematrix sparsea, int ksparse, double[,] densea, int kdense, double[] al, double[] au)
+    {
+    
+        minqp.minqpsetlc2mixed(state.innerobj, sparsea.innerobj, ksparse, densea, kdense, al, au, null);
+    }
+    
+    public static void minqpsetlc2mixed(minqpstate state, sparsematrix sparsea, int ksparse, double[,] densea, int kdense, double[] al, double[] au, alglib.xparams _params)
+    {
+    
+        minqp.minqpsetlc2mixed(state.innerobj, sparsea.innerobj, ksparse, densea, kdense, al, au, _params);
+    }
+    
+    /*************************************************************************
+    This function appends two-sided linear constraint  AL <= A*x <= AU  to the
+    list of currently present dense constraints.
+
+    INPUT PARAMETERS:
+        State   -   structure previously allocated with minqpcreate() call.
+        A       -   linear constraint coefficient, array[N], right side is NOT
+                    included.
+        AL, AU  -   lower and upper bounds;
+                    * AL=AU    => equality constraint Ai*x
+                    * AL<AU    => two-sided constraint AL<=A*x<=AU
+                    * AL=-INF  => one-sided constraint Ai*x<=AU
+                    * AU=+INF  => one-sided constraint AL<=Ai*x
+                    * AL=-INF, AU=+INF => constraint is ignored
+
+      -- ALGLIB --
+         Copyright 19.07.2018 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpaddlc2dense(minqpstate state, double[] a, double al, double au)
+    {
+    
+        minqp.minqpaddlc2dense(state.innerobj, a, al, au, null);
+    }
+    
+    public static void minqpaddlc2dense(minqpstate state, double[] a, double al, double au, alglib.xparams _params)
+    {
+    
+        minqp.minqpaddlc2dense(state.innerobj, a, al, au, _params);
+    }
+    
+    /*************************************************************************
+    This function appends two-sided linear constraint  AL <= A*x <= AU  to the
+    list of currently present sparse constraints.
+
+    Constraint is passed in compressed format: as list of non-zero entries  of
+    coefficient vector A. Such approach is more efficient than  dense  storage
+    for highly sparse constraint vectors.
+
+    INPUT PARAMETERS:
+        State   -   structure previously allocated with minqpcreate() call.
+        IdxA    -   array[NNZ], indexes of non-zero elements of A:
+                    * can be unsorted
+                    * can include duplicate indexes (corresponding entries  of
+                      ValA[] will be summed)
+        ValA    -   array[NNZ], values of non-zero elements of A
+        NNZ     -   number of non-zero coefficients in A
+        AL, AU  -   lower and upper bounds;
+                    * AL=AU    => equality constraint A*x
+                    * AL<AU    => two-sided constraint AL<=A*x<=AU
+                    * AL=-INF  => one-sided constraint A*x<=AU
+                    * AU=+INF  => one-sided constraint AL<=A*x
+                    * AL=-INF, AU=+INF => constraint is ignored
+
+      -- ALGLIB --
+         Copyright 19.07.2018 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minqpaddlc2(minqpstate state, int[] idxa, double[] vala, int nnz, double al, double au)
+    {
+    
+        minqp.minqpaddlc2(state.innerobj, idxa, vala, nnz, al, au, null);
+    }
+    
+    public static void minqpaddlc2(minqpstate state, int[] idxa, double[] vala, int nnz, double al, double au, alglib.xparams _params)
+    {
+    
+        minqp.minqpaddlc2(state.innerobj, idxa, vala, nnz, al, au, _params);
     }
     
     /*************************************************************************
@@ -3817,6 +4462,7 @@ public partial class alglib
     * minqpsetalgoquickqp()     - for QuickQP solver
     * minqpsetalgobleic()       - for BLEIC-QP solver
     * minqpsetalgodenseaul()    - for Dense-AUL-QP solver
+    * minqpsetalgodenseipm()    - for Dense-IPM-QP solver
 
     These functions also allow you to control stopping criteria of the solver.
     If you did not set solver,  MinQP  subpackage  will  automatically  select
@@ -3857,35 +4503,12 @@ public partial class alglib
         X       -   array[0..N-1], solution.
                     This array is allocated and initialized only when
                     Rep.TerminationType parameter is positive (success).
-        Rep     -   optimization report. You should check Rep.TerminationType,
-                    which contains completion code, and you may check  another
-                    fields which contain another information  about  algorithm
-                    functioning.
-
-                    Failure codes returned by algorithm are:
-                    * -9    failure of the automatic scale evaluation:  one of
-                            the diagonal elements of  the  quadratic  term  is
-                            non-positive.  Specify variable scales manually!
-                    * -5    inappropriate solver was used:
-                            * QuickQP solver for problem with  general  linear
-                              constraints
-                    * -4    BLEIC-QP/QuickQP   solver    found   unconstrained
-                            direction  of   negative  curvature  (function  is
-                            unbounded from below even under constraints),   no
-                            meaningful minimum can be found.
-                    * -3    inconsistent constraints (or maybe  feasible point
-                            is too  hard  to  find).  If  you  are  sure  that
-                            constraints are feasible, try to restart optimizer
-                            with better initial approximation.
-
-                    Completion codes specific for Cholesky algorithm:
-                    *  4   successful completion
-
-                    Completion codes specific for BLEIC/QuickQP algorithms:
-                    *  1   relative function improvement is no more than EpsF.
-                    *  2   scaled step is no more than EpsX.
-                    *  4   scaled gradient norm is no more than EpsG.
-                    *  5   MaxIts steps was taken
+        Rep     -   optimization report, contains:
+                    * completion code in Rep.TerminationType (positive  values
+                      denote some kind of success, negative - failures)
+                    * Lagrange multipliers - for QP solvers which support then
+                    * other statistics
+                    See comments on minqpreport structure for more information
 
       -- ALGLIB --
          Copyright 11.01.2011 by Bochkanov Sergey
@@ -4776,8 +5399,8 @@ public partial class alglib
     * user must provide function value and gradient for F(), H(), G()
     * starting point X0 must be feasible or not too far away from the feasible
       set
-    * F(), G(), H() are twice continuously differentiable on the feasible  set
-      and its neighborhood
+    * F(), G(), H() are continuously differentiable on the  feasible  set  and
+      its neighborhood
     * nonlinear constraints G() and H() must have non-zero gradient at  G(x)=0
       and at H(x)=0. Say, constraint like x^2>=1 is supported, but x^2>=0   is
       NOT supported.
@@ -4804,16 +5427,21 @@ public partial class alglib
        sure that it will work with new ALGLIB releases.
 
        In the current release following solvers can be used:
-       * SLP solver (activated with minnlcsetalgoslp() function) -  successive
-         linear programming, recommended as the first step.
-       * AUL solver (activated with minnlcsetalgoaul() function)  -  augmented
-         Lagrangian method with dense preconditioner.
-
-       SLP solver is the most robust one  in  ALGLIB  and  converges  in  less
-       iterations than AUL; however, each iteration has higher overhead  -  we
-       have to solve an LP problem. From  the  other  side,  AUL  has  cheaper
-       iterations - although it typically needs more of them, and also  it  is
-       less robust in nonconvex setting.
+       * SQP solver, recommended for medium-scale problems (less than thousand
+         of variables) with hard-to-evaluate target functions.  Requires  less
+         function  evaluations  than  other  solvers  but  each  step involves
+         solution of QP subproblem, so running time may be higher than that of
+         AUL (another recommended option). Activated  with  minnlcsetalgosqp()
+         function.
+       * AUL solver with dense  preconditioner,  recommended  for  large-scale
+         problems or for problems  with  cheap  target  function.  Needs  more
+         function evaluations that SQP (about  5x-10x  times  more),  but  its
+         iterations  are  much  cheaper  that  that  of  SQP.  Activated  with
+         minnlcsetalgoaul() function.
+       * SLP solver, successive linear programming. The slowest one,  requires
+         more target function evaluations that SQP and  AUL.  However,  it  is
+         somewhat more robust in tricky cases, so it can be used  as  a backup
+         plan. Activated with minnlcsetalgoslp() function.
 
     2. [optional] user activates OptGuard  integrity checker  which  tries  to
        detect possible errors in the user-supplied callbacks:
@@ -5462,8 +6090,8 @@ public partial class alglib
     Method for  Constrained  Minimization  (1999)"  by  D.GOLDFARB,  R.POLYAK,
     K. SCHEINBERG, I.YUZEFOVICH.
 
-    AUL solver can be significantly faster than SLP on easy problems, although
-    it is less robust than SLP (the "gold standard" of robust optimization).
+    AUL solver can be significantly faster than SQP on easy  problems  due  to
+    cheaper iterations, although it needs more function evaluations.
 
     Augmented Lagrangian algorithm works by converting problem  of  minimizing
     F(x) subject to equality/inequality constraints   to unconstrained problem
@@ -5670,6 +6298,13 @@ public partial class alglib
     programming-based optimization algorithm for solving nonlinear programming
     problems" (2010) by Claus Still and Tapio Westerlund.
 
+    This solver is the slowest one in ALGLIB, it requires more target function
+    evaluations that SQP and AUL. However it is somewhat more robust in tricky
+    cases, so it can be used as a backup plan. We recommend to use  this  algo
+    when SQP/AUL do not work (does not return  the  solution  you  expect). If
+    trying different approach gives same  results,  then  MAYBE  something  is
+    wrong with your optimization problem.
+
     Despite its name ("linear" = "first order method") this algorithm performs
     steps similar to that of conjugate gradients method;  internally  it  uses
     orthogonality/conjugacy requirement for subsequent steps  which  makes  it
@@ -5694,17 +6329,54 @@ public partial class alglib
       as much as possible
     * numerical differentiation does not  violate  box  constraints  (although
       general linear and nonlinear ones can be violated during differentiation)
-
-    However, following drawbacks can be noted:
-    * algorithm performance decreased on problems with dense constraints
-    * it has higher iteration cost than AUL - we have to solve an  LP  problem
-      at each step.
-
-    We recommend this algorithm as a first step; as soon as you make sure that
-    it converges, you can try switching to AUL which is sometimes much faster.
+    * from our experience, this algorithm is somewhat more  robust  in  really
+      difficult cases
 
     INPUT PARAMETERS:
         State   -   structure which stores algorithm state
+
+    ===== TRACING SLP SOLVER =================================================
+
+    SLP solver supports advanced tracing capabilities. You can trace algorithm
+    output by specifying following trace symbols (case-insensitive)  by  means
+    of trace_file() call:
+    * 'SLP'         - for basic trace of algorithm  steps and decisions.  Only
+                      short scalars (function values and deltas) are  printed.
+                      N-dimensional quantities like search directions are  NOT
+                      printed.
+                      It also prints OptGuard  integrity  checker  report when
+                      nonsmoothness of target/constraints is suspected.
+    * 'SLP.DETAILED'- for output of points being visited and search directions
+                      This  symbol  also  implicitly  defines  'SLP'. You  can
+                      control output format by additionally specifying:
+                      * nothing     to output in  6-digit exponential format
+                      * 'PREC.E15'  to output in 15-digit exponential format
+                      * 'PREC.F6'   to output in  6-digit fixed-point format
+    * 'SLP.PROBING' - to let algorithm insert additional function  evaluations
+                      before line search  in  order  to  build  human-readable
+                      chart of the raw  Lagrangian  (~40  additional  function
+                      evaluations is performed for  each  line  search).  This
+                      symbol also implicitly defines 'SLP'.
+    * 'OPTGUARD'    - for report of smoothness/continuity violations in target
+                      and/or constraints. This kind of reporting is   included
+                      in 'SLP', but it comes with lots of additional info.  If
+                      you  need  just  smoothness  monitoring,   specify  this
+                      setting.
+
+                      NOTE: this tag merely directs  OptGuard  output  to  log
+                            file. Even if you specify it, you  still  have  to
+                            configure OptGuard  by calling minnlcoptguard...()
+                            family of functions.
+
+    By default trace is disabled and adds  no  overhead  to  the  optimization
+    process. However, specifying any of the symbols adds some  formatting  and
+    output-related   overhead.  Specifying  'SLP.PROBING'  adds   even  larger
+    overhead due to additional function evaluations being performed.
+
+    You may specify multiple symbols by separating them with commas:
+    >
+    > alglib::trace_file("SLP,SLP.PROBING,PREC.F6", "path/to/trace.log")
+    >
 
       -- ALGLIB --
          Copyright 02.04.2018 by Bochkanov Sergey
@@ -5719,6 +6391,102 @@ public partial class alglib
     {
     
         minnlc.minnlcsetalgoslp(state.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    This   function  tells  MinNLC  optimizer to use SQP (Successive Quadratic
+    Programming) algorithm for nonlinearly constrained optimization.
+
+    This algorithm needs order of magnitude (5x-10x) less function evaluations
+    than AUL solver, but has higher overhead because each  iteration  involves
+    solution of quadratic programming problem.
+
+    Convergence is proved for the following case:
+    * function and constraints are continuously differentiable (C1 class)
+
+    This algorithm has following nice properties:
+    * no parameters to tune
+    * no convexity requirements for target function or constraints
+    * initial point can be infeasible
+    * algorithm respects box constraints in all intermediate points  (it  does
+      not even evaluate function outside of box constrained area)
+    * once linear constraints are enforced, algorithm will not violate them
+    * no such guarantees can be provided for nonlinear constraints,  but  once
+      nonlinear constraints are enforced, algorithm will try  to  respect them
+      as much as possible
+    * numerical differentiation does not  violate  box  constraints  (although
+      general linear and nonlinear ones can be violated during differentiation)
+
+    We recommend this algorithm as a default option for medium-scale  problems
+    (less than thousand of variables) or problems with target  function  being
+    hard to evaluate.
+
+    For   large-scale  problems  or  ones  with very  cheap  target   function
+    AUL solver can be better option.
+
+    INPUT PARAMETERS:
+        State   -   structure which stores algorithm state
+
+    ===== INTERACTION WITH OPTGUARD ==========================================
+
+    OptGuard integrity  checker  allows us to catch problems  like  errors  in
+    gradients   and  discontinuity/nonsmoothness  of  the  target/constraints.
+    Latter kind of problems can be detected  by  looking  upon  line  searches
+    performed during optimization and searching for signs of nonsmoothness.
+
+    The problem with SQP is that it is too good for OptGuard to work - it does
+    not perform line searches. It typically  needs  1-2  function  evaluations
+    per step, and it is not enough for OptGuard to detect nonsmoothness.
+
+    So, if you suspect that your problem is nonsmooth, we recommend you to use
+    AUL or SLP solvers.
+
+    ===== TRACING SQP SOLVER =================================================
+
+    SQP solver supports advanced tracing capabilities. You can trace algorithm
+    output by specifying following trace symbols (case-insensitive)  by  means
+    of trace_file() call:
+    * 'SQP'         - for basic trace of algorithm  steps and decisions.  Only
+                      short scalars (function values and deltas) are  printed.
+                      N-dimensional quantities like search directions are  NOT
+                      printed.
+                      It also prints OptGuard  integrity  checker  report when
+                      nonsmoothness of target/constraints is suspected.
+    * 'SQP.DETAILED'- for output of points being visited and search directions
+                      This  symbol  also  implicitly  defines  'SQP'. You  can
+                      control output format by additionally specifying:
+                      * nothing     to output in  6-digit exponential format
+                      * 'PREC.E15'  to output in 15-digit exponential format
+                      * 'PREC.F6'   to output in  6-digit fixed-point format
+    * 'SQP.PROBING' - to let algorithm insert additional function  evaluations
+                      before line search  in  order  to  build  human-readable
+                      chart of the raw  Lagrangian  (~40  additional  function
+                      evaluations is performed for  each  line  search).  This
+                      symbol also implicitly defines 'SQP'.
+
+    By default trace is disabled and adds  no  overhead  to  the  optimization
+    process. However, specifying any of the symbols adds some  formatting  and
+    output-related   overhead.  Specifying  'SQP.PROBING'  adds   even  larger
+    overhead due to additional function evaluations being performed.
+
+    You may specify multiple symbols by separating them with commas:
+    >
+    > alglib::trace_file("SQP,SQP.PROBING,PREC.F6", "path/to/trace.log")
+    >
+
+      -- ALGLIB --
+         Copyright 02.12.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minnlcsetalgosqp(minnlcstate state)
+    {
+    
+        minnlc.minnlcsetalgosqp(state.innerobj, null);
+    }
+    
+    public static void minnlcsetalgosqp(minnlcstate state, alglib.xparams _params)
+    {
+    
+        minnlc.minnlcsetalgosqp(state.innerobj, _params);
     }
     
     /*************************************************************************
@@ -5977,6 +6745,10 @@ public partial class alglib
                           and/or gradients are recorded, but OptGuard does not
                           try to perform additional evaluations  in  order  to
                           get more information about suspicious locations.
+                          This kind of monitoring does not work well with  SQP
+                          because SQP solver needs just 1-2 function evaluations
+                          per step, which is not enough for OptGuard  to  make
+                          any conclusions.
 
     === EXPLANATION ==========================================================
 
@@ -13432,6 +14204,90 @@ public partial class alglib
 
 
         /*************************************************************************
+        This  structure  is  used  for  detailed   reporting  about  suspected  C0
+        continuity violation.
+
+        === WHAT IS TESTED =======================================================
+
+        C0 test  studies  function  values (not gradient!)  obtained  during  line
+        searches and monitors estimate of the Lipschitz  constant.  Sudden  spikes
+        usually indicate that discontinuity was detected.
+
+
+        === WHAT IS REPORTED =====================================================
+
+        Actually, report retrieval function returns TWO report structures:
+
+        * one for most suspicious point found so far (one with highest  change  in
+          the function value), so called "strongest" report
+        * another one for most detailed line search (more function  evaluations  =
+          easier to understand what's going on) which triggered  test #0 criteria,
+          so called "longest" report
+
+        In both cases following fields are returned:
+
+        * positive - is TRUE  when test flagged suspicious point;  FALSE  if  test
+          did not notice anything (in the latter cases fields below are empty).
+        * fidx - is an index of the function (0 for  target  function, 1 or higher
+          for nonlinear constraints) which is suspected of being "non-C1"
+        * x0[], d[] - arrays of length N which store initial point  and  direction
+          for line search (d[] can be normalized, but does not have to)
+        * stp[], f[] - arrays of length CNT which store step lengths and  function
+          values at these points; f[i] is evaluated in x0+stp[i]*d.
+        * stpidxa, stpidxb - we  suspect  that  function  violates  C1  continuity
+          between steps #stpidxa and #stpidxb (usually we have  stpidxb=stpidxa+3,
+          with  most  likely  position  of  the  violation  between  stpidxa+1 and
+          stpidxa+2.
+
+        You can plot function values stored in stp[]  and  f[]  arrays  and  study
+        behavior of your function by your own eyes, just  to  be  sure  that  test
+        correctly reported C1 violation.
+
+          -- ALGLIB --
+             Copyright 19.11.2018 by Bochkanov Sergey
+        *************************************************************************/
+        public class optguardnonc0report : apobject
+        {
+            public bool positive;
+            public int fidx;
+            public double[] x0;
+            public double[] d;
+            public int n;
+            public double[] stp;
+            public double[] f;
+            public int cnt;
+            public int stpidxa;
+            public int stpidxb;
+            public optguardnonc0report()
+            {
+                init();
+            }
+            public override void init()
+            {
+                x0 = new double[0];
+                d = new double[0];
+                stp = new double[0];
+                f = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                optguardnonc0report _result = new optguardnonc0report();
+                _result.positive = positive;
+                _result.fidx = fidx;
+                _result.x0 = (double[])x0.Clone();
+                _result.d = (double[])d.Clone();
+                _result.n = n;
+                _result.stp = (double[])stp.Clone();
+                _result.f = (double[])f.Clone();
+                _result.cnt = cnt;
+                _result.stpidxa = stpidxa;
+                _result.stpidxb = stpidxb;
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
         This  structure  is  used  for  detailed   reporting  about  suspected  C1
         continuity violation as flagged by C1 test #0 (OptGuard  has several tests
         for C1 continuity, this report is used by #0).
@@ -13974,12 +14830,26 @@ public partial class alglib
             public double[] sortedstp;
             public int[] sortedidx;
             public int sortedcnt;
+            public double probingstp;
+            public double[] probingf;
+            public int probingnvalues;
+            public double probingstepmax;
+            public double probingstepscale;
+            public int probingnstepsstored;
+            public double[] probingsteps;
+            public double[,] probingvalues;
+            public double[,] probingslopes;
+            public rcommstate probingrcomm;
             public bool linesearchspoiled;
             public bool linesearchstarted;
             public double nonc0currentrating;
             public double nonc1currentrating;
             public bool badgradhasxj;
             public optguardapi.optguardreport rep;
+            public double nonc0strrating;
+            public double nonc0lngrating;
+            public optguardapi.optguardnonc0report nonc0strrep;
+            public optguardapi.optguardnonc0report nonc0lngrep;
             public double nonc1test0strrating;
             public double nonc1test0lngrating;
             public optguardapi.optguardnonc1test0report nonc1test0strrep;
@@ -14027,7 +14897,14 @@ public partial class alglib
                 enqueuedjac = new double[0,0];
                 sortedstp = new double[0];
                 sortedidx = new int[0];
+                probingf = new double[0];
+                probingsteps = new double[0];
+                probingvalues = new double[0,0];
+                probingslopes = new double[0,0];
+                probingrcomm = new rcommstate();
                 rep = new optguardapi.optguardreport();
+                nonc0strrep = new optguardapi.optguardnonc0report();
+                nonc0lngrep = new optguardapi.optguardnonc0report();
                 nonc1test0strrep = new optguardapi.optguardnonc1test0report();
                 nonc1test0lngrep = new optguardapi.optguardnonc1test0report();
                 nonc1test1strrep = new optguardapi.optguardnonc1test1report();
@@ -14073,12 +14950,26 @@ public partial class alglib
                 _result.sortedstp = (double[])sortedstp.Clone();
                 _result.sortedidx = (int[])sortedidx.Clone();
                 _result.sortedcnt = sortedcnt;
+                _result.probingstp = probingstp;
+                _result.probingf = (double[])probingf.Clone();
+                _result.probingnvalues = probingnvalues;
+                _result.probingstepmax = probingstepmax;
+                _result.probingstepscale = probingstepscale;
+                _result.probingnstepsstored = probingnstepsstored;
+                _result.probingsteps = (double[])probingsteps.Clone();
+                _result.probingvalues = (double[,])probingvalues.Clone();
+                _result.probingslopes = (double[,])probingslopes.Clone();
+                _result.probingrcomm = (rcommstate)probingrcomm.make_copy();
                 _result.linesearchspoiled = linesearchspoiled;
                 _result.linesearchstarted = linesearchstarted;
                 _result.nonc0currentrating = nonc0currentrating;
                 _result.nonc1currentrating = nonc1currentrating;
                 _result.badgradhasxj = badgradhasxj;
                 _result.rep = (optguardapi.optguardreport)rep.make_copy();
+                _result.nonc0strrating = nonc0strrating;
+                _result.nonc0lngrating = nonc0lngrating;
+                _result.nonc0strrep = (optguardapi.optguardnonc0report)nonc0strrep.make_copy();
+                _result.nonc0lngrep = (optguardapi.optguardnonc0report)nonc0lngrep.make_copy();
                 _result.nonc1test0strrating = nonc1test0strrating;
                 _result.nonc1test0lngrating = nonc1test0lngrating;
                 _result.nonc1test0strrep = (optguardapi.optguardnonc1test0report)nonc1test0strrep.make_copy();
@@ -14275,7 +15166,7 @@ public partial class alglib
         target value (ignored), Fi[1:NG+NH] are values of nonlinear constraints.
 
         On output it sets nlcerr to the scaled violation, nlcidx to the index
-        of the most violating constraint.
+        of the most violating constraint in [0,NG+NH-1] range.
 
         if nlcerr=0 (say, if no constraints are violated) then nlcidx=-1.
 
@@ -14302,6 +15193,53 @@ public partial class alglib
             for(i=0; i<=ng+nh-1; i++)
             {
                 v = fi[i+1];
+                if( i<ng )
+                {
+                    v = Math.Abs(v);
+                }
+                else
+                {
+                    v = Math.Max(v, 0);
+                }
+                if( v>nlcerr )
+                {
+                    nlcerr = v;
+                    nlcidx = i;
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This subroutine is same as CheckNLCViolation, but  is  works  with  scaled
+        constraints: it assumes that Fi[] were divided by FScales[] vector  BEFORE
+        passing them to this function.
+
+        The function checks scaled values, but reports unscaled errors.
+
+          -- ALGLIB --
+             Copyright 7.11.2018 by Bochkanov Sergey
+        *************************************************************************/
+        public static void unscaleandchecknlcviolation(double[] fi,
+            double[] fscales,
+            int ng,
+            int nh,
+            ref double nlcerr,
+            ref int nlcidx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            double v = 0;
+
+            nlcerr = 0;
+            nlcidx = 0;
+
+            nlcerr = 0;
+            nlcidx = -1;
+            for(i=0; i<=ng+nh-1; i++)
+            {
+                alglib.ap.assert((double)(fscales[i+1])>(double)(0), "UnscaleAndCheckNLCViolation: integrity check failed");
+                v = fi[i+1]*fscales[i+1];
                 if( i<ng )
                 {
                     v = Math.Abs(v);
@@ -16373,12 +17311,16 @@ public partial class alglib
             monitor.nonc0currentrating = 0.0;
             monitor.nonc1currentrating = 0.0;
             optguardapi.optguardinitinternal(monitor.rep, n, k, _params);
+            monitor.nonc0strrating = 0.0;
+            monitor.nonc0lngrating = -math.maxrealnumber;
+            monitor.nonc0strrep.positive = false;
+            monitor.nonc0lngrep.positive = false;
             monitor.nonc1test0strrating = 0.0;
-            monitor.nonc1test0lngrating = 0.0;
+            monitor.nonc1test0lngrating = -math.maxrealnumber;
             monitor.nonc1test0strrep.positive = false;
             monitor.nonc1test0lngrep.positive = false;
             monitor.nonc1test1strrating = 0.0;
-            monitor.nonc1test1lngrating = 0.0;
+            monitor.nonc1test1lngrating = -math.maxrealnumber;
             monitor.nonc1test1strrep.positive = false;
             monitor.nonc1test1lngrep.positive = false;
             monitor.badgradhasxj = false;
@@ -16557,6 +17499,8 @@ public partial class alglib
             double noise3 = 0;
             double rating = 0;
             double lipschitz = 0;
+            double nrm = 0;
+            double lengthrating = 0;
 
             n = monitor.n;
             k = monitor.k;
@@ -16707,14 +17651,86 @@ public partial class alglib
                         {
                             continue;
                         }
-                        testc0continuity(f0, f1, f2, f3, noise0, noise1, noise2, noise3, monitor.sortedstp[stpidx+1]-monitor.sortedstp[stpidx+0], monitor.sortedstp[stpidx+2]-monitor.sortedstp[stpidx+1], monitor.sortedstp[stpidx+3]-monitor.sortedstp[stpidx+2], true, ref rating, ref lipschitz, _params);
-                        if( rating>ogminrating0 && rating>monitor.nonc0currentrating )
+                        testc0continuity(f0, f1, f2, f3, noise0, noise1, noise2, noise3, monitor.sortedstp[stpidx+1]-monitor.sortedstp[stpidx+0], monitor.sortedstp[stpidx+2]-monitor.sortedstp[stpidx+1], monitor.sortedstp[stpidx+3]-monitor.sortedstp[stpidx+2], false, ref rating, ref lipschitz, _params);
+                        if( rating>ogminrating0 )
                         {
-                            monitor.nonc0currentrating = rating;
+                            
+                            //
+                            // Store to total report
+                            //
                             monitor.rep.nonc0suspected = true;
                             monitor.rep.nonc0test0positive = true;
-                            monitor.rep.nonc0lipschitzc = lipschitz;
-                            monitor.rep.nonc0fidx = funcidx;
+                            if( rating>monitor.nonc0currentrating )
+                            {
+                                monitor.nonc0currentrating = rating;
+                                monitor.rep.nonc0lipschitzc = lipschitz;
+                                monitor.rep.nonc0fidx = funcidx;
+                            }
+                            
+                            //
+                            // Store to "strongest" report
+                            //
+                            if( rating>monitor.nonc0strrating )
+                            {
+                                monitor.nonc0strrating = rating;
+                                monitor.nonc0strrep.positive = true;
+                                monitor.nonc0strrep.fidx = funcidx;
+                                monitor.nonc0strrep.n = n;
+                                monitor.nonc0strrep.cnt = sortedcnt;
+                                monitor.nonc0strrep.stpidxa = stpidx+0;
+                                monitor.nonc0strrep.stpidxb = stpidx+3;
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0strrep.x0, n, _params);
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0strrep.d, n, _params);
+                                for(i=0; i<=n-1; i++)
+                                {
+                                    monitor.nonc0strrep.x0[i] = monitor.enqueuedx[monitor.sortedidx[0]*n+i];
+                                    monitor.nonc0strrep.d[i] = monitor.dcur[i];
+                                }
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0strrep.stp, sortedcnt, _params);
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0strrep.f, sortedcnt, _params);
+                                for(i=0; i<=sortedcnt-1; i++)
+                                {
+                                    monitor.nonc0strrep.stp[i] = monitor.sortedstp[i];
+                                    monitor.nonc0strrep.f[i] = monitor.f[i];
+                                }
+                            }
+                            
+                            //
+                            // Store to "longest" report
+                            //
+                            nrm = 0;
+                            for(i=0; i<=n-1; i++)
+                            {
+                                nrm = nrm+math.sqr(monitor.enqueuedx[monitor.sortedidx[0]*n+i]-monitor.enqueuedx[monitor.sortedidx[sortedcnt-1]*n+i]);
+                            }
+                            nrm = Math.Sqrt(nrm);
+                            nrm = Math.Min(nrm, 1.0);
+                            nrm = apserv.coalesce(nrm, math.machineepsilon, _params);
+                            lengthrating = sortedcnt+Math.Log(nrm)/Math.Log(100);
+                            if( lengthrating>monitor.nonc0lngrating )
+                            {
+                                monitor.nonc0lngrating = lengthrating;
+                                monitor.nonc0lngrep.positive = true;
+                                monitor.nonc0lngrep.fidx = funcidx;
+                                monitor.nonc0lngrep.n = n;
+                                monitor.nonc0lngrep.cnt = sortedcnt;
+                                monitor.nonc0lngrep.stpidxa = stpidx+0;
+                                monitor.nonc0lngrep.stpidxb = stpidx+3;
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0lngrep.x0, n, _params);
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0lngrep.d, n, _params);
+                                for(i=0; i<=n-1; i++)
+                                {
+                                    monitor.nonc0lngrep.x0[i] = monitor.enqueuedx[monitor.sortedidx[0]*n+i];
+                                    monitor.nonc0lngrep.d[i] = monitor.dcur[i];
+                                }
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0lngrep.stp, sortedcnt, _params);
+                                apserv.rvectorsetlengthatleast(ref monitor.nonc0lngrep.f, sortedcnt, _params);
+                                for(i=0; i<=sortedcnt-1; i++)
+                                {
+                                    monitor.nonc0lngrep.stp[i] = monitor.sortedstp[i];
+                                    monitor.nonc0lngrep.f[i] = monitor.f[i];
+                                }
+                            }
                         }
                     }
                 }
@@ -16877,6 +17893,416 @@ public partial class alglib
 
 
         /*************************************************************************
+        This function starts aggressive probing for a range of step lengths [0,StpMax].
+
+        This function stores NValues values per step, with the first one (index 0)
+        value being "primary" one (target function / merit function) and the rest
+        being supplementary ones.
+
+          -- ALGLIB --
+             Copyright 10.10.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void smoothnessmonitorstartprobing(smoothnessmonitor monitor,
+            double stpmax,
+            int nvalues,
+            double stepscale,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(math.isfinite(stpmax) && (double)(stpmax)>(double)(0), "SmoothnessMonitorStartProbing: StpMax<=0");
+            alglib.ap.assert(nvalues>=1, "SmoothnessMonitorStartProbing: NValues<1");
+            alglib.ap.assert(math.isfinite(stepscale) && (double)(stepscale)>=(double)(0), "SmoothnessMonitorStartProbing: StepScale<0");
+            monitor.probingnvalues = nvalues;
+            monitor.probingnstepsstored = 0;
+            monitor.probingstepmax = stpmax;
+            monitor.probingstepscale = stepscale;
+            apserv.rvectorsetlengthatleast(ref monitor.probingf, nvalues, _params);
+            monitor.probingrcomm.ia = new int[1+1];
+            monitor.probingrcomm.stage = -1;
+        }
+
+
+        /*************************************************************************
+        This function performs aggressive probing.
+
+        After each call it returns step to evaluate  in  Monitor.ProbingStp.  Load
+        values being probed into Monitor.ProbingF and continue iteration.
+
+          -- ALGLIB --
+             Copyright 10.10.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static bool smoothnessmonitorprobe(smoothnessmonitor monitor,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int i = 0;
+            int j = 0;
+
+            
+            //
+            // Reverse communication preparations
+            // I know it looks ugly, but it works the same way
+            // anywhere from C++ to Python.
+            //
+            // This code initializes locals by:
+            // * random values determined during code
+            //   generation - on first subroutine call
+            // * values from previous call - on subsequent calls
+            //
+            if( monitor.probingrcomm.stage>=0 )
+            {
+                i = monitor.probingrcomm.ia[0];
+                j = monitor.probingrcomm.ia[1];
+            }
+            else
+            {
+                i = 359;
+                j = -58;
+            }
+            if( monitor.probingrcomm.stage==0 )
+            {
+                goto lbl_0;
+            }
+            
+            //
+            // Routine body
+            //
+            i = 0;
+        lbl_1:
+            if( i>40 )
+            {
+                goto lbl_3;
+            }
+            apserv.rvectorgrowto(ref monitor.probingsteps, monitor.probingnstepsstored+1, _params);
+            apserv.rmatrixgrowrowsto(ref monitor.probingvalues, monitor.probingnstepsstored+1, monitor.probingnvalues, _params);
+            apserv.rmatrixgrowrowsto(ref monitor.probingslopes, monitor.probingnstepsstored+1, monitor.probingnvalues, _params);
+            if( i<=20 )
+            {
+                monitor.probingstp = Math.Pow(0.66, i)*monitor.probingstepmax;
+            }
+            else
+            {
+                monitor.probingstp = Math.Pow(0.95, i-20)*monitor.probingstepmax;
+            }
+            monitor.probingsteps[monitor.probingnstepsstored] = monitor.probingstp;
+            monitor.probingrcomm.stage = 0;
+            goto lbl_rcomm;
+        lbl_0:
+            for(j=0; j<=monitor.probingnvalues-1; j++)
+            {
+                monitor.probingvalues[monitor.probingnstepsstored,j] = monitor.probingf[j];
+                monitor.probingslopes[monitor.probingnstepsstored,j] = 0;
+            }
+            apserv.inc(ref monitor.probingnstepsstored, _params);
+            i = i+1;
+            goto lbl_1;
+        lbl_3:
+            result = false;
+            return result;
+            
+            //
+            // Saving state
+            //
+        lbl_rcomm:
+            result = true;
+            monitor.probingrcomm.ia[0] = i;
+            monitor.probingrcomm.ia[1] = j;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function prints probing results to trace log.
+
+        Tracing is performed using fixed width for all columns, so you  may  print
+        a header before printing trace - and reasonably expect that its width will
+        match that of the trace. This function promises that it wont change  trace
+        output format without introducing breaking changes into its signature.
+
+        NOTE: this function ALWAYS tries to print results; it is caller's responsibility
+              to decide whether he needs tracing or not.
+
+          -- ALGLIB --
+             Copyright 10.10.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void smoothnessmonitortraceprobingresults(smoothnessmonitor monitor,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            double steplen = 0;
+
+            
+            //
+            // First, sort elements by their step
+            //
+            for(i=0; i<=monitor.probingnstepsstored-1; i++)
+            {
+                k = i;
+                for(j=i; j<=monitor.probingnstepsstored-1; j++)
+                {
+                    if( (double)(monitor.probingsteps[j])<(double)(monitor.probingsteps[k]) )
+                    {
+                        k = j;
+                    }
+                }
+                apserv.swapelements(monitor.probingsteps, i, k, _params);
+                apserv.swaprows(monitor.probingvalues, i, k, monitor.probingnvalues, _params);
+            }
+            for(i=0; i<=monitor.probingnstepsstored-2; i++)
+            {
+                for(j=0; j<=monitor.probingnvalues-1; j++)
+                {
+                    steplen = (monitor.probingsteps[i+1]-monitor.probingsteps[i]+100*math.machineepsilon)*(monitor.probingstepscale+math.machineepsilon);
+                    monitor.probingslopes[i,j] = (monitor.probingvalues[i+1,j]-monitor.probingvalues[i,j])/steplen;
+                }
+            }
+            if( monitor.probingnstepsstored>=1 )
+            {
+                for(j=0; j<=monitor.probingnvalues-1; j++)
+                {
+                    monitor.probingslopes[monitor.probingnstepsstored-1,j] = monitor.probingslopes[Math.Max(monitor.probingnstepsstored-2, 0),j];
+                }
+            }
+            
+            //
+            // Print to trace log
+            //
+            alglib.ap.trace("*** ----------");
+            for(j=0; j<=monitor.probingnvalues-1; j++)
+            {
+                alglib.ap.trace("-------------------------");
+            }
+            alglib.ap.trace("\n");
+            for(i=0; i<=monitor.probingnstepsstored-1; i++)
+            {
+                alglib.ap.trace(System.String.Format("*** | {0,0:F4} |", monitor.probingsteps[i]));
+                for(j=0; j<=monitor.probingnvalues-1; j++)
+                {
+                    alglib.ap.trace(System.String.Format(" {0,11:E3} {1,10:E2} |", monitor.probingvalues[i,j]-monitor.probingvalues[0,j], monitor.probingslopes[i,j]));
+                }
+                alglib.ap.trace("\n");
+            }
+            alglib.ap.trace("*** ----------");
+            for(j=0; j<=monitor.probingnvalues-1; j++)
+            {
+                alglib.ap.trace("-------------------------");
+            }
+            alglib.ap.trace("\n");
+        }
+
+
+        /*************************************************************************
+        This subroutine tells monitor to output trace info.
+
+        If CallerSuggestsTrace=True, monitor  ALWAYS  prints  trace,  even  if  no
+        suspicions were raised during optimization. If  CallerSuggestsTrace=False,
+        the monitor will print trace only if:
+        * trace was requested by trace tag 'OPTGUARD' AND suspicious  points  were
+          found during optimization
+        * trace was requested by trace tag 'OPTGUARD.ALWAYS' - always
+
+          -- ALGLIB --
+             Copyright 11.10.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void smoothnessmonitortracestatus(smoothnessmonitor monitor,
+            bool callersuggeststrace,
+            alglib.xparams _params)
+        {
+            bool needreport = new bool();
+            bool needxdreport = new bool();
+            bool suspicionsraised = new bool();
+            int i = 0;
+            double slope = 0;
+
+            
+            //
+            // Do we need trace report?
+            //
+            suspicionsraised = (monitor.rep.nonc0suspected || monitor.rep.nonc1suspected) || monitor.rep.badgradsuspected;
+            needreport = false;
+            needreport = needreport || callersuggeststrace;
+            needreport = needreport || ap.istraceenabled("OPTGUARD.ALWAYS", _params);
+            needreport = needreport || (ap.istraceenabled("OPTGUARD", _params) && suspicionsraised);
+            if( !needreport )
+            {
+                return;
+            }
+            needxdreport = needreport && ap.istraceenabled("OPTIMIZERS.X", _params);
+            
+            //
+            //
+            //
+            alglib.ap.trace("\n");
+            alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            alglib.ap.trace("// OPTGUARD INTEGRITY CHECKER REPORT                                                              //\n");
+            alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            if( !suspicionsraised )
+            {
+                alglib.ap.trace("> no discontinuity/nonsmoothness/bad-gradient suspicions were raised during optimization\n");
+                return;
+            }
+            if( monitor.rep.nonc0suspected )
+            {
+                alglib.ap.trace("> [WARNING] suspected discontinuity (aka C0-discontinuity)\n");
+            }
+            if( monitor.rep.nonc1suspected )
+            {
+                alglib.ap.trace("> [WARNING] suspected nonsmoothness (aka C1-discontinuity)\n");
+            }
+            alglib.ap.trace("> printing out test reports...\n");
+            if( monitor.rep.nonc0suspected && monitor.rep.nonc0test0positive )
+            {
+                alglib.ap.trace("> printing out discontinuity test #0 report:\n");
+                alglib.ap.trace("*** -------------------------------------------------------\n");
+                alglib.ap.trace("*** | Test #0 for discontinuity was triggered  (this test |\n");
+                alglib.ap.trace("*** | analyzes changes in function values). See below for |\n");
+                alglib.ap.trace("*** | detailed info:                                      |\n");
+                alglib.ap.trace(System.String.Format("*** | * function index:       {0,10:d}", monitor.nonc0lngrep.fidx));
+                if( monitor.nonc0lngrep.fidx==0 )
+                {
+                    alglib.ap.trace(" (target)         |\n");
+                }
+                else
+                {
+                    alglib.ap.trace(" (constraint)     |\n");
+                }
+                alglib.ap.trace(System.String.Format("*** | * F() Lipschitz const:  {0,10:E2}                  |\n", monitor.rep.nonc0lipschitzc));
+                alglib.ap.trace("*** | Printing out log of suspicious line search XK+Stp*D |\n");
+                alglib.ap.trace("*** | Look for abrupt changes in slope.                   |\n");
+                if( !needxdreport )
+                {
+                    alglib.ap.trace("*** | NOTE: XK and D are  not printed  by default. If you |\n");
+                    alglib.ap.trace("*** |       need them, add trace tag OPTIMIZERS.X         |\n");
+                }
+                alglib.ap.trace("*** -------------------------------------------------------\n");
+                alglib.ap.trace("*** |  step along D   |     delta F     |      slope      |\n");
+                alglib.ap.trace("*** ------------------------------------------------------|\n");
+                for(i=0; i<=monitor.nonc0lngrep.cnt-1; i++)
+                {
+                    slope = monitor.nonc0lngrep.f[Math.Min(i+1, monitor.nonc0lngrep.cnt-1)]-monitor.nonc0lngrep.f[i];
+                    slope = slope/(1.0e-15+monitor.nonc0lngrep.stp[Math.Min(i+1, monitor.nonc0lngrep.cnt-1)]-monitor.nonc0lngrep.stp[i]);
+                    alglib.ap.trace(System.String.Format("*** |  {0,13:E5}  |  {1,13:E5}  |   {2,11:E3}   |", monitor.nonc0lngrep.stp[i], monitor.nonc0lngrep.f[i]-monitor.nonc0lngrep.f[0], slope));
+                    if( i>=monitor.nonc0lngrep.stpidxa && i<=monitor.nonc0lngrep.stpidxb )
+                    {
+                        alglib.ap.trace(" <---");
+                    }
+                    alglib.ap.trace("\n");
+                }
+                alglib.ap.trace("*** ------------------------------------------------------|\n");
+                if( needxdreport )
+                {
+                    alglib.ap.trace("*** XK = ");
+                    apserv.tracevectore6(monitor.nonc0lngrep.x0, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** D  = ");
+                    apserv.tracevectore6(monitor.nonc0lngrep.d, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                }
+            }
+            if( monitor.rep.nonc1suspected && monitor.rep.nonc1test0positive )
+            {
+                alglib.ap.trace("> printing out nonsmoothness test #0 report:\n");
+                alglib.ap.trace("*** -------------------------------------------------------\n");
+                alglib.ap.trace("*** | Test #0 for nonsmoothness was triggered  (this test |\n");
+                alglib.ap.trace("*** | analyzes changes in  function  values  and  ignores |\n");
+                alglib.ap.trace("*** | gradient info). See below for detailed info:        |\n");
+                alglib.ap.trace(System.String.Format("*** | * function index:         {0,10:d}", monitor.nonc1test0lngrep.fidx));
+                if( monitor.nonc1test0lngrep.fidx==0 )
+                {
+                    alglib.ap.trace(" (target)       |\n");
+                }
+                else
+                {
+                    alglib.ap.trace(" (constraint)   |\n");
+                }
+                alglib.ap.trace(System.String.Format("*** | * dF/dX Lipschitz const:  {0,10:E2}                |\n", monitor.rep.nonc1lipschitzc));
+                alglib.ap.trace("*** | Printing out log of suspicious line search XK+Stp*D |\n");
+                alglib.ap.trace("*** | Look for abrupt changes in slope.                   |\n");
+                if( !needxdreport )
+                {
+                    alglib.ap.trace("*** | NOTE: XK and D are  not printed  by default. If you |\n");
+                    alglib.ap.trace("*** |       need them, add trace tag OPTIMIZERS.X         |\n");
+                }
+                alglib.ap.trace("*** -------------------------------------------------------\n");
+                alglib.ap.trace("*** |  step along D   |     delta F     |      slope      |\n");
+                alglib.ap.trace("*** ------------------------------------------------------|\n");
+                for(i=0; i<=monitor.nonc1test0lngrep.cnt-1; i++)
+                {
+                    slope = monitor.nonc1test0lngrep.f[Math.Min(i+1, monitor.nonc1test0lngrep.cnt-1)]-monitor.nonc1test0lngrep.f[i];
+                    slope = slope/(1.0e-15+monitor.nonc1test0lngrep.stp[Math.Min(i+1, monitor.nonc1test0lngrep.cnt-1)]-monitor.nonc1test0lngrep.stp[i]);
+                    alglib.ap.trace(System.String.Format("*** |  {0,13:E5}  |  {1,13:E5}  |   {2,11:E3}   |", monitor.nonc1test0lngrep.stp[i], monitor.nonc1test0lngrep.f[i]-monitor.nonc1test0lngrep.f[0], slope));
+                    if( i>=monitor.nonc1test0lngrep.stpidxa && i<=monitor.nonc1test0lngrep.stpidxb )
+                    {
+                        alglib.ap.trace(" <---");
+                    }
+                    alglib.ap.trace("\n");
+                }
+                alglib.ap.trace("*** ------------------------------------------------------|\n");
+                if( needxdreport )
+                {
+                    alglib.ap.trace("*** XK = ");
+                    apserv.tracevectore6(monitor.nonc1test0lngrep.x0, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** D  = ");
+                    apserv.tracevectore6(monitor.nonc1test0lngrep.d, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                }
+            }
+            if( monitor.rep.nonc1suspected && monitor.rep.nonc1test1positive )
+            {
+                alglib.ap.trace("> printing out nonsmoothness test #1 report:\n");
+                alglib.ap.trace("*** -------------------------------------------------------\n");
+                alglib.ap.trace("*** | Test #1 for nonsmoothness was triggered  (this test |\n");
+                alglib.ap.trace("*** | analyzes changes in gradient components). See below |\n");
+                alglib.ap.trace("*** | for detailed info:                                  |\n");
+                alglib.ap.trace(System.String.Format("*** | * function index:         {0,10:d}", monitor.nonc1test1lngrep.fidx));
+                if( monitor.nonc1test1lngrep.fidx==0 )
+                {
+                    alglib.ap.trace(" (target)       |\n");
+                }
+                else
+                {
+                    alglib.ap.trace(" (constraint)   |\n");
+                }
+                alglib.ap.trace(System.String.Format("*** | * variable index I:       {0,10:d}                |\n", monitor.nonc1test1lngrep.vidx));
+                alglib.ap.trace(System.String.Format("*** | * dF/dX Lipschitz const:  {0,10:E2}                |\n", monitor.rep.nonc1lipschitzc));
+                alglib.ap.trace("*** | Printing out log of suspicious line search XK+Stp*D |\n");
+                alglib.ap.trace("*** | Look for abrupt changes in slope.                   |\n");
+                if( !needxdreport )
+                {
+                    alglib.ap.trace("*** | NOTE: XK and D are  not printed  by default. If you |\n");
+                    alglib.ap.trace("*** |       need them, add trace tag OPTIMIZERS.X         |\n");
+                }
+                alglib.ap.trace("*** -------------------------------------------------------\n");
+                alglib.ap.trace("*** |  step along D   |     delta Gi    |      slope      |\n");
+                alglib.ap.trace("*** ------------------------------------------------------|\n");
+                for(i=0; i<=monitor.nonc1test1lngrep.cnt-1; i++)
+                {
+                    slope = monitor.nonc1test1lngrep.g[Math.Min(i+1, monitor.nonc1test1lngrep.cnt-1)]-monitor.nonc1test1lngrep.g[i];
+                    slope = slope/(1.0e-15+monitor.nonc1test1lngrep.stp[Math.Min(i+1, monitor.nonc1test1lngrep.cnt-1)]-monitor.nonc1test1lngrep.stp[i]);
+                    alglib.ap.trace(System.String.Format("*** |  {0,13:E5}  |  {1,13:E5}  |   {2,11:E3}   |", monitor.nonc1test1lngrep.stp[i], monitor.nonc1test1lngrep.g[i]-monitor.nonc1test1lngrep.g[0], slope));
+                    if( i>=monitor.nonc1test1lngrep.stpidxa && i<=monitor.nonc1test1lngrep.stpidxb )
+                    {
+                        alglib.ap.trace(" <---");
+                    }
+                    alglib.ap.trace("\n");
+                }
+                alglib.ap.trace("*** ------------------------------------------------------|\n");
+                if( needxdreport )
+                {
+                    alglib.ap.trace("*** XK = ");
+                    apserv.tracevectore6(monitor.nonc1test1lngrep.x0, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** D  = ");
+                    apserv.tracevectore6(monitor.nonc1test1lngrep.d, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                }
+            }
+        }
+
+
+        /*************************************************************************
         This subroutine exports report to user-readable representation (all arrays
         are forced to have exactly same size as needed; unused arrays are  set  to
         zero length).
@@ -16964,15 +18390,15 @@ public partial class alglib
             }
             else
             {
-                n = 359;
-                k = -58;
-                i = -919;
-                j = -909;
-                varidx = 81;
-                v = 255;
-                vp = 74;
-                vm = -788;
-                vc = 809;
+                n = -919;
+                k = -909;
+                i = 81;
+                j = 255;
+                varidx = 74;
+                v = -788;
+                vp = 809;
+                vm = 205;
+                vc = -838;
             }
             if( monitor.rstateg0.stage==0 )
             {
@@ -23848,6 +25274,7036 @@ public partial class alglib
 
 
     }
+    public class lpqpserv
+    {
+        /*************************************************************************
+        This function generates scaled (by S) and shifted (by XC) reformulation of
+        the box constraints.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            XOrigin         -   origin term, array[N]. Can be zero.
+            BndL            -     raw lower bounds, array[N]
+            BndU            -   raw upper bounds, array[N]
+            N               -   number of variables.
+
+        OUTPUT PARAMETERS:
+            BndL            -   replaced by scaled/shifted lower bounds, array[N]
+            BndU            -   replaced by scaled/shifted upper bounds, array[N]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaleshiftbcinplace(double[] s,
+            double[] xorigin,
+            double[] bndl,
+            double[] bndu,
+            int n,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            bool hasbndl = new bool();
+            bool hasbndu = new bool();
+
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(math.isfinite(s[i]) && s[i]>0.0, "ScaleShiftBC: S[i] is nonpositive");
+                alglib.ap.assert(math.isfinite(bndl[i]) || Double.IsNegativeInfinity(bndl[i]), "ScaleShiftBC: BndL[i] is +INF or NAN");
+                alglib.ap.assert(math.isfinite(bndu[i]) || Double.IsPositiveInfinity(bndu[i]), "ScaleShiftBC: BndU[i] is -INF or NAN");
+                hasbndl = math.isfinite(bndl[i]);
+                hasbndu = math.isfinite(bndu[i]);
+                if( (hasbndl && hasbndu) && (double)(bndl[i])==(double)(bndu[i]) )
+                {
+                    
+                    //
+                    // Make sure that BndL[I]=BndU[I] bit-to-bit
+                    // even with CRAZY optimizing compiler.
+                    //
+                    bndu[i] = (bndu[i]-xorigin[i])/s[i];
+                    bndl[i] = bndu[i];
+                    continue;
+                }
+                if( hasbndl )
+                {
+                    bndl[i] = (bndl[i]-xorigin[i])/s[i];
+                }
+                if( hasbndu )
+                {
+                    bndu[i] = (bndu[i]-xorigin[i])/s[i];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) and shifted (by XC) reformulation of
+        two-sided "lower-bound/range" constraints stored in dense format.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            XOrigin         -   origin term, array[N]. Can be zero.
+            N               -   number of variables.
+            DenseA          -   array[M,N], constraint matrix
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[M]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[M]
+            M               -   constraint count, M>=0
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by scaled/shifted constraints, array[M,N]
+            AB              -   replaced by scaled/shifted lower bounds, array[M]
+            AR              -   replaced by scaled/shifted ranges, array[M]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaleshiftdensebrlcinplace(double[] s,
+            double[] xorigin,
+            int n,
+            double[,] densea,
+            double[] ab,
+            double[] ar,
+            int m,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Scale/shift constraint; shift its lower bound
+                //
+                // NOTE: range is NOT scaled or shifted
+                //
+                v = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    vv = densea[i,j];
+                    v = v+vv*xorigin[j];
+                    densea[i,j] = vv*s[j];
+                }
+                ab[i] = ab[i]-v;
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) and shifted (by XC) reformulation of
+        two-sided "lower-bound/range" constraints stored in dense format.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            XOrigin         -   origin term, array[N]. Can be zero.
+            N               -   number of variables.
+            SparseA         -   sparse MSparse*N constraint matrix in CRS format;
+                                ignored if MSparse=0.
+            MSparse         -   dense constraint count, MSparse>=0
+            DenseA          -   array[MDense,N], constraint matrix;
+                                ignored if MDense=0.
+            MDense          -   dense constraint count, MDense>=0
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[MSparse+MDense]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[MSparse+MDense]
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by scaled/shifted constraints, array[MDense,N]
+            SparseA         -   replaced by scaled/shifted constraints, array[MSparse,N]
+            AB              -   replaced by scaled/shifted lower bounds, array[MDense+MSparse]
+            AR              -   replaced by scaled/shifted ranges, array[MDense+MSparse]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaleshiftmixedbrlcinplace(double[] s,
+            double[] xorigin,
+            int n,
+            sparse.sparsematrix sparsea,
+            int msparse,
+            double[,] densea,
+            int mdense,
+            double[] ab,
+            double[] ar,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double v = 0;
+            double vv = 0;
+
+            alglib.ap.assert(msparse==0 || ((sparsea.matrixtype==1 && sparsea.m==msparse) && sparsea.n==n), "ScaleShiftMixedBRLCInplace: non-CRS sparse constraint matrix!");
+            for(i=0; i<=msparse-1; i++)
+            {
+                
+                //
+                // Scale/shift constraint; shift its lower bound
+                //
+                // NOTE: range is NOT scaled or shifted
+                //
+                v = 0.0;
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    j = sparsea.idx[k];
+                    vv = sparsea.vals[k];
+                    v = v+vv*xorigin[j];
+                    sparsea.vals[k] = vv*s[j];
+                }
+                ab[i] = ab[i]-v;
+            }
+            for(i=0; i<=mdense-1; i++)
+            {
+                
+                //
+                // Scale/shift constraint; shift its lower bound
+                //
+                // NOTE: range is NOT scaled or shifted
+                //
+                v = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    vv = densea[i,j];
+                    v = v+vv*xorigin[j];
+                    densea[i,j] = vv*s[j];
+                }
+                ab[msparse+i] = ab[msparse+i]-v;
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) reformulation of dense quadratic and
+        linear terms in QP problem.
+
+        INPUT PARAMETERS:
+            N               -   number of variables.
+            DenseA          -   array[NMain,NMain], quadratic term
+            IsUpper         -   whether upper or lower triangle is present
+            NMain           -   number of nonslack vars, 1<=NMain<=NTotal
+            DenseB          -   array[NTotal], linear term
+            NTotal          -   total number of variables, NTotal>=1
+            S               -   scale vector, array[NTotal]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by scaled term, array[N,N]
+            DenseB          -   replaced by scaled term, array[N]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaledenseqpinplace(double[,] densea,
+            bool isupper,
+            int nmain,
+            double[] denseb,
+            int ntotal,
+            double[] s,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double si = 0;
+
+            for(i=0; i<=nmain-1; i++)
+            {
+                si = s[i];
+                if( isupper )
+                {
+                    j0 = i;
+                    j1 = nmain-1;
+                }
+                else
+                {
+                    j0 = 0;
+                    j1 = i;
+                }
+                for(j=j0; j<=j1; j++)
+                {
+                    densea[i,j] = densea[i,j]*si*s[j];
+                }
+            }
+            for(i=0; i<=ntotal-1; i++)
+            {
+                denseb[i] = denseb[i]*s[i];
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) reformulation of sparse quadratic and
+        linear terms in QP problem.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            N               -   number of variables.
+            SparseA         -   NxN SparseMatrix in CRS format (any triangle can
+                                be present, we will scale everything)
+            DenseB          -   array[N], linear term
+
+        OUTPUT PARAMETERS:
+            SparseA         -   replaced by scaled term
+            DenseB          -   replaced by scaled term
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scalesparseqpinplace(double[] s,
+            int n,
+            sparse.sparsematrix sparsea,
+            double[] denseb,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int k0 = 0;
+            int k1 = 0;
+            int k = 0;
+            double si = 0;
+
+            alglib.ap.assert((sparsea.matrixtype==1 && sparsea.m==n) && sparsea.n==n, "ScaleSparseQPInplace: SparseA in unexpected format");
+            for(i=0; i<=n-1; i++)
+            {
+                si = s[i];
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    sparsea.vals[k] = sparsea.vals[k]*si*s[sparsea.idx[k]];
+                }
+                denseb[i] = denseb[i]*si;
+            }
+        }
+
+
+        /*************************************************************************
+        This function normalizes two-sided "lower-bound/range" constraints  stored
+        in dense format in such a way that L2 norms of rows (right hand  side  NOT
+        included) become equal to 1.0. Exactly zero rows are handled correctly.
+
+        INPUT PARAMETERS:
+            DenseA          -   array[M,N], constraint matrix
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[M]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[M]
+            N               -   number of variables, N>=1.
+            M               -   constraint count, M>=0
+            NeedNorms       -   whether we need row norms or not
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized constraints, array[M,N]
+            AB              -   replaced by normalized lower bounds, array[M]
+            AR              -   replaced by normalized ranges, array[M]
+            RowNorms        -   if NeedNorms is true, leading M elements (resized
+                                if length is less than M) are filled by row norms
+                                before normalization was performed.
+            
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void normalizedensebrlcinplace(double[,] densea,
+            double[] ab,
+            double[] ar,
+            int n,
+            int m,
+            ref double[] rownorms,
+            bool neednorms,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            if( neednorms )
+            {
+                apserv.rvectorsetlengthatleast(ref rownorms, m, _params);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vv = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = densea[i,j];
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                if( neednorms )
+                {
+                    rownorms[i] = vv;
+                }
+                if( (double)(vv)>(double)(0) )
+                {
+                    vv = 1/vv;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        densea[i,j] = densea[i,j]*vv;
+                    }
+                    ab[i] = ab[i]*vv;
+                    if( math.isfinite(ar[i]) )
+                    {
+                        ar[i] = ar[i]*vv;
+                    }
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function normalizes two-sided "lower-bound/range" constraints  stored
+        in dense format in such a way that L2 norms of rows (right hand  side  NOT
+        included) become equal to 1.0. Exactly zero rows are handled correctly.
+
+        INPUT PARAMETERS:
+            SparseA         -   sparse MSparse*N constraint matrix in CRS format;
+                                ignored if MSparse=0.
+            MSparse         -   dense constraint count, MSparse>=0
+            DenseA          -   array[MDense,N], constraint matrix;
+                                ignored if MDense=0.
+            MDense          -   dense constraint count, MDense>=0
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[MSparse+MDense]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[MSparse+MDense]
+            N               -   number of variables, N>=1.
+            NeedNorms       -   whether we need row norms or not
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized constraints, array[M,N]
+            AB              -   replaced by normalized lower bounds, array[M]
+            AR              -   replaced by normalized ranges, array[M]
+            RowNorms        -   if NeedNorms is true, leading M elements (resized
+                                if length is less than M) are filled by row norms
+                                before normalization was performed.
+            
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void normalizemixedbrlcinplace(sparse.sparsematrix sparsea,
+            int msparse,
+            double[,] densea,
+            int mdense,
+            double[] ab,
+            double[] ar,
+            int n,
+            ref double[] rownorms,
+            bool neednorms,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double v = 0;
+            double vv = 0;
+
+            alglib.ap.assert(msparse==0 || ((sparsea.matrixtype==1 && sparsea.m==msparse) && sparsea.n==n), "ScaleShiftMixedBRLCInplace: non-CRS sparse constraint matrix!");
+            if( neednorms )
+            {
+                apserv.rvectorsetlengthatleast(ref rownorms, mdense+msparse, _params);
+            }
+            for(i=0; i<=msparse-1; i++)
+            {
+                vv = 0.0;
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    v = sparsea.vals[k];
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                if( neednorms )
+                {
+                    rownorms[i] = vv;
+                }
+                if( (double)(vv)>(double)(0) )
+                {
+                    vv = 1/vv;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        sparsea.vals[k] = sparsea.vals[k]*vv;
+                    }
+                    ab[i] = ab[i]*vv;
+                    if( math.isfinite(ar[i]) )
+                    {
+                        ar[i] = ar[i]*vv;
+                    }
+                }
+            }
+            for(i=0; i<=mdense-1; i++)
+            {
+                vv = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = densea[i,j];
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                if( neednorms )
+                {
+                    rownorms[msparse+i] = vv;
+                }
+                if( (double)(vv)>(double)(0) )
+                {
+                    vv = 1/vv;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        densea[i,j] = densea[i,j]*vv;
+                    }
+                    ab[msparse+i] = ab[msparse+i]*vv;
+                    if( math.isfinite(ar[msparse+i]) )
+                    {
+                        ar[msparse+i] = ar[msparse+i]*vv;
+                    }
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function normalizes dense QP problem in such a way that maximum  over
+        its linear/quadratic coefficients max(max(A),max(B)) becomes equal to 1.0.
+
+        NOTE: completely zero A and B are handled correctly.
+
+        INPUT PARAMETERS:
+            DenseA          -   array[NMain,NMain], quadratic term
+            IsUpper         -   whether upper or lower triangle is present
+            NMain           -   number of nonslack vars, 1<=NMain<=NTotal
+            DenseB          -   array[NTotal], linear term
+            NTotal          -   total number of variables.
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized term
+            DenseB          -   replaced by normalized term
+            
+        RESULT:
+            max(max(A),max(B)) is returned
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double normalizedenseqpinplace(double[,] densea,
+            bool isupper,
+            int nmain,
+            double[] denseb,
+            int ntotal,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double mx = 0;
+            double v = 0;
+
+            mx = 0;
+            for(i=0; i<=nmain-1; i++)
+            {
+                if( isupper )
+                {
+                    j0 = i;
+                    j1 = nmain-1;
+                }
+                else
+                {
+                    j0 = 0;
+                    j1 = i;
+                }
+                for(j=j0; j<=j1; j++)
+                {
+                    mx = Math.Max(mx, Math.Abs(densea[i,j]));
+                }
+            }
+            for(i=0; i<=ntotal-1; i++)
+            {
+                mx = Math.Max(mx, Math.Abs(denseb[i]));
+            }
+            result = mx;
+            if( (double)(mx)==(double)(0) )
+            {
+                return result;
+            }
+            v = 1/mx;
+            for(i=0; i<=nmain-1; i++)
+            {
+                if( isupper )
+                {
+                    j0 = i;
+                    j1 = nmain-1;
+                }
+                else
+                {
+                    j0 = 0;
+                    j1 = i;
+                }
+                for(j=j0; j<=j1; j++)
+                {
+                    densea[i,j] = densea[i,j]*v;
+                }
+            }
+            for(i=0; i<=ntotal-1; i++)
+            {
+                denseb[i] = denseb[i]*v;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function normalizes sparse QP problem in such a way that maximum over
+        its linear/quadratic coefficients max(max(A),max(B)) becomes equal to 1.0.
+
+        NOTE: completely zero A and B are handled correctly.
+
+        INPUT PARAMETERS:
+            SparseA         -   Sparse NxN matrix, either upper or lower triangle,
+                                diagonal MUST be present
+            IsUpper         -   which triangle is present (other one is ignored)
+            DenseB          -   array[N], linear term
+            N               -   number of variables.
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized term, array[N,N]
+            DenseB          -   replaced by normalized term, array[N]
+            
+        RESULT:
+            max(max(A),max(B)) is returned
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double normalizesparseqpinplace(sparse.sparsematrix sparsea,
+            bool isupper,
+            double[] denseb,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double mx = 0;
+            double v = 0;
+
+            alglib.ap.assert((sparsea.matrixtype==1 && sparsea.m==n) && sparsea.n==n, "ScaleSparseQPInplace: SparseA in unexpected format");
+            mx = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(sparsea.didx[i]+1==sparsea.uidx[i], "NormalizeSparseQPInplace: critical integrity check failed, sparse diagonal not found");
+                if( isupper )
+                {
+                    k0 = sparsea.didx[i];
+                    k1 = sparsea.ridx[i+1]-1;
+                }
+                else
+                {
+                    k0 = sparsea.ridx[i];
+                    k1 = sparsea.didx[i];
+                }
+                for(k=k0; k<=k1; k++)
+                {
+                    mx = Math.Max(mx, Math.Abs(sparsea.vals[k]));
+                }
+                mx = Math.Max(mx, Math.Abs(denseb[i]));
+            }
+            result = mx;
+            if( (double)(mx)==(double)(0) )
+            {
+                return result;
+            }
+            v = 1/mx;
+            for(i=0; i<=n-1; i++)
+            {
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    sparsea.vals[k] = sparsea.vals[k]*v;
+                }
+                denseb[i] = denseb[i]*v;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function performs transformation of X from scaled/shifted coordinates
+        to unscaled/unshifted ones, paying special attention to box constraints:
+        * points which were exactly at the boundary before scaling will be  mapped
+          to corresponding boundary after scaling
+        * in any case, unscaled box constraints will be satisfied
+
+          -- ALGLIB --
+             Copyright 02.06.2015 by Bochkanov Sergey
+        *************************************************************************/
+        public static void unscaleunshiftpointbc(double[] s,
+            double[] xorigin,
+            double[] rawbndl,
+            double[] rawbndu,
+            double[] sclsftbndl,
+            double[] sclsftbndu,
+            bool[] hasbndl,
+            bool[] hasbndu,
+            double[] x,
+            int n,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                if( hasbndl[i] && (double)(x[i])<=(double)(sclsftbndl[i]) )
+                {
+                    x[i] = rawbndl[i];
+                    continue;
+                }
+                if( hasbndu[i] && (double)(x[i])>=(double)(sclsftbndu[i]) )
+                {
+                    x[i] = rawbndu[i];
+                    continue;
+                }
+                x[i] = x[i]*s[i]+xorigin[i];
+                if( hasbndl[i] && (double)(x[i])<=(double)(rawbndl[i]) )
+                {
+                    x[i] = rawbndl[i];
+                }
+                if( hasbndu[i] && (double)(x[i])>=(double)(rawbndu[i]) )
+                {
+                    x[i] = rawbndu[i];
+                }
+            }
+        }
+
+
+    }
+    public class vipmsolver
+    {
+        /*************************************************************************
+        Variables of Vanderbei IPM method (primal and dual, slacks)
+        *************************************************************************/
+        public class vipmvars : apobject
+        {
+            public int n;
+            public int m;
+            public double[] x;
+            public double[] g;
+            public double[] w;
+            public double[] t;
+            public double[] p;
+            public double[] y;
+            public double[] z;
+            public double[] v;
+            public double[] s;
+            public double[] q;
+            public vipmvars()
+            {
+                init();
+            }
+            public override void init()
+            {
+                x = new double[0];
+                g = new double[0];
+                w = new double[0];
+                t = new double[0];
+                p = new double[0];
+                y = new double[0];
+                z = new double[0];
+                v = new double[0];
+                s = new double[0];
+                q = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                vipmvars _result = new vipmvars();
+                _result.n = n;
+                _result.m = m;
+                _result.x = (double[])x.Clone();
+                _result.g = (double[])g.Clone();
+                _result.w = (double[])w.Clone();
+                _result.t = (double[])t.Clone();
+                _result.p = (double[])p.Clone();
+                _result.y = (double[])y.Clone();
+                _result.z = (double[])z.Clone();
+                _result.v = (double[])v.Clone();
+                _result.s = (double[])s.Clone();
+                _result.q = (double[])q.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        Vanderbei IPM state
+        *************************************************************************/
+        public class vipmstate : apobject
+        {
+            public int n;
+            public int nmain;
+            public double regeps;
+            public double epsp;
+            public double epsd;
+            public double epsgap;
+            public bool islinear;
+            public double[] scl;
+            public double[] invscl;
+            public double[] xorigin;
+            public double targetscale;
+            public double[] c;
+            public double[,] denseh;
+            public sparse.sparsematrix sparseh;
+            public int hkind;
+            public double[] bndl;
+            public double[] bndu;
+            public double[] rawbndl;
+            public double[] rawbndu;
+            public bool[] hasbndl;
+            public bool[] hasbndu;
+            public double[,] denseafull;
+            public double[,] denseamain;
+            public sparse.sparsematrix sparseafull;
+            public sparse.sparsematrix sparseamain;
+            public sparse.sparsematrix combinedaslack;
+            public double[] ascales;
+            public double[] b;
+            public double[] r;
+            public bool[] hasr;
+            public int mdense;
+            public int msparse;
+            public vipmvars current;
+            public vipmvars trial;
+            public vipmvars deltaaff;
+            public vipmvars deltacorr;
+            public double errp2;
+            public double errd2;
+            public double errpinf;
+            public double errdinf;
+            public int repiterationscount;
+            public int repncholesky;
+            public int factorizationtype;
+            public bool factorizationpoweredup;
+            public bool factorizationpresent;
+            public double[] diagginvz;
+            public double[] diagzinvg;
+            public double[] diagtinvs;
+            public double[] diagsinvt;
+            public double[] diagvinvw;
+            public double[] diagpinvq;
+            public double[] diagqinvp;
+            public double[] diagd;
+            public double[] diage;
+            public double[,] factdensehaug;
+            public double[] factdh;
+            public double[] factdz;
+            public double[] factinvdz;
+            public double[] facteffectivee;
+            public sparse.sparsematrix factsparsekkttmpl;
+            public sparse.sparsematrix factsparsekkt;
+            public int[] factsparsekktpivp;
+            public int[] factsparsekktpivq;
+            public double[] rhsrho;
+            public double[] rhsnu;
+            public double[] rhstau;
+            public double[] rhsalpha;
+            public double[] rhssigma;
+            public double[] rhsbeta;
+            public double[] rhsgammaz;
+            public double[] rhsgammas;
+            public double[] rhsgammaw;
+            public double[] rhsgammaq;
+            public double[] rhsalphacap;
+            public double[] rhsbetacap;
+            public double[] rhsnucap;
+            public double[] rhstaucap;
+            public double[] deltaxy;
+            public double[] tmphx;
+            public double[] tmpax;
+            public double[] tmpaty;
+            public double[] dummyr;
+            public double[] tmp0;
+            public double[] tmp1;
+            public double[] tmp2;
+            public double[,] tmpr2;
+            public double[] evalprogressg;
+            public int[] tmpi;
+            public sparse.sparsematrix tmpsparse0;
+            public sparse.sparsematrix tmpsparse1;
+            public vipmstate()
+            {
+                init();
+            }
+            public override void init()
+            {
+                scl = new double[0];
+                invscl = new double[0];
+                xorigin = new double[0];
+                c = new double[0];
+                denseh = new double[0,0];
+                sparseh = new sparse.sparsematrix();
+                bndl = new double[0];
+                bndu = new double[0];
+                rawbndl = new double[0];
+                rawbndu = new double[0];
+                hasbndl = new bool[0];
+                hasbndu = new bool[0];
+                denseafull = new double[0,0];
+                denseamain = new double[0,0];
+                sparseafull = new sparse.sparsematrix();
+                sparseamain = new sparse.sparsematrix();
+                combinedaslack = new sparse.sparsematrix();
+                ascales = new double[0];
+                b = new double[0];
+                r = new double[0];
+                hasr = new bool[0];
+                current = new vipmvars();
+                trial = new vipmvars();
+                deltaaff = new vipmvars();
+                deltacorr = new vipmvars();
+                diagginvz = new double[0];
+                diagzinvg = new double[0];
+                diagtinvs = new double[0];
+                diagsinvt = new double[0];
+                diagvinvw = new double[0];
+                diagpinvq = new double[0];
+                diagqinvp = new double[0];
+                diagd = new double[0];
+                diage = new double[0];
+                factdensehaug = new double[0,0];
+                factdh = new double[0];
+                factdz = new double[0];
+                factinvdz = new double[0];
+                facteffectivee = new double[0];
+                factsparsekkttmpl = new sparse.sparsematrix();
+                factsparsekkt = new sparse.sparsematrix();
+                factsparsekktpivp = new int[0];
+                factsparsekktpivq = new int[0];
+                rhsrho = new double[0];
+                rhsnu = new double[0];
+                rhstau = new double[0];
+                rhsalpha = new double[0];
+                rhssigma = new double[0];
+                rhsbeta = new double[0];
+                rhsgammaz = new double[0];
+                rhsgammas = new double[0];
+                rhsgammaw = new double[0];
+                rhsgammaq = new double[0];
+                rhsalphacap = new double[0];
+                rhsbetacap = new double[0];
+                rhsnucap = new double[0];
+                rhstaucap = new double[0];
+                deltaxy = new double[0];
+                tmphx = new double[0];
+                tmpax = new double[0];
+                tmpaty = new double[0];
+                dummyr = new double[0];
+                tmp0 = new double[0];
+                tmp1 = new double[0];
+                tmp2 = new double[0];
+                tmpr2 = new double[0,0];
+                evalprogressg = new double[0];
+                tmpi = new int[0];
+                tmpsparse0 = new sparse.sparsematrix();
+                tmpsparse1 = new sparse.sparsematrix();
+            }
+            public override alglib.apobject make_copy()
+            {
+                vipmstate _result = new vipmstate();
+                _result.n = n;
+                _result.nmain = nmain;
+                _result.regeps = regeps;
+                _result.epsp = epsp;
+                _result.epsd = epsd;
+                _result.epsgap = epsgap;
+                _result.islinear = islinear;
+                _result.scl = (double[])scl.Clone();
+                _result.invscl = (double[])invscl.Clone();
+                _result.xorigin = (double[])xorigin.Clone();
+                _result.targetscale = targetscale;
+                _result.c = (double[])c.Clone();
+                _result.denseh = (double[,])denseh.Clone();
+                _result.sparseh = (sparse.sparsematrix)sparseh.make_copy();
+                _result.hkind = hkind;
+                _result.bndl = (double[])bndl.Clone();
+                _result.bndu = (double[])bndu.Clone();
+                _result.rawbndl = (double[])rawbndl.Clone();
+                _result.rawbndu = (double[])rawbndu.Clone();
+                _result.hasbndl = (bool[])hasbndl.Clone();
+                _result.hasbndu = (bool[])hasbndu.Clone();
+                _result.denseafull = (double[,])denseafull.Clone();
+                _result.denseamain = (double[,])denseamain.Clone();
+                _result.sparseafull = (sparse.sparsematrix)sparseafull.make_copy();
+                _result.sparseamain = (sparse.sparsematrix)sparseamain.make_copy();
+                _result.combinedaslack = (sparse.sparsematrix)combinedaslack.make_copy();
+                _result.ascales = (double[])ascales.Clone();
+                _result.b = (double[])b.Clone();
+                _result.r = (double[])r.Clone();
+                _result.hasr = (bool[])hasr.Clone();
+                _result.mdense = mdense;
+                _result.msparse = msparse;
+                _result.current = (vipmvars)current.make_copy();
+                _result.trial = (vipmvars)trial.make_copy();
+                _result.deltaaff = (vipmvars)deltaaff.make_copy();
+                _result.deltacorr = (vipmvars)deltacorr.make_copy();
+                _result.errp2 = errp2;
+                _result.errd2 = errd2;
+                _result.errpinf = errpinf;
+                _result.errdinf = errdinf;
+                _result.repiterationscount = repiterationscount;
+                _result.repncholesky = repncholesky;
+                _result.factorizationtype = factorizationtype;
+                _result.factorizationpoweredup = factorizationpoweredup;
+                _result.factorizationpresent = factorizationpresent;
+                _result.diagginvz = (double[])diagginvz.Clone();
+                _result.diagzinvg = (double[])diagzinvg.Clone();
+                _result.diagtinvs = (double[])diagtinvs.Clone();
+                _result.diagsinvt = (double[])diagsinvt.Clone();
+                _result.diagvinvw = (double[])diagvinvw.Clone();
+                _result.diagpinvq = (double[])diagpinvq.Clone();
+                _result.diagqinvp = (double[])diagqinvp.Clone();
+                _result.diagd = (double[])diagd.Clone();
+                _result.diage = (double[])diage.Clone();
+                _result.factdensehaug = (double[,])factdensehaug.Clone();
+                _result.factdh = (double[])factdh.Clone();
+                _result.factdz = (double[])factdz.Clone();
+                _result.factinvdz = (double[])factinvdz.Clone();
+                _result.facteffectivee = (double[])facteffectivee.Clone();
+                _result.factsparsekkttmpl = (sparse.sparsematrix)factsparsekkttmpl.make_copy();
+                _result.factsparsekkt = (sparse.sparsematrix)factsparsekkt.make_copy();
+                _result.factsparsekktpivp = (int[])factsparsekktpivp.Clone();
+                _result.factsparsekktpivq = (int[])factsparsekktpivq.Clone();
+                _result.rhsrho = (double[])rhsrho.Clone();
+                _result.rhsnu = (double[])rhsnu.Clone();
+                _result.rhstau = (double[])rhstau.Clone();
+                _result.rhsalpha = (double[])rhsalpha.Clone();
+                _result.rhssigma = (double[])rhssigma.Clone();
+                _result.rhsbeta = (double[])rhsbeta.Clone();
+                _result.rhsgammaz = (double[])rhsgammaz.Clone();
+                _result.rhsgammas = (double[])rhsgammas.Clone();
+                _result.rhsgammaw = (double[])rhsgammaw.Clone();
+                _result.rhsgammaq = (double[])rhsgammaq.Clone();
+                _result.rhsalphacap = (double[])rhsalphacap.Clone();
+                _result.rhsbetacap = (double[])rhsbetacap.Clone();
+                _result.rhsnucap = (double[])rhsnucap.Clone();
+                _result.rhstaucap = (double[])rhstaucap.Clone();
+                _result.deltaxy = (double[])deltaxy.Clone();
+                _result.tmphx = (double[])tmphx.Clone();
+                _result.tmpax = (double[])tmpax.Clone();
+                _result.tmpaty = (double[])tmpaty.Clone();
+                _result.dummyr = (double[])dummyr.Clone();
+                _result.tmp0 = (double[])tmp0.Clone();
+                _result.tmp1 = (double[])tmp1.Clone();
+                _result.tmp2 = (double[])tmp2.Clone();
+                _result.tmpr2 = (double[,])tmpr2.Clone();
+                _result.evalprogressg = (double[])evalprogressg.Clone();
+                _result.tmpi = (int[])tmpi.Clone();
+                _result.tmpsparse0 = (sparse.sparsematrix)tmpsparse0.make_copy();
+                _result.tmpsparse1 = (sparse.sparsematrix)tmpsparse1.make_copy();
+                return _result;
+            }
+        };
+
+
+
+
+        public const int maxipmits = 50;
+        public const double initslackval = 100.0;
+        public const double affinesteplengthdecay = 0.99;
+        public const double steplengthdecay = 0.95;
+        public const double stagnationdelta = 0.99999;
+        public const double primalinfeasible1 = 1.0E-6;
+        public const double dualinfeasible1 = 1.0E-4;
+        public const double bigy = 1.0E10;
+        public const int itersfortoostringentcond = 25;
+        public const int minitersbeforestagnation = 5;
+        public const int primalstagnationlen = 5;
+        public const int dualstagnationlen = 7;
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The solver is configured to work internally with dense NxN  factorization,
+        no matter what exactly is passed - dense or sparse matrices.
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipminitdense(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int n,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(n>=1, "VIPMInitDense: N<1");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitDense: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitDense: XOrigin contains infinite or NaN elements");
+            vipminit(state, s, xorigin, n, n, 0, _params);
+        }
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The solver is configured to work internally with dense NxN problem divided
+        into two distinct parts - "main" and slack one:
+        * dense quadratic term  is  a  NMain*NMain  matrix  (NMain<=N),  quadratic
+          coefficients are zero for variables outside of [0,NMain) range)
+        * linear term is general vector of length N
+        * linear constraints have special structure for variable with  indexes  in
+          [NMain,N) range: at most one element per column can be nonzero.
+
+        This mode is intended for problems arising during SL1QP nonlinear programming.
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+            NMain       -   number of "main" variables, 1<=NMain<=N
+            N           -   total number of variables including slack ones
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipminitdensewithslacks(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int nmain,
+            int n,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(nmain>=1, "VIPMInitDense: NMain<1");
+            alglib.ap.assert(n>=1, "VIPMInitDense: N<1");
+            alglib.ap.assert(nmain<=n, "VIPMInitDense: NMain>N");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitDense: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitDense: XOrigin contains infinite or NaN elements");
+            vipminit(state, s, xorigin, n, nmain, 0, _params);
+        }
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The  solver  is configured  to  work  internally  with  sparse (N+M)x(N+M)
+        factorization no matter what exactly is passed - dense or sparse matrices.
+        Dense quadratic term will be sparsified prior to storage.
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+            N           -   total number of variables, N>=1
+            
+        This optimization mode assumes that no slack variables is present.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipminitsparse(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int n,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(n>=1, "VIPMInitSparse: N<1");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitSparse: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitSparse: XOrigin contains infinite or NaN elements");
+            vipminit(state, s, xorigin, n, n, 1, _params);
+        }
+
+
+        /*************************************************************************
+        Sets linear/quadratic terms for QP-IPM solver
+
+        If you initialized solver with VIMPInitDenseWithSlacks(), NMain below is a
+        number of non-slack variables. In other cases, NMain=N.
+
+        INPUT PARAMETERS:
+            State               -   instance initialized with one of the initialization
+                                    functions
+            DenseH              -   if HKind=0: array[NMain,NMain], dense quadratic term
+                                    (either upper or lower triangle)
+            SparseH             -   if HKind=1: array[NMain,NMain], sparse quadratic term
+                                    (either upper or lower triangle)
+            HKind               -   0 or 1, quadratic term format
+            IsUpper             -   whether dense/sparse H contains lower or upper
+                                    triangle of the quadratic term
+            C                   -   array[N], linear term
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmsetquadraticlinear(vipmstate state,
+            double[,] denseh,
+            sparse.sparsematrix sparseh,
+            int hkind,
+            bool isupper,
+            double[] c,
+            alglib.xparams _params)
+        {
+            int nmain = 0;
+            int n = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double v = 0;
+            double vv = 0;
+            int nnz = 0;
+            int offs = 0;
+
+            nmain = state.nmain;
+            n = state.n;
+            alglib.ap.assert(hkind==0 || hkind==1, "VIPMSetQuadraticLinear: incorrect HKind");
+            alglib.ap.assert(apserv.isfinitevector(c, n, _params), "VIPMSetQuadraticLinear: C contains infinite or NaN elements");
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMSetQuadraticLinear: unexpected factorization type");
+            
+            //
+            // Set problem info, reset factorization flag
+            //
+            state.islinear = false;
+            state.factorizationpresent = false;
+            state.factorizationpoweredup = false;
+            
+            //
+            // Linear term
+            //
+            apserv.rvectorsetlengthatleast(ref state.c, n, _params);
+            ablas.rvectorcopy(n, c, 0, state.c, 0, _params);
+            
+            //
+            // Quadratic term and normalization
+            //
+            // NOTE: we perform integrity check for inifinities/NANs by
+            //       computing sum of all matrix elements and checking its
+            //       value for being finite. It is a bit faster than checking
+            //       each element individually.
+            //
+            state.hkind = -1;
+            state.targetscale = 1.0;
+            if( state.factorizationtype==0 )
+            {
+                
+                //
+                // Quadratic term is stored in dense format: either copy dense
+                // term of densify sparse one
+                //
+                state.hkind = 0;
+                apserv.rmatrixsetlengthatleast(ref state.denseh, nmain, nmain, _params);
+                if( hkind==0 )
+                {
+                    
+                    //
+                    // Copy dense quadratic term
+                    //
+                    if( isupper )
+                    {
+                        ablas.rmatrixtranspose(nmain, nmain, denseh, 0, 0, state.denseh, 0, 0, _params);
+                    }
+                    else
+                    {
+                        ablas.rmatrixcopy(nmain, nmain, denseh, 0, 0, state.denseh, 0, 0, _params);
+                    }
+                }
+                if( hkind==1 )
+                {
+                    
+                    //
+                    // Extract sparse quadratic term
+                    //
+                    alglib.ap.assert(sparseh.matrixtype==1, "VIPMSetQuadraticLinear: unexpected sparse matrix format");
+                    alglib.ap.assert(sparseh.m==nmain, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    alglib.ap.assert(sparseh.n==nmain, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    for(i=0; i<=nmain-1; i++)
+                    {
+                        for(j=0; j<=i; j++)
+                        {
+                            state.denseh[i,j] = 0;
+                        }
+                    }
+                    for(i=0; i<=nmain-1; i++)
+                    {
+                        
+                        //
+                        // diagonal element
+                        //
+                        if( sparseh.didx[i]!=sparseh.uidx[i] )
+                        {
+                            state.denseh[i,i] = sparseh.vals[sparseh.didx[i]];
+                        }
+                        
+                        //
+                        // Off-diagonal elements
+                        //
+                        if( isupper )
+                        {
+                            
+                            //
+                            // superdiagonal elements are moved to subdiagonal part
+                            //
+                            j0 = sparseh.uidx[i];
+                            j1 = sparseh.ridx[i+1]-1;
+                            for(j=j0; j<=j1; j++)
+                            {
+                                state.denseh[sparseh.idx[j],i] = sparseh.vals[j];
+                            }
+                        }
+                        else
+                        {
+                            
+                            //
+                            // subdiagonal elements are moved to subdiagonal part
+                            //
+                            j0 = sparseh.ridx[i];
+                            j1 = sparseh.didx[i]-1;
+                            for(j=j0; j<=j1; j++)
+                            {
+                                state.denseh[i,sparseh.idx[j]] = sparseh.vals[j];
+                            }
+                        }
+                    }
+                }
+                vv = 0;
+                for(i=0; i<=nmain-1; i++)
+                {
+                    for(j=0; j<=i; j++)
+                    {
+                        vv = vv+state.denseh[i,j];
+                    }
+                }
+                alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: DenseH contains infinite or NaN values!");
+                lpqpserv.scaledenseqpinplace(state.denseh, false, nmain, state.c, n, state.scl, _params);
+                state.targetscale = lpqpserv.normalizedenseqpinplace(state.denseh, false, nmain, state.c, n, _params);
+            }
+            if( state.factorizationtype==1 )
+            {
+                alglib.ap.assert(nmain==n, "VIPMSetQuadraticLinear: critical integrity check failed, NMain!=N");
+                
+                //
+                // Quadratic term is stored in sparse format: either sparsify dense
+                // term of copy sparse one
+                //
+                state.hkind = 1;
+                state.sparseh.matrixtype = 1;
+                state.sparseh.m = n;
+                state.sparseh.n = n;
+                if( hkind==0 )
+                {
+                    
+                    //
+                    // Sparsify dense term
+                    //
+                    nnz = 0;
+                    for(i=0; i<=n-1; i++)
+                    {
+                        nnz = nnz+1;
+                        if( isupper )
+                        {
+                            j0 = i+1;
+                            j1 = n-1;
+                        }
+                        else
+                        {
+                            j0 = 0;
+                            j1 = i-1;
+                        }
+                        for(j=j0; j<=j1; j++)
+                        {
+                            if( denseh[i,j]!=0 )
+                            {
+                                nnz = nnz+1;
+                            }
+                        }
+                    }
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.idx, nnz, _params);
+                    apserv.rvectorsetlengthatleast(ref state.sparseh.vals, nnz, _params);
+                    state.sparseh.ridx[0] = 0;
+                    offs = 0;
+                    vv = 0;
+                    for(i=0; i<=n-1; i++)
+                    {
+                        
+                        //
+                        // Off-diagonal elements are copied only when nonzero
+                        //
+                        if( !isupper )
+                        {
+                            for(j=0; j<=i-1; j++)
+                            {
+                                if( denseh[i,j]!=0 )
+                                {
+                                    v = denseh[i,j];
+                                    state.sparseh.idx[offs] = j;
+                                    state.sparseh.vals[offs] = v;
+                                    vv = vv+v;
+                                    offs = offs+1;
+                                }
+                            }
+                        }
+                        
+                        //
+                        // Diagonal element is always copied
+                        //
+                        v = denseh[i,i];
+                        state.sparseh.idx[offs] = i;
+                        state.sparseh.vals[offs] = v;
+                        vv = vv+v;
+                        offs = offs+1;
+                        
+                        //
+                        // Off-diagonal elements are copied only when nonzero
+                        //
+                        if( isupper )
+                        {
+                            for(j=i+1; j<=n-1; j++)
+                            {
+                                if( denseh[i,j]!=0 )
+                                {
+                                    v = denseh[i,j];
+                                    state.sparseh.idx[offs] = j;
+                                    state.sparseh.vals[offs] = v;
+                                    vv = vv+v;
+                                    offs = offs+1;
+                                }
+                            }
+                        }
+                        
+                        //
+                        // Finalize row
+                        //
+                        state.sparseh.ridx[i+1] = offs;
+                    }
+                    alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: DenseH contains infinite or NaN values!");
+                    alglib.ap.assert(offs==nnz, "VIPMSetQuadraticLinear: integrity check failed");
+                    sparse.sparsecreatecrsinplace(state.sparseh, _params);
+                }
+                if( hkind==1 )
+                {
+                    
+                    //
+                    // Copy sparse quadratic term, but make sure that we have diagonal elements
+                    // present (we add diagonal if it is not present)
+                    //
+                    alglib.ap.assert(sparseh.matrixtype==1, "VIPMSetQuadraticLinear: unexpected sparse matrix format");
+                    alglib.ap.assert(sparseh.m==n, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    alglib.ap.assert(sparseh.n==n, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.idx, sparseh.ridx[n]+n, _params);
+                    apserv.rvectorsetlengthatleast(ref state.sparseh.vals, sparseh.ridx[n]+n, _params);
+                    state.sparseh.ridx[0] = 0;
+                    offs = 0;
+                    vv = 0;
+                    for(i=0; i<=n-1; i++)
+                    {
+                        
+                        //
+                        // Copy subdiagonal elements (if needed)
+                        //
+                        if( !isupper )
+                        {
+                            j0 = sparseh.ridx[i];
+                            j1 = sparseh.didx[i]-1;
+                            for(k=j0; k<=j1; k++)
+                            {
+                                v = sparseh.vals[k];
+                                state.sparseh.idx[offs] = sparseh.idx[k];
+                                state.sparseh.vals[offs] = v;
+                                vv = vv+v;
+                                offs = offs+1;
+                            }
+                        }
+                        
+                        //
+                        // Diagonal element is always copied
+                        //
+                        v = 0;
+                        if( sparseh.uidx[i]!=sparseh.didx[i] )
+                        {
+                            v = sparseh.vals[sparseh.didx[i]];
+                        }
+                        state.sparseh.idx[offs] = i;
+                        state.sparseh.vals[offs] = v;
+                        vv = vv+v;
+                        offs = offs+1;
+                        
+                        //
+                        // Copy superdiagonal elements (if needed)
+                        //
+                        if( isupper )
+                        {
+                            j0 = sparseh.uidx[i];
+                            j1 = sparseh.ridx[i+1]-1;
+                            for(k=j0; k<=j1; k++)
+                            {
+                                v = sparseh.vals[k];
+                                state.sparseh.idx[offs] = sparseh.idx[k];
+                                state.sparseh.vals[offs] = v;
+                                vv = vv+v;
+                                offs = offs+1;
+                            }
+                        }
+                        
+                        //
+                        // Finalize row
+                        //
+                        state.sparseh.ridx[i+1] = offs;
+                    }
+                    alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: SparseH contains infinite or NaN values!");
+                    alglib.ap.assert(offs<=alglib.ap.len(state.sparseh.vals) && offs<=alglib.ap.len(state.sparseh.idx), "VIPMSetQuadraticLinear: integrity check failed");
+                    sparse.sparsecreatecrsinplace(state.sparseh, _params);
+                    if( isupper )
+                    {
+                        sparse.sparsecopytransposecrsbuf(state.sparseh, state.tmpsparse0, _params);
+                        sparse.sparsecopybuf(state.tmpsparse0, state.sparseh, _params);
+                    }
+                }
+                lpqpserv.scalesparseqpinplace(state.scl, n, state.sparseh, state.c, _params);
+                state.targetscale = lpqpserv.normalizesparseqpinplace(state.sparseh, false, state.c, n, _params);
+            }
+            alglib.ap.assert(state.hkind>=0, "VIPMSetQuadraticLinear: integrity check failed");
+        }
+
+
+        /*************************************************************************
+        Sets constraints for QP-IPM solver
+
+        INPUT PARAMETERS:
+            State               -   instance initialized with one of the initialization
+                                    functions
+            BndL, BndU          -   lower and upper bound. BndL[] can be -INF,
+                                    BndU[] can be +INF.
+            SparseA             -   sparse constraint matrix, CRS format
+            MSparse             -   number of sparse constraints
+            DenseA              -   array[MDense,N], dense part of the constraints
+            MDense              -   number of dense constraints
+            CL, CU              -   lower and upper bounds for constraints, first
+                                    MSparse are bounds for sparse part, following
+                                    MDense ones are bounds for dense part,
+                                    MSparse+MDense in total.
+                                    -INF <= CL[I] <= CU[I] <= +INF.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmsetconstraints(vipmstate state,
+            double[] bndl,
+            double[] bndu,
+            sparse.sparsematrix sparsea,
+            int msparse,
+            double[,] densea,
+            int mdense,
+            double[] cl,
+            double[] cu,
+            alglib.xparams _params)
+        {
+            int m = 0;
+            int n = 0;
+            int nmain = 0;
+            int nslack = 0;
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            int k = 0;
+            int offsmain = 0;
+            int offscombined = 0;
+            double vs = 0;
+            double v = 0;
+
+            n = state.n;
+            nmain = state.nmain;
+            nslack = n-nmain;
+            alglib.ap.assert(mdense>=0, "VIPMSetConstraints: MDense<0");
+            alglib.ap.assert(msparse>=0, "VIPMSetConstraints: MSparse<0");
+            alglib.ap.assert(apserv.apservisfinitematrix(densea, mdense, n, _params), "VIPMSetConstraints: DenseA contains infinite or NaN values!");
+            alglib.ap.assert(msparse==0 || sparsea.matrixtype==1, "VIPMSetConstraints: non-CRS constraint matrix!");
+            alglib.ap.assert(msparse==0 || (sparsea.m==msparse && sparsea.n==n), "VIPMSetConstraints: constraint matrix has incorrect size");
+            alglib.ap.assert(alglib.ap.len(cl)>=mdense+msparse, "VIPMSetConstraints: CL is too short!");
+            alglib.ap.assert(alglib.ap.len(cu)>=mdense+msparse, "VIPMSetConstraints: CU is too short!");
+            
+            //
+            // Reset factorization flag
+            //
+            state.factorizationpresent = false;
+            state.factorizationpoweredup = false;
+            
+            //
+            // Box constraints
+            //
+            apserv.rvectorsetlengthatleast(ref state.bndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.bndu, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rawbndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rawbndu, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.hasbndl[i] = math.isfinite(bndl[i]);
+                state.hasbndu[i] = math.isfinite(bndu[i]);
+                state.bndl[i] = bndl[i];
+                state.bndu[i] = bndu[i];
+                state.rawbndl[i] = bndl[i];
+                state.rawbndu[i] = bndu[i];
+            }
+            lpqpserv.scaleshiftbcinplace(state.scl, state.xorigin, state.bndl, state.bndu, n, _params);
+            
+            //
+            // Linear constraints (full matrices)
+            //
+            m = mdense+msparse;
+            apserv.rvectorsetlengthatleast(ref state.b, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.r, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.ascales, m, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasr, m, _params);
+            apserv.rmatrixsetlengthatleast(ref state.denseafull, mdense, n, _params);
+            if( msparse>0 )
+            {
+                sparse.sparsecopytocrsbuf(sparsea, state.sparseafull, _params);
+            }
+            if( mdense>0 )
+            {
+                ablas.rmatrixcopy(mdense, n, densea, 0, 0, state.denseafull, 0, 0, _params);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                alglib.ap.assert(math.isfinite(cl[i]) || Double.IsNegativeInfinity(cl[i]), "VIPMInitDenseQuadratic: CL is not finite number or -INF");
+                alglib.ap.assert(math.isfinite(cu[i]) || Double.IsPositiveInfinity(cu[i]), "VIPMInitDenseQuadratic: CU is not finite number or +INF");
+                alglib.ap.assert(math.isfinite(cl[i]) || math.isfinite(cu[i]), "VIPMInitDenseQuadratic: linear constraint with CL=-INF, CU=+INF; degenerate problem formulation");
+                
+                //
+                // Store range
+                //
+                if( math.isfinite(cl[i]) )
+                {
+                    alglib.ap.assert(!math.isfinite(cu[i]) || (double)(cu[i])>=(double)(cl[i]), "VIPMInitDenseQuadratic: inconsistent range (right-hand side) for linear constraint");
+                    state.b[i] = cl[i];
+                    state.r[i] = cu[i]-cl[i];
+                    state.hasr[i] = math.isfinite(cu[i]);
+                    vs = 1;
+                }
+                else
+                {
+                    state.b[i] = -cu[i];
+                    state.r[i] = Double.PositiveInfinity;
+                    state.hasr[i] = false;
+                    vs = -1;
+                }
+                
+                //
+                // Store matrix row and its scaling coefficient
+                //
+                if( i<msparse )
+                {
+                    j0 = state.sparseafull.ridx[i];
+                    j1 = state.sparseafull.ridx[i+1]-1;
+                    for(j=j0; j<=j1; j++)
+                    {
+                        state.sparseafull.vals[j] = state.sparseafull.vals[j]*vs;
+                    }
+                }
+                else
+                {
+                    for(j=0; j<=n-1; j++)
+                    {
+                        state.denseafull[i-msparse,j] = state.denseafull[i-msparse,j]*vs;
+                    }
+                }
+                state.ascales[i] = vs;
+            }
+            lpqpserv.scaleshiftmixedbrlcinplace(state.scl, state.xorigin, n, state.sparseafull, msparse, state.denseafull, mdense, state.b, state.r, _params);
+            lpqpserv.normalizemixedbrlcinplace(state.sparseafull, msparse, state.denseafull, mdense, state.b, state.r, n, ref state.tmp0, true, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                state.ascales[i] = state.ascales[i]*state.tmp0[i];
+            }
+            state.mdense = mdense;
+            state.msparse = msparse;
+            
+            //
+            // Separate main and slack parts of the constraint matrices
+            //
+            apserv.ivectorsetlengthatleast(ref state.tmpi, nslack, _params);
+            for(i=0; i<=nslack-1; i++)
+            {
+                state.tmpi[i] = 0;
+            }
+            state.combinedaslack.m = mdense+msparse;
+            state.combinedaslack.n = nslack;
+            apserv.ivectorsetlengthatleast(ref state.combinedaslack.ridx, mdense+msparse+1, _params);
+            apserv.ivectorsetlengthatleast(ref state.combinedaslack.idx, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref state.combinedaslack.vals, nslack, _params);
+            state.combinedaslack.ridx[0] = 0;
+            state.sparseamain.m = msparse;
+            state.sparseamain.n = nmain;
+            if( msparse>0 )
+            {
+                apserv.ivectorsetlengthatleast(ref state.sparseamain.ridx, msparse+1, _params);
+                apserv.ivectorsetlengthatleast(ref state.sparseamain.idx, sparsea.ridx[msparse], _params);
+                apserv.rvectorsetlengthatleast(ref state.sparseamain.vals, sparsea.ridx[msparse], _params);
+                state.sparseamain.ridx[0] = 0;
+                for(i=0; i<=msparse-1; i++)
+                {
+                    offsmain = state.sparseamain.ridx[i];
+                    offscombined = state.combinedaslack.ridx[i];
+                    j0 = state.sparseafull.ridx[i];
+                    j1 = state.sparseafull.ridx[i+1]-1;
+                    for(j=j0; j<=j1; j++)
+                    {
+                        v = state.sparseafull.vals[j];
+                        k = state.sparseafull.idx[j];
+                        if( k<nmain )
+                        {
+                            state.sparseamain.idx[offsmain] = k;
+                            state.sparseamain.vals[offsmain] = v;
+                            offsmain = offsmain+1;
+                        }
+                        else
+                        {
+                            alglib.ap.assert(state.tmpi[k-nmain]==0, "VIPMSetConstraints: slack column contains more than one nonzero element");
+                            state.combinedaslack.idx[offscombined] = k-nmain;
+                            state.combinedaslack.vals[offscombined] = v;
+                            state.tmpi[k-nmain] = state.tmpi[k-nmain]+1;
+                            offscombined = offscombined+1;
+                        }
+                    }
+                    state.sparseamain.ridx[i+1] = offsmain;
+                    state.combinedaslack.ridx[i+1] = offscombined;
+                }
+            }
+            sparse.sparsecreatecrsinplace(state.sparseamain, _params);
+            if( mdense>0 )
+            {
+                apserv.rmatrixsetlengthatleast(ref state.denseamain, mdense, nmain, _params);
+                ablas.rmatrixcopy(mdense, nmain, state.denseafull, 0, 0, state.denseamain, 0, 0, _params);
+                for(i=0; i<=mdense-1; i++)
+                {
+                    offscombined = state.combinedaslack.ridx[msparse+i];
+                    for(k=nmain; k<=n-1; k++)
+                    {
+                        if( state.denseafull[i,k]!=0 )
+                        {
+                            alglib.ap.assert(state.tmpi[k-nmain]==0, "VIPMSetConstraints: slack column contains more than one nonzero element");
+                            state.combinedaslack.idx[offscombined] = k-nmain;
+                            state.combinedaslack.vals[offscombined] = state.denseafull[i,k];
+                            state.tmpi[k-nmain] = state.tmpi[k-nmain]+1;
+                            offscombined = offscombined+1;
+                        }
+                    }
+                    state.combinedaslack.ridx[msparse+i+1] = offscombined;
+                }
+            }
+            sparse.sparsecreatecrsinplace(state.combinedaslack, _params);
+        }
+
+
+        /*************************************************************************
+        Sets stopping criteria for QP-IPM solver.
+
+        You can set all epsilon-values to one small value, roughly 1.0E-6 or 1.0E-8.
+
+        INPUT PARAMETERS:
+            State               -   instance initialized with one of the initialization
+                                    functions
+            EpsP                -   maximum primal error allowed in the  solution,
+                                    EpsP>=0. Zero will be  automatically  replaced
+                                    by recommended default value,  which is  equal
+                                    to sqrt(machineEpsilon) in the current version
+            EpsD                -   maximum  dual  error allowed in the  solution,
+                                    EpsP>=0. Zero will be  automatically  replaced
+                                    by recommended default value,  which is  equal
+                                    to sqrt(machineEpsilon) in the current version
+            EpsGap              -   maximum  duality gap allowed in the  solution,
+                                    EpsP>=0. Zero will be  automatically  replaced
+                                    by recommended default value,  which is  equal
+                                    to sqrt(machineEpsilon) in the current version
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmsetcond(vipmstate state,
+            double epsp,
+            double epsd,
+            double epsgap,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(math.isfinite(epsp) && (double)(epsp)>=(double)(0), "VIPMSetCond: EpsP is infinite or negative");
+            alglib.ap.assert(math.isfinite(epsd) && (double)(epsd)>=(double)(0), "VIPMSetCond: EpsD is infinite or negative");
+            alglib.ap.assert(math.isfinite(epsgap) && (double)(epsgap)>=(double)(0), "VIPMSetCond: EpsP is infinite or negative");
+            state.epsp = apserv.coalesce(epsp, Math.Sqrt(math.machineepsilon), _params);
+            state.epsd = apserv.coalesce(epsd, Math.Sqrt(math.machineepsilon), _params);
+            state.epsgap = apserv.coalesce(epsgap, Math.Sqrt(math.machineepsilon), _params);
+        }
+
+
+        /*************************************************************************
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmoptimize(vipmstate state,
+            ref double[] xs,
+            ref double[] lagbc,
+            ref double[] laglc,
+            ref int terminationtype,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            bool dotrace = new bool();
+            bool dodetailedtrace = new bool();
+            int iteridx = 0;
+            double mu = 0;
+            double muaff = 0;
+            double sigma = 0;
+            double alphaaffp = 0;
+            double alphaaffd = 0;
+            double alphap = 0;
+            double alphad = 0;
+            int primalstagnationcnt = 0;
+            int dualstagnationcnt = 0;
+            double preverrp2 = 0;
+            double preverrd2 = 0;
+            double eprimal = 0;
+            double edual = 0;
+            double egap = 0;
+            double bnrminf = 0;
+            double cnrminf = 0;
+            double mumin = 0;
+            double mustop = 0;
+
+            terminationtype = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            dotrace = ap.istraceenabled("IPM", _params);
+            dodetailedtrace = dotrace && ap.istraceenabled("IPM.DETAILED", _params);
+            
+            //
+            // Allocate output
+            //
+            apserv.rvectorsetlengthatleast(ref xs, n, _params);
+            apserv.rvectorsetlengthatleast(ref lagbc, n, _params);
+            apserv.rvectorsetlengthatleast(ref laglc, m, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                xs[i] = 0.0;
+                lagbc[i] = 0.0;
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                laglc[i] = 0.0;
+            }
+            
+            //
+            // Some integrity checks:
+            // * we need PrimalStagnationLen<DualStagnationLen in order to be able to correctly
+            //   detect infeasible instances (stagnated dual error is present in both infeasible
+            //   and unbounded instances, so we should check for primal stagnation a few iters
+            //   before checking for dual stagnation)
+            //
+            alglib.ap.assert(primalstagnationlen<dualstagnationlen, "VIPM: critical integrity failure - incorrect configuration parameters");
+            
+            //
+            // Trace output (if needed)
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+                alglib.ap.trace("//  VANDERBEI IPM SOLVER STARTED                                                                  //\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            }
+            
+            //
+            // Set up initial point.
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("> initial point was generated\n");
+            }
+            vipmpowerup(state, _params);
+            vipminitialpoint(state, _params);
+            vipmevaluateprogress(state, dotrace, dodetailedtrace, 0.0, 0.0, 0.0, 0.0, 0.0, _params);
+            
+            //
+            // Start iteration
+            //
+            mustop = math.machineepsilon;
+            mumin = 0.01*mustop;
+            bnrminf = nrminf(state.b, m, _params);
+            cnrminf = nrminf(state.c, n, _params);
+            primalstagnationcnt = 0;
+            dualstagnationcnt = 0;
+            terminationtype = 7;
+            for(iteridx=0; iteridx<=maxipmits-1; iteridx++)
+            {
+                
+                //
+                // Precompute factorization
+                //
+                vipmprecomputenewtonfactorization(state, state.current, _params);
+                
+                //
+                // Compute Mu
+                //
+                mu = varscomputemu(state.current, _params);
+                
+                //
+                // Compute affine scaling step for Mehrotra's predictor-corrector algorithm
+                //
+                varsinitbyzero(state.deltaaff, n, m, _params);
+                vipmcomputestepdirection(state, state.current, 0.0, state.deltaaff, _params);
+                vipmcomputesteplength(state, state.current, state.deltaaff, affinesteplengthdecay, ref alphaaffp, ref alphaaffd, _params);
+                
+                //
+                // Compute MuAff and centering parameter
+                //
+                varsinitfrom(state.trial, state.current, _params);
+                varsaddstep(state.trial, state.deltaaff, alphaaffp, alphaaffd, _params);
+                muaff = varscomputemu(state.trial, _params);
+                sigma = Math.Pow((muaff+mumin)/(mu+mumin), 3);
+                alglib.ap.assert((double)(sigma)<=(double)(1), "VIPMOptimize: critical integrity check failed, Sigma>1");
+                
+                //
+                // Compute corrector step
+                //
+                varsinitfrom(state.deltacorr, state.deltaaff, _params);
+                vipmcomputestepdirection(state, state.current, sigma*mu+mumin, state.deltacorr, _params);
+                vipmcomputesteplength(state, state.current, state.deltacorr, steplengthdecay, ref alphap, ref alphad, _params);
+                
+                //
+                // Perform a step
+                //
+                varsaddstep(state.current, state.deltacorr, alphap, alphad, _params);
+                apserv.inc(ref state.repiterationscount, _params);
+                
+                //
+                // Evaluate progress so far
+                //
+                preverrp2 = state.errp2;
+                preverrd2 = state.errd2;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("=== A PREDICTOR-CORRECTOR STEP {0,2:d} WAS PERFORMED ====================================================\n", iteridx));
+                }
+                vipmevaluateprogress(state, dotrace, dodetailedtrace, mu, muaff, sigma, alphap, alphad, _params);
+                
+                //
+                // Check stopping criteria
+                //
+                if( ((double)(state.errp2)>=(double)(stagnationdelta*preverrp2) && (double)(state.errpinf)>=(double)(primalinfeasible1)) && iteridx>=minitersbeforestagnation )
+                {
+                    apserv.inc(ref primalstagnationcnt, _params);
+                }
+                else
+                {
+                    primalstagnationcnt = 0;
+                }
+                if( ((double)(state.errd2)>=(double)(stagnationdelta*preverrd2) && (double)(state.errdinf)>=(double)(dualinfeasible1)) && iteridx>=minitersbeforestagnation )
+                {
+                    apserv.inc(ref dualstagnationcnt, _params);
+                }
+                else
+                {
+                    dualstagnationcnt = 0;
+                }
+                mu = varscomputemu(state.current, _params);
+                egap = varscomputecomplementaritygap(state.current, _params)/(1.0+Math.Abs(vipmtarget(state, state.current.x, _params)));
+                eprimal = state.errpinf/(1.0+bnrminf);
+                edual = state.errdinf/(1.0+cnrminf);
+                if( (double)(mu)<=(double)(mustop) && iteridx>=itersfortoostringentcond )
+                {
+                    if( dotrace )
+                    {
+                        alglib.ap.trace("> stopping conditions are too stringent, stopping at best point found so far\n");
+                    }
+                    terminationtype = 7;
+                    break;
+                }
+                if( ((double)(egap)<=(double)(state.epsgap) && (double)(eprimal)<=(double)(state.epsp)) && (double)(edual)<=(double)(state.epsd) )
+                {
+                    if( dotrace )
+                    {
+                        alglib.ap.trace("> stopping criteria are met\n");
+                    }
+                    terminationtype = 1;
+                    break;
+                }
+                if( primalstagnationcnt>=primalstagnationlen )
+                {
+                    if( dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("> primal error stagnated for {0,0:d} its, stopping at best point found so far\n", primalstagnationlen));
+                    }
+                    terminationtype = 7;
+                    break;
+                }
+                if( dualstagnationcnt>=dualstagnationlen )
+                {
+                    if( dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("> dual error stagnated for {0,0:d} its, declaring unboundedness\n", dualstagnationlen));
+                    }
+                    terminationtype = -4;
+                    break;
+                }
+                if( (double)(nrminf(state.current.y, m, _params))>=(double)(bigy) )
+                {
+                    if( dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("> |Y| increased beyond {0,0:E1}, declaring infeasibility\n", bigy));
+                    }
+                    terminationtype = -3;
+                    break;
+                }
+            }
+            
+            //
+            // Output
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                xs[i] = state.current.x[i];
+                lagbc[i] = 0.0;
+                if( state.hasbndl[i] )
+                {
+                    lagbc[i] = lagbc[i]-state.current.z[i];
+                }
+                if( state.hasbndu[i] )
+                {
+                    lagbc[i] = lagbc[i]+state.current.s[i];
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                laglc[i] = -state.current.y[i];
+            }
+            
+            //
+            // Unscale point and Lagrange multipliers
+            //
+            lpqpserv.unscaleunshiftpointbc(state.scl, state.xorigin, state.rawbndl, state.rawbndu, state.bndl, state.bndu, state.hasbndl, state.hasbndu, xs, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                lagbc[i] = lagbc[i]*state.targetscale/state.scl[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                laglc[i] = laglc[i]*state.targetscale/apserv.coalesce(state.ascales[i], 1.0, _params);
+            }
+        }
+
+
+        /*************************************************************************
+        Allocates place for variables of Vanderbei IPM and fills by zeros.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void varsinitbyzero(vipmvars vstate,
+            int n,
+            int m,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            alglib.ap.assert(n>=1, "VarsInitByZero: N<1");
+            alglib.ap.assert(m>=0, "VarsInitByZero: M<0");
+            vstate.n = n;
+            vstate.m = m;
+            apserv.rvectorsetlengthatleast(ref vstate.x, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.g, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.t, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.w, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.p, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.z, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.s, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.y, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.v, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.q, m, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                vstate.x[i] = 0;
+                vstate.g[i] = 0;
+                vstate.t[i] = 0;
+                vstate.z[i] = 0;
+                vstate.s[i] = 0;
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vstate.w[i] = 0;
+                vstate.p[i] = 0;
+                vstate.y[i] = 0;
+                vstate.v[i] = 0;
+                vstate.q[i] = 0;
+            }
+        }
+
+
+        /*************************************************************************
+        Allocates place for variables of Vanderbei IPM and fills them by values of
+        the source
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void varsinitfrom(vipmvars vstate,
+            vipmvars vsrc,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int m = 0;
+
+            n = vsrc.n;
+            m = vsrc.m;
+            alglib.ap.assert(n>=1, "VarsInitFrom: N<1");
+            alglib.ap.assert(m>=0, "VarsInitFrom: M<0");
+            vstate.n = n;
+            vstate.m = m;
+            apserv.rvectorsetlengthatleast(ref vstate.x, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.g, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.t, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.w, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.p, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.z, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.s, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.y, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.v, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.q, m, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                vstate.x[i] = vsrc.x[i];
+                vstate.g[i] = vsrc.g[i];
+                vstate.t[i] = vsrc.t[i];
+                vstate.z[i] = vsrc.z[i];
+                vstate.s[i] = vsrc.s[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vstate.w[i] = vsrc.w[i];
+                vstate.p[i] = vsrc.p[i];
+                vstate.y[i] = vsrc.y[i];
+                vstate.v[i] = vsrc.v[i];
+                vstate.q[i] = vsrc.q[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Adds to Vanderbei variables direction vector times step length. Different
+        lengths are used for primal and dual steps.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void varsaddstep(vipmvars vstate,
+            vipmvars vdir,
+            double stpp,
+            double stpd,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int m = 0;
+
+            n = vstate.n;
+            m = vstate.m;
+            alglib.ap.assert(n>=1, "VarsAddStep: N<1");
+            alglib.ap.assert(m>=0, "VarsAddStep: M<0");
+            alglib.ap.assert(n==vdir.n, "VarsAddStep: sizes mismatch");
+            alglib.ap.assert(m==vdir.m, "VarsAddStep: sizes mismatch");
+            for(i=0; i<=n-1; i++)
+            {
+                vstate.x[i] = vstate.x[i]+stpp*vdir.x[i];
+                vstate.g[i] = vstate.g[i]+stpp*vdir.g[i];
+                vstate.t[i] = vstate.t[i]+stpp*vdir.t[i];
+                vstate.z[i] = vstate.z[i]+stpd*vdir.z[i];
+                vstate.s[i] = vstate.s[i]+stpd*vdir.s[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vstate.w[i] = vstate.w[i]+stpp*vdir.w[i];
+                vstate.p[i] = vstate.p[i]+stpp*vdir.p[i];
+                vstate.y[i] = vstate.y[i]+stpd*vdir.y[i];
+                vstate.v[i] = vstate.v[i]+stpd*vdir.v[i];
+                vstate.q[i] = vstate.q[i]+stpd*vdir.q[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Computes complementarity gap
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double varscomputecomplementaritygap(vipmvars vstate,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int n = 0;
+            int m = 0;
+
+            n = vstate.n;
+            m = vstate.m;
+            result = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                result = result+vstate.z[i]*vstate.g[i]+vstate.s[i]*vstate.t[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                result = result+vstate.v[i]*vstate.w[i]+vstate.p[i]*vstate.q[i];
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes empirical value of the barrier parameter Mu
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double varscomputemu(vipmvars vstate,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int k = 0;
+
+            k = 0;
+            for(i=0; i<=vstate.n-1; i++)
+            {
+                if( !(vstate.z[i]*vstate.g[i]==0.0) )
+                {
+                    k = k+1;
+                }
+                if( !(vstate.s[i]*vstate.t[i]==0.0) )
+                {
+                    k = k+1;
+                }
+            }
+            for(i=0; i<=vstate.m-1; i++)
+            {
+                if( !(vstate.v[i]*vstate.w[i]==0.0) )
+                {
+                    k = k+1;
+                }
+                if( !(vstate.p[i]*vstate.q[i]==0.0) )
+                {
+                    k = k+1;
+                }
+            }
+            result = varscomputecomplementaritygap(vstate, _params)/apserv.coalesce(k, 1, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The solver is configured to work internally with factorization FType
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+            FType       -   factorization type:
+                            * 0 for dense NxN factorization (normal equations)
+                            * 1 for sparse (N+M)x(N+M) factorization
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipminit(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int n,
+            int nmain,
+            int ftype,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int nslack = 0;
+
+            alglib.ap.assert(n>=1, "VIPMInit: N<1");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInit: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInit: XOrigin contains infinite or NaN elements");
+            alglib.ap.assert(ftype==0 || ftype==1, "VIPMInit: unexpected FType");
+            alglib.ap.assert(nmain>=1, "VIPMInit: NMain<1");
+            alglib.ap.assert(nmain<=n, "VIPMInit: NMain>N");
+            nslack = n-nmain;
+            
+            //
+            // Problem metrics and type
+            //
+            state.regeps = Math.Sqrt(math.machineepsilon);
+            state.epsp = Math.Sqrt(math.machineepsilon);
+            state.epsd = Math.Sqrt(math.machineepsilon);
+            state.epsgap = Math.Sqrt(math.machineepsilon);
+            state.n = n;
+            state.nmain = nmain;
+            state.islinear = true;
+            state.factorizationtype = ftype;
+            state.factorizationpresent = false;
+            state.factorizationpoweredup = false;
+            
+            //
+            // Reports
+            //
+            state.repiterationscount = 0;
+            state.repncholesky = 0;
+            
+            //
+            // Scale and origin
+            //
+            apserv.rvectorsetlengthatleast(ref state.scl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.invscl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.xorigin, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(s[i]>0.0, "VIPMInit: S[i] is non-positive");
+                state.scl[i] = s[i];
+                state.invscl[i] = 1/s[i];
+                state.xorigin[i] = xorigin[i];
+            }
+            state.targetscale = 1.0;
+            
+            //
+            // Linear and quadratic terms - default value
+            //
+            apserv.rvectorsetlengthatleast(ref state.c, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.c[i] = 0;
+            }
+            state.hkind = -1;
+            if( ftype==0 )
+            {
+                
+                //
+                // Dense quadratic term
+                //
+                apserv.rmatrixsetlengthatleast(ref state.denseh, nmain, nmain, _params);
+                for(i=0; i<=nmain-1; i++)
+                {
+                    for(j=0; j<=i; j++)
+                    {
+                        state.denseh[i,j] = 0;
+                    }
+                }
+                state.hkind = 0;
+            }
+            if( ftype==1 )
+            {
+                
+                //
+                // Sparse quadratic term
+                //
+                state.sparseh.matrixtype = 1;
+                state.sparseh.m = n;
+                state.sparseh.n = n;
+                state.sparseh.ninitialized = n;
+                apserv.ivectorsetlengthatleast(ref state.sparseh.idx, n, _params);
+                apserv.rvectorsetlengthatleast(ref state.sparseh.vals, n, _params);
+                apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    state.sparseh.idx[i] = i;
+                    state.sparseh.vals[i] = 0.0;
+                    state.sparseh.ridx[i] = i;
+                }
+                state.sparseh.ridx[n] = n;
+                sparse.sparsecreatecrsinplace(state.sparseh, _params);
+                state.hkind = 1;
+            }
+            alglib.ap.assert(state.hkind>=0, "VIPMInit: integrity check failed");
+            
+            //
+            // Box constraints - default values
+            //
+            apserv.rvectorsetlengthatleast(ref state.bndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.bndu, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.hasbndl[i] = false;
+                state.hasbndu[i] = false;
+                state.bndl[i] = Double.NegativeInfinity;
+                state.bndu[i] = Double.PositiveInfinity;
+            }
+            
+            //
+            // Linear constraints - empty
+            //
+            state.mdense = 0;
+            state.msparse = 0;
+            state.combinedaslack.m = 0;
+            state.combinedaslack.n = nslack;
+            state.sparseamain.m = 0;
+            state.sparseamain.n = nmain;
+            sparse.sparsecreatecrsinplace(state.sparseamain, _params);
+            sparse.sparsecreatecrsinplace(state.combinedaslack, _params);
+        }
+
+
+        /*************************************************************************
+        Returns INF-norm
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double nrminf(double[] x,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+
+            result = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                result = Math.Max(result, Math.Abs(x[i]));
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function computes initial point and loads it to State.Current
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipminitialpoint(vipmstate state,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            double v = 0;
+            double priorcoeff = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            varsinitbyzero(state.current, n, m, _params);
+            
+            //
+            // Set up initial values of primal and dual variables X and Y by solving
+            // modified KKT system which tries to enforce linear constraints (ignoring
+            // box constraints for a while) subject to minimization of additional prior
+            // term which moves solution towards some interior point.
+            //
+            priorcoeff = 1.0;
+            vipmfactorize(state, 0.0, state.diagd, 0.0, state.diage, priorcoeff, priorcoeff, _params);
+            state.deltaxy = new double[n+m];
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Compute I-th component of the prior term. The prior shifts solution
+                // towards interior point
+                //
+                v = 0;
+                if( state.hasbndl[i] && state.hasbndu[i] )
+                {
+                    v = 0.5*(state.bndl[i]+state.bndu[i]);
+                }
+                if( state.hasbndl[i] && !state.hasbndu[i] )
+                {
+                    v = state.bndl[i];
+                }
+                if( state.hasbndu[i] && !state.hasbndl[i] )
+                {
+                    v = state.bndu[i];
+                }
+                
+                //
+                // Right hand side
+                //
+                state.deltaxy[i] = state.c[i]-priorcoeff*v;
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Linear constraints are either at B[i] or B[I]+0.5*R[i]
+                //
+                v = 0;
+                if( state.hasr[i] )
+                {
+                    v = 0.5*state.r[i];
+                }
+                state.deltaxy[n+i] = state.b[i]+v;
+            }
+            vipmsolve(state, state.deltaxy, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.current.x[i] = state.deltaxy[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                state.current.y[i] = state.deltaxy[n+i];
+            }
+            
+            //
+            // Set up default values of slacks.
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    state.current.g[i] = initslackval;
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.current.t[i] = initslackval;
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                state.current.w[i] = initslackval;
+                if( state.hasr[i] )
+                {
+                    state.current.p[i] = initslackval;
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    state.current.z[i] = initslackval;
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.current.s[i] = initslackval;
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                state.current.v[i] = initslackval;
+                if( state.hasr[i] )
+                {
+                    state.current.q[i] = initslackval;
+                }
+            }
+            
+            //
+            // Then, having (a) initial values of X[] and Y[i], and (b) default values of nonnegatively
+            // constrained slacks try to deduce better initial guess for slacks.
+            //
+            vipmmultiply(state, state.current.x, state.current.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Better initial guess for box constraint primal slacks
+                //
+                if( state.hasbndl[i] )
+                {
+                    state.current.g[i] = Math.Max(state.current.g[i], Math.Abs(state.current.x[i]-state.bndl[i]));
+                    state.current.z[i] = Math.Max(state.current.z[i], Math.Abs(state.current.x[i]));
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.current.t[i] = Math.Max(state.current.t[i], Math.Abs(state.bndu[i]-state.current.x[i]));
+                    state.current.s[i] = Math.Max(state.current.s[i], Math.Abs(state.current.x[i]));
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Better initial guess for linear constraint primal slacks
+                //
+                state.current.w[i] = Math.Max(state.current.w[i], Math.Abs(state.current.y[i]));
+                state.current.v[i] = Math.Max(state.current.v[i], Math.Abs(state.current.y[i]));
+                if( state.hasr[i] )
+                {
+                    state.current.p[i] = Math.Max(state.current.p[i], Math.Abs(state.r[i]-state.current.w[i]));
+                    state.current.q[i] = Math.Max(state.current.q[i], Math.Abs(state.r[i]-state.current.w[i]));
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Computes target function 0.5*x'*H*x+c'*x
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double vipmtarget(vipmstate state,
+            double[] x,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int n = 0;
+            int nmain = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double v = 0;
+
+            n = state.n;
+            nmain = state.nmain;
+            alglib.ap.assert(state.hkind==0 || state.hkind==1, "VIPMTarget: unexpected HKind");
+            result = 0;
+            
+            //
+            // Dense
+            //
+            if( state.hkind==0 )
+            {
+                for(i=0; i<=nmain-1; i++)
+                {
+                    for(j=0; j<=i-1; j++)
+                    {
+                        result = result+x[i]*state.denseh[i,j]*x[j];
+                    }
+                    result = result+0.5*x[i]*x[i]*state.denseh[i,i];
+                }
+                for(i=0; i<=n-1; i++)
+                {
+                    result = result+state.c[i]*x[i];
+                }
+                return result;
+            }
+            
+            //
+            // Sparse
+            //
+            if( state.hkind==1 )
+            {
+                result = 0;
+                for(i=0; i<=n-1; i++)
+                {
+                    result = result+state.c[i]*x[i];
+                    j0 = state.sparseh.ridx[i];
+                    j1 = state.sparseh.didx[i]-1;
+                    for(k=j0; k<=j1; k++)
+                    {
+                        v = state.sparseh.vals[k];
+                        j = state.sparseh.idx[k];
+                        result = result+v*x[i]*x[j];
+                    }
+                    alglib.ap.assert(state.sparseh.uidx[i]!=state.sparseh.didx[i], "VIPMTarget: sparse diagonal not found");
+                    v = state.sparseh.vals[state.sparseh.didx[i]];
+                    result = result+0.5*v*x[i]*x[i];
+                }
+                return result;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes products H*x, A*x, A^T*y
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmmultiply(vipmstate state,
+            double[] x,
+            double[] y,
+            ref double[] hx,
+            ref double[] ax,
+            ref double[] aty,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int nmain = 0;
+            int m = 0;
+            int mdense = 0;
+            int msparse = 0;
+            int i = 0;
+
+            n = state.n;
+            nmain = state.nmain;
+            m = state.mdense+state.msparse;
+            mdense = state.mdense;
+            msparse = state.msparse;
+            
+            //
+            // Allocate
+            //
+            apserv.rvectorsetlengthatleast(ref hx, n, _params);
+            apserv.rvectorsetlengthatleast(ref ax, m, _params);
+            apserv.rvectorsetlengthatleast(ref aty, n, _params);
+            
+            //
+            // Compute A*x
+            //
+            if( msparse>0 )
+            {
+                sparse.sparsegemv(state.sparseafull, 1.0, 0, x, 0, 0.0, ax, 0, _params);
+            }
+            if( mdense>0 )
+            {
+                ablas.rmatrixgemv(mdense, n, 1.0, state.denseafull, 0, 0, 0, x, 0, 0.0, ax, msparse, _params);
+            }
+            
+            //
+            // Compute A^T*y
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                aty[i] = 0;
+            }
+            if( msparse>0 )
+            {
+                sparse.sparsegemv(state.sparseafull, 1.0, 1, y, 0, 1.0, aty, 0, _params);
+            }
+            if( mdense>0 )
+            {
+                ablas.rmatrixgemv(n, mdense, 1.0, state.denseafull, 0, 0, 1, y, msparse, 1.0, aty, 0, _params);
+            }
+            
+            //
+            // Compute H*x
+            //
+            alglib.ap.assert(state.hkind==0 || state.hkind==1, "VIPMMultiply: unexpected HKind");
+            if( state.hkind==0 )
+            {
+                ablas.rmatrixsymv(nmain, 1.0, state.denseh, 0, 0, false, x, 0, 0.0, hx, 0, _params);
+                for(i=nmain; i<=n-1; i++)
+                {
+                    hx[i] = 0;
+                }
+            }
+            if( state.hkind==1 )
+            {
+                alglib.ap.assert(state.sparseh.n==n && state.sparseh.m==n, "VIPMMultiply: sparse H has incorrect size");
+                sparse.sparsesmv(state.sparseh, false, x, ref hx, _params);
+            }
+        }
+
+
+        /*************************************************************************
+        This function "powers up" factorization, i.e. prepares some important
+        temporaries. It should be called once prior to the first call to
+        VIPMInitialPoint() or VIPMFactorize().
+
+        Subsequent calls are possible (no actions will be taken), but not needed.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmpowerup(vipmstate state,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int nnzhalfmax = 0;
+            int nnzfull = 0;
+            int offs = 0;
+            int rowoffs = 0;
+            int i = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double v = 0;
+
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMFactorize: unexpected factorization type");
+            n = state.n;
+            m = state.mdense+state.msparse;
+            
+            //
+            // Skip if already powered up
+            //
+            if( state.factorizationpoweredup )
+            {
+                return;
+            }
+            
+            //
+            // Only sparse factorization needs powering up
+            //
+            if( state.factorizationtype==1 )
+            {
+                alglib.ap.assert(state.hkind==1, "VIPMPowerUp: unexpected HKind");
+                nnzhalfmax = state.sparseh.ridx[n];
+                if( state.msparse>0 )
+                {
+                    nnzhalfmax = nnzhalfmax+state.sparseafull.ridx[state.msparse];
+                }
+                if( state.mdense>0 )
+                {
+                    nnzhalfmax = nnzhalfmax+n*state.mdense;
+                }
+                
+                //
+                // Prepare strictly lower triangle of template KKT matrix (KKT system without D and E
+                // terms being added to diagonals)
+                //
+                state.tmpsparse0.m = n+m;
+                state.tmpsparse0.n = n+m;
+                apserv.ivectorsetlengthatleast(ref state.tmpsparse0.idx, nnzhalfmax, _params);
+                apserv.rvectorsetlengthatleast(ref state.tmpsparse0.vals, nnzhalfmax, _params);
+                apserv.ivectorsetlengthatleast(ref state.tmpsparse0.ridx, n+m+1, _params);
+                state.tmpsparse0.ridx[0] = 0;
+                offs = 0;
+                rowoffs = 0;
+                for(i=0; i<=n-1; i++)
+                {
+                    k0 = state.sparseh.ridx[i];
+                    k1 = state.sparseh.didx[i]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        state.tmpsparse0.idx[offs] = state.sparseh.idx[k];
+                        state.tmpsparse0.vals[offs] = -state.sparseh.vals[k];
+                        offs = offs+1;
+                    }
+                    rowoffs = rowoffs+1;
+                    state.tmpsparse0.ridx[rowoffs] = offs;
+                }
+                for(i=0; i<=state.msparse-1; i++)
+                {
+                    k0 = state.sparseafull.ridx[i];
+                    k1 = state.sparseafull.ridx[i+1]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        state.tmpsparse0.idx[offs] = state.sparseafull.idx[k];
+                        state.tmpsparse0.vals[offs] = state.sparseafull.vals[k];
+                        offs = offs+1;
+                    }
+                    rowoffs = rowoffs+1;
+                    state.tmpsparse0.ridx[rowoffs] = offs;
+                }
+                for(i=0; i<=state.mdense-1; i++)
+                {
+                    for(k=0; k<=n-1; k++)
+                    {
+                        if( state.denseafull[i,k]!=0.0 )
+                        {
+                            state.tmpsparse0.idx[offs] = k;
+                            state.tmpsparse0.vals[offs] = state.denseafull[i,k];
+                            offs = offs+1;
+                        }
+                    }
+                    rowoffs = rowoffs+1;
+                    state.tmpsparse0.ridx[rowoffs] = offs;
+                }
+                alglib.ap.assert(rowoffs==m+n, "VIPMPowerUp: critical integrity check failed");
+                alglib.ap.assert(offs<=nnzhalfmax, "VIPMPowerUp: critical integrity check failed");
+                sparse.sparsecreatecrsinplace(state.tmpsparse0, _params);
+                
+                //
+                // Prepare strictly upper triangle of KKT system
+                //
+                sparse.sparsecopytransposecrsbuf(state.tmpsparse0, state.tmpsparse1, _params);
+                
+                //
+                // Merge triangles
+                //
+                nnzfull = 2*state.tmpsparse0.ridx[m+n]+(m+n);
+                state.factsparsekkttmpl.m = m+n;
+                state.factsparsekkttmpl.n = m+n;
+                apserv.ivectorsetlengthatleast(ref state.factsparsekkttmpl.idx, nnzfull, _params);
+                apserv.rvectorsetlengthatleast(ref state.factsparsekkttmpl.vals, nnzfull, _params);
+                apserv.ivectorsetlengthatleast(ref state.factsparsekkttmpl.ridx, n+m+1, _params);
+                state.factsparsekkttmpl.ridx[0] = 0;
+                offs = 0;
+                for(i=0; i<=n+m-1; i++)
+                {
+                    
+                    //
+                    // Merge in lower triangle
+                    //
+                    k0 = state.tmpsparse0.ridx[i];
+                    k1 = state.tmpsparse0.ridx[i+1]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        state.factsparsekkttmpl.idx[offs] = state.tmpsparse0.idx[k];
+                        state.factsparsekkttmpl.vals[offs] = state.tmpsparse0.vals[k];
+                        offs = offs+1;
+                    }
+                    
+                    //
+                    // Merge in diagonal term
+                    //
+                    v = 0.0;
+                    if( i<n )
+                    {
+                        alglib.ap.assert(state.sparseh.didx[i]+1==state.sparseh.uidx[i], "VIPMPowerUp: critical integrity check failed for diagonal of H");
+                        v = -state.sparseh.vals[state.sparseh.didx[i]];
+                    }
+                    state.factsparsekkttmpl.idx[offs] = i;
+                    state.factsparsekkttmpl.vals[offs] = v;
+                    offs = offs+1;
+                    
+                    //
+                    // Merge in upper triangle
+                    //
+                    k0 = state.tmpsparse1.ridx[i];
+                    k1 = state.tmpsparse1.ridx[i+1]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        state.factsparsekkttmpl.idx[offs] = state.tmpsparse1.idx[k];
+                        state.factsparsekkttmpl.vals[offs] = state.tmpsparse1.vals[k];
+                        offs = offs+1;
+                    }
+                    
+                    //
+                    // Finalize row
+                    //
+                    state.factsparsekkttmpl.ridx[i+1] = offs;
+                }
+                alglib.ap.assert(offs==nnzfull, "VIPMPowerUp: critical integrity check failed");
+                sparse.sparsecreatecrsinplace(state.factsparsekkttmpl, _params);
+            }
+            
+            //
+            // Powered up!
+            //
+            state.factorizationpoweredup = true;
+        }
+
+
+        /*************************************************************************
+        This function performs factorization of modified KKT system
+
+            (                        |                 )
+            ( -(H+alpha0*D+alpha1*I) |       A^T       )
+            (                        |                 )
+            (------------------------|-----------------)
+            (                        |                 )
+            (           A            | beta0*E+beta1*I )
+            (                        |                 )
+
+        where:
+        * H is an NxN quadratic term
+        * A is an MxN matrix of linear constraint
+        * alpha0, alpha1, beta0, beta1 are nonnegative scalars
+        * D and E are diagonal matrices with nonnegative entries (which are ignored
+          if alpha0 and beta0 are zero - arrays are not referenced at all)
+        * I is an NxN or MxM identity matrix
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmfactorize(vipmstate state,
+            double alpha0,
+            double[] d,
+            double beta0,
+            double[] e,
+            double alpha1,
+            double beta1,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int nmain = 0;
+            int nslack = 0;
+            int m = 0;
+            int mdense = 0;
+            int msparse = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            int ka = 0;
+            int kb = 0;
+            int ja = 0;
+            int jb = 0;
+            double va = 0;
+            double vb = 0;
+            double v = 0;
+            double vv = 0;
+
+            alglib.ap.assert(math.isfinite(alpha0) && (double)(alpha0)>=(double)(0), "VIPMFactorize: Alpha0 is infinite or negative");
+            alglib.ap.assert(math.isfinite(alpha1) && (double)(alpha1)>=(double)(0), "VIPMFactorize: Alpha1 is infinite or negative");
+            alglib.ap.assert(math.isfinite(beta0) && (double)(beta0)>=(double)(0), "VIPMFactorize: Beta0 is infinite or negative");
+            alglib.ap.assert(math.isfinite(beta1) && (double)(beta1)>=(double)(0), "VIPMFactorize: Beta1 is infinite or negative");
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMFactorize: unexpected factorization type");
+            alglib.ap.assert(state.factorizationpoweredup, "VIPMFactorize: critical integrity check failed (no powerup stage)");
+            n = state.n;
+            nmain = state.nmain;
+            nslack = n-nmain;
+            m = state.mdense+state.msparse;
+            mdense = state.mdense;
+            msparse = state.msparse;
+            state.factorizationpresent = false;
+            
+            //
+            // Dense NxN normal equations approach
+            //
+            if( state.factorizationtype==0 )
+            {
+                
+                //
+                // A problem formulation with possible slacks.
+                //
+                // We have to solve following system:
+                //
+                //     [ -(H+Dh)        Ah'  ] [ Xh ]   [ Bh ]
+                //     [          -Dz   Az'  ] [ Xz ] = [ Bz ]
+                //     [   Ah     Az     E   ] [ Y  ]   [ By ]
+                //
+                // with Xh being NMain-dimensional vector, Xz being NSlack-dimensional vector, constraint
+                // matrix A being divided into non-slack and slack parts Ah and Az (and Ah, in turn, being
+                // divided into sparse and dense parts), Y being M-dimensional vector.
+                //
+                // NOTE: due to definition of slack variables following holds: for any diagonal matrix W
+                //       a product Az*W*Az' is a diagonal matrix.
+                //
+                // From the second line we get
+                //
+                //     Xz = inv(Dz)*Az'*y - inv(Dz)*Bz
+                //        = inv(Dz)*Az'*y - BzWave
+                //
+                // Using this value for Zx, third line gives us 
+                //
+                //     Y  = inv(E+Az*inv(Dz)*Az')*(By+Az*BzWave-Ah*Xh)
+                //        = inv(EWave)*(ByWave-Ah*Xh)
+                //        with EWave = E+Az*inv(Dz)*Az' and ByWave = By+Az*BzWave
+                //
+                // Finally, first line gives us 
+                //
+                //     Xh = -inv(H+Dh+Ah'*inv(EWave)*Ah)*(Bh-Ah'*inv(EWave)*ByWave)
+                //        = -inv(HWave)*BhWave
+                //        with HWave = H+Dh+Ah'*inv(EWave)*Ah and BhWave = Bh-Ah'*inv(EWave)*ByWave
+                //
+                // In order to prepare factorization we need to compute:
+                // (a) diagonal matrices Dh and Dz (and precomputed inverse of Dz)
+                // (b) EWave
+                // (c) HWave
+                //
+                // First, we compute dense Dh and Dz
+                //
+                apserv.rvectorsetlengthatleast(ref state.factdh, nmain, _params);
+                apserv.rvectorsetlengthatleast(ref state.factdz, nslack, _params);
+                apserv.rvectorsetlengthatleast(ref state.factinvdz, nslack, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    v = 0;
+                    if( (double)(alpha0)>(double)(0) )
+                    {
+                        v = v+alpha0*d[i];
+                    }
+                    if( (double)(alpha1)>(double)(0) )
+                    {
+                        v = v+alpha1;
+                    }
+                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
+                    if( i>=nmain )
+                    {
+                        state.factdz[i-nmain] = v;
+                        state.factinvdz[i-nmain] = 1/v;
+                    }
+                    else
+                    {
+                        state.factdh[i] = v;
+                    }
+                }
+                
+                //
+                // Now we are ready to compute EWave
+                //
+                apserv.rvectorsetlengthatleast(ref state.facteffectivee, m, _params);
+                for(i=0; i<=m-1; i++)
+                {
+                    
+                    //
+                    // Compute diagonal element of E
+                    //
+                    v = 0;
+                    if( (double)(beta0)>(double)(0) )
+                    {
+                        v = v+beta0*e[i];
+                    }
+                    if( (double)(beta1)>(double)(0) )
+                    {
+                        v = v+beta1;
+                    }
+                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
+                    
+                    //
+                    // Compute diagonal modification Az*inv(Dz)*Az'
+                    //
+                    k0 = state.combinedaslack.ridx[i];
+                    k1 = state.combinedaslack.ridx[i+1]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        vv = state.combinedaslack.vals[k];
+                        v = v+vv*vv*state.factinvdz[state.combinedaslack.idx[k]];
+                    }
+                    
+                    //
+                    // Save EWave
+                    //
+                    state.facteffectivee[i] = v;
+                }
+                
+                //
+                // Now we are ready to compute HWave:
+                // * store H
+                // * add Dh
+                // * add Ah'*inv(EWave)*Ah
+                //
+                apserv.rmatrixsetlengthatleast(ref state.factdensehaug, nmain, nmain, _params);
+                alglib.ap.assert(state.hkind==0, "VIPMFactorize: unexpected HKind");
+                ablas.rmatrixcopy(nmain, nmain, state.denseh, 0, 0, state.factdensehaug, 0, 0, _params);
+                for(i=0; i<=nmain-1; i++)
+                {
+                    state.factdensehaug[i,i] = state.factdensehaug[i,i]+state.factdh[i];
+                }
+                if( msparse>0 )
+                {
+                    
+                    //
+                    // Handle sparse part of Ah in Ah'*inv(EWave)*Ah
+                    //
+                    for(i=0; i<=msparse-1; i++)
+                    {
+                        v = 1.0/state.facteffectivee[i];
+                        k0 = state.sparseamain.ridx[i];
+                        k1 = state.sparseamain.ridx[i+1]-1;
+                        for(ka=k0; ka<=k1; ka++)
+                        {
+                            ja = state.sparseamain.idx[ka];
+                            va = state.sparseamain.vals[ka];
+                            for(kb=k0; kb<=ka; kb++)
+                            {
+                                jb = state.sparseamain.idx[kb];
+                                vb = state.sparseamain.vals[kb];
+                                state.factdensehaug[ja,jb] = state.factdensehaug[ja,jb]+v*va*vb;
+                            }
+                        }
+                    }
+                }
+                if( mdense>0 )
+                {
+                    
+                    //
+                    // Handle dense part of Ah in Ah'*inv(EWave)*Ah
+                    //
+                    apserv.rmatrixsetlengthatleast(ref state.tmpr2, mdense, nmain, _params);
+                    ablas.rmatrixcopy(mdense, nmain, state.denseamain, 0, 0, state.tmpr2, 0, 0, _params);
+                    for(i=0; i<=mdense-1; i++)
+                    {
+                        v = 1.0/Math.Sqrt(state.facteffectivee[msparse+i]);
+                        for(j=0; j<=nmain-1; j++)
+                        {
+                            state.tmpr2[i,j] = v*state.tmpr2[i,j];
+                        }
+                    }
+                    ablas.rmatrixsyrk(nmain, mdense, 1.0, state.tmpr2, 0, 0, 2, 1.0, state.factdensehaug, 0, 0, false, _params);
+                }
+                
+                //
+                // Compute Cholesky factorization of HWave
+                //
+                if( !trfac.spdmatrixcholesky(ref state.factdensehaug, nmain, false, _params) )
+                {
+                    alglib.ap.assert(false, "VIPMFactorize: critical failure, nonconvex input detected");
+                }
+                state.factorizationpresent = true;
+            }
+            
+            //
+            // Sparse (M+N)x(M+N) factorization
+            //
+            if( state.factorizationtype==1 )
+            {
+                sparse.sparsecopybuf(state.factsparsekkttmpl, state.factsparsekkt, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    alglib.ap.assert(state.factsparsekkt.didx[i]+1==state.factsparsekkt.uidx[i], "VIPMFactorize: integrity check failed, no diagonal element");
+                    v = state.factsparsekkt.vals[state.factsparsekkt.didx[i]];
+                    if( (double)(alpha0)>(double)(0) )
+                    {
+                        v = v-alpha0*d[i];
+                    }
+                    if( (double)(alpha1)>(double)(0) )
+                    {
+                        v = v-alpha1;
+                    }
+                    state.factsparsekkt.vals[state.factsparsekkt.didx[i]] = v;
+                }
+                for(i=0; i<=msparse+mdense-1; i++)
+                {
+                    alglib.ap.assert(state.factsparsekkt.didx[n+i]+1==state.factsparsekkt.uidx[n+i], "VIPMFactorize: integrity check failed, no diagonal element");
+                    v = state.factsparsekkt.vals[state.factsparsekkt.didx[n+i]];
+                    if( (double)(beta0)>(double)(0) )
+                    {
+                        v = v+beta0*e[i];
+                    }
+                    if( (double)(beta1)>(double)(0) )
+                    {
+                        v = v+beta1;
+                    }
+                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
+                    state.factsparsekkt.vals[state.factsparsekkt.didx[n+i]] = v;
+                }
+                if( !trfac.sparselu(state.factsparsekkt, 0, ref state.factsparsekktpivp, ref state.factsparsekktpivq, _params) )
+                {
+                    alglib.ap.assert(false, "VIPMFactorize: critical failure, degenerate KKT system encountered");
+                }
+                state.factorizationpresent = true;
+            }
+            
+            //
+            // Done, integrity control
+            //
+            alglib.ap.assert(state.factorizationpresent, "VIPMFactorize: integrity check failed");
+            apserv.inc(ref state.repncholesky, _params);
+        }
+
+
+        /*************************************************************************
+        Solves KKT system whose factorization was prepared by VIPMFactorize().
+
+        On input, right-hand-side is stored in DeltaXY; on output, solution replaces
+        DeltaXY.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmsolve(vipmstate state,
+            double[] deltaxy,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int nmain = 0;
+            int nslack = 0;
+            int m = 0;
+            int mdense = 0;
+            int msparse = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+
+            alglib.ap.assert(state.factorizationpresent, "VIPMSolve: integrity check failed - factorization is not present");
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMSolve: unexpected factorization type");
+            n = state.n;
+            nmain = state.nmain;
+            nslack = n-nmain;
+            m = state.mdense+state.msparse;
+            mdense = state.mdense;
+            msparse = state.msparse;
+            
+            //
+            // Dense solving
+            //
+            if( state.factorizationtype==0 )
+            {
+                
+                //
+                // Compute
+                //
+                //     BzWave = inv(Dz)*Bz
+                //     ByWave = By+Az*BzWave
+                //     BhWave = Bh-Ah'*inv(EWave)*ByWave
+                //
+                for(i=0; i<=nslack-1; i++)
+                {
+                    deltaxy[nmain+i] = deltaxy[nmain+i]*state.factinvdz[i];
+                }
+                sparse.sparsegemv(state.combinedaslack, 1.0, 0, deltaxy, nmain, 1.0, deltaxy, n, _params);
+                apserv.rvectorsetlengthatleast(ref state.tmp1, m, _params);
+                for(i=0; i<=m-1; i++)
+                {
+                    state.tmp1[i] = deltaxy[n+i]/state.facteffectivee[i];
+                }
+                sparse.sparsegemv(state.sparseamain, -1.0, 1, state.tmp1, 0, 1.0, deltaxy, 0, _params);
+                ablas.rmatrixgemv(nmain, mdense, -1.0, state.denseamain, 0, 0, 1, state.tmp1, msparse, 1.0, deltaxy, 0, _params);
+                
+                //
+                // Compute Xh = -inv(HWave)*BhWave
+                //
+                for(i=0; i<=nmain-1; i++)
+                {
+                    state.deltaxy[i] = -state.deltaxy[i];
+                }
+                ablas.rmatrixtrsv(nmain, state.factdensehaug, 0, 0, false, false, 0, state.deltaxy, 0, _params);
+                ablas.rmatrixtrsv(nmain, state.factdensehaug, 0, 0, false, false, 1, state.deltaxy, 0, _params);
+                
+                //
+                // Compute Y = inv(EWave)*(ByWave-Ah*Xh)
+                //
+                sparse.sparsegemv(state.sparseamain, -1.0, 0, deltaxy, 0, 1.0, deltaxy, n, _params);
+                ablas.rmatrixgemv(mdense, nmain, -1.0, state.denseamain, 0, 0, 0, deltaxy, 0, 1.0, deltaxy, n+msparse, _params);
+                for(i=0; i<=m-1; i++)
+                {
+                    deltaxy[n+i] = deltaxy[n+i]/state.facteffectivee[i];
+                }
+                
+                //
+                // Compute Xz = -(BzWave - inv(Dz)*Az'*y)
+                //
+                apserv.rvectorsetlengthatleast(ref state.tmp0, nslack, _params);
+                for(i=0; i<=nslack-1; i++)
+                {
+                    state.tmp0[i] = 0;
+                }
+                sparse.sparsegemv(state.combinedaslack, 1.0, 1, deltaxy, n, 1.0, state.tmp0, 0, _params);
+                for(i=0; i<=nslack-1; i++)
+                {
+                    state.deltaxy[nmain+i] = -(state.deltaxy[nmain+i]-state.factinvdz[i]*state.tmp0[i]);
+                }
+                
+                //
+                // Done
+                //
+                return;
+            }
+            
+            //
+            // Sparse solving
+            //
+            if( state.factorizationtype==1 )
+            {
+                
+                //
+                // Solve sparse KKT system given by its triangular factorization
+                //
+                for(i=0; i<=n-1; i++)
+                {
+                    alglib.ap.assert(state.factsparsekkt.didx[i]+1==state.factsparsekkt.uidx[i] && state.factsparsekkt.vals[state.factsparsekkt.didx[i]]!=0.0, "VIPMSolve: degenerate KKT system encountered");
+                }
+                for(i=0; i<=n+m-1; i++)
+                {
+                    j = state.factsparsekktpivp[i];
+                    v = deltaxy[i];
+                    deltaxy[i] = deltaxy[j];
+                    deltaxy[j] = v;
+                }
+                sparse.sparsetrsv(state.factsparsekkt, false, true, 0, deltaxy, _params);
+                sparse.sparsetrsv(state.factsparsekkt, true, false, 0, deltaxy, _params);
+                for(i=n+m-1; i>=0; i--)
+                {
+                    j = state.factsparsekktpivq[i];
+                    v = deltaxy[i];
+                    deltaxy[i] = deltaxy[j];
+                    deltaxy[j] = v;
+                }
+                
+                //
+                // Done
+                //
+                return;
+            }
+            
+            //
+            //
+            //
+            alglib.ap.assert(false, "VIPMSolve: integrity check failed - unexpected factorization");
+        }
+
+
+        /*************************************************************************
+        Generates precomputed temporary  vectors  and  KKT  factorization  at  the
+        beginning of the current iteration.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmprecomputenewtonfactorization(vipmstate state,
+            vipmvars v0,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            apserv.rvectorsetlengthatleast(ref state.diagginvz, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.diagzinvg, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.diagtinvs, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.diagsinvt, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.diagpinvq, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.diagqinvp, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.diagvinvw, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.diagd, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.diage, m, _params);
+            
+            //
+            // Handle temporary matrices arising due to box constraints
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Lower bound: G*inv(Z) and Z*inv(G)
+                //
+                if( state.hasbndl[i] )
+                {
+                    alglib.ap.assert(v0.g[i]>0.0 && v0.z[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - G[i]<=0 or Z[i]<=0");
+                    state.diagginvz[i] = v0.g[i]/v0.z[i];
+                    state.diagzinvg[i] = v0.z[i]/v0.g[i];
+                }
+                else
+                {
+                    alglib.ap.assert(v0.g[i]==0.0 && v0.z[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - G[i]<>0 or Z[i]<>0 for absent lower bound");
+                    state.diagginvz[i] = 0.0;
+                    state.diagzinvg[i] = 0.0;
+                }
+                
+                //
+                // Upper bound: T*inv(S) and S*inv(T)
+                //
+                if( state.hasbndu[i] )
+                {
+                    alglib.ap.assert(v0.t[i]>0.0 && v0.s[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - T[i]<=0 or S[i]<=0");
+                    state.diagtinvs[i] = v0.t[i]/v0.s[i];
+                    state.diagsinvt[i] = v0.s[i]/v0.t[i];
+                }
+                else
+                {
+                    alglib.ap.assert(v0.t[i]==0.0 && v0.s[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - T[i]<>0 or S[i]<>0 for absent upper bound");
+                    state.diagtinvs[i] = 0.0;
+                    state.diagsinvt[i] = 0.0;
+                }
+                
+                //
+                // Diagonal term D
+                //
+                state.diagd[i] = state.diagzinvg[i]+state.diagsinvt[i];
+            }
+            
+            //
+            // Handle temporary matrices arising due to linear constraints: with lower bound B[]
+            // or with lower and upper bounds.
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Lower bound: always present
+                //
+                alglib.ap.assert(v0.v[i]>0.0 && v0.w[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - V[i]<=0 or W[i]<=0");
+                state.diagvinvw[i] = v0.v[i]/v0.w[i];
+                
+                //
+                // Upper bound
+                //
+                if( state.hasr[i] )
+                {
+                    alglib.ap.assert(v0.p[i]>0.0 && v0.q[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - P[i]<=0 or Q[i]<=0");
+                    state.diagpinvq[i] = v0.p[i]/v0.q[i];
+                    state.diagqinvp[i] = v0.q[i]/v0.p[i];
+                }
+                else
+                {
+                    alglib.ap.assert(v0.p[i]==0.0 && v0.q[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - P[i]<>0 or Q[i]<>0 for absent range of linear constraint");
+                    state.diagpinvq[i] = 0.0;
+                    state.diagqinvp[i] = 0.0;
+                }
+                
+                //
+                // Diagonal term E
+                //
+                state.diage[i] = 1/(state.diagvinvw[i]+state.diagqinvp[i]);
+            }
+            
+            //
+            // Perform factorization
+            //
+            vipmfactorize(state, 1.0, state.diagd, 1.0, state.diage, state.regeps, state.regeps, _params);
+        }
+
+
+        /*************************************************************************
+        Compute VIPM step by solving KKT system
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmcomputestepdirection(vipmstate state,
+            vipmvars v0,
+            double mu,
+            vipmvars vd,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            
+            //
+            // Allocate
+            //
+            apserv.rvectorsetlengthatleast(ref state.rhssigma, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsbeta, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsrho, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsnu, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhstau, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsalpha, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsgammaz, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsgammas, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsgammaw, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsgammaq, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsnucap, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhstaucap, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsbetacap, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.rhsalphacap, m, _params);
+            
+            //
+            // Compute products H*x, A*x, A^T*y
+            // We compute these products in one location for the sake of simplicity.
+            //
+            vipmmultiply(state, v0.x, v0.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
+            
+            //
+            // RhsRho = b - A*x + w
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                state.rhsrho[i] = state.b[i]-state.tmpax[i]+v0.w[i];
+            }
+            
+            //
+            // RhsNu = l - x + g
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    
+                    //
+                    // Lower bound is present
+                    //
+                    state.rhsnu[i] = state.bndl[i]-v0.x[i]+v0.g[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Lower bound is absent, g[i] = 0
+                    //
+                    alglib.ap.assert(v0.g[i]==0.0, "VIPMComputeStep: G[i]<>0 for absent constraint");
+                    state.rhsnu[i] = 0;
+                }
+            }
+            
+            //
+            // RhsTau = u - x - t
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndu[i] )
+                {
+                    
+                    //
+                    // Upper bound is present
+                    //
+                    state.rhstau[i] = state.bndu[i]-v0.x[i]-v0.t[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Upper bound is absent, t[i] = 0
+                    //
+                    alglib.ap.assert(v0.t[i]==0.0, "VIPMComputeStep: T[i]<>0 for absent constraint");
+                    state.rhstau[i] = 0;
+                }
+            }
+            
+            //
+            // RhsAlpha = r - w - p
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.hasr[i] )
+                {
+                    state.rhsalpha[i] = state.r[i]-v0.w[i]-v0.p[i];
+                }
+                else
+                {
+                    state.rhsalpha[i] = 0;
+                }
+            }
+            
+            //
+            // RhsSigma = c - A^T*y - z + s + H*x
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                state.rhssigma[i] = state.c[i]-state.tmpaty[i]+state.tmphx[i];
+                if( state.hasbndl[i] )
+                {
+                    state.rhssigma[i] = state.rhssigma[i]-v0.z[i];
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.rhssigma[i] = state.rhssigma[i]+v0.s[i];
+                }
+            }
+            
+            //
+            // RhsBeta = y + q - v
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                state.rhsbeta[i] = v0.y[i]-v0.v[i];
+                if( state.hasr[i] )
+                {
+                    state.rhsbeta[i] = state.rhsbeta[i]+v0.q[i];
+                }
+            }
+            
+            //
+            // RhsGammaZ = mu*inv(G)*e - z - inv(G)*DELTAG*deltaZ
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    alglib.ap.assert(v0.g[i]>0.0, "VIPMComputeStep: G[i]<=0");
+                    state.rhsgammaz[i] = mu/v0.g[i]-v0.z[i]-vd.g[i]*vd.z[i]/v0.g[i];
+                }
+                else
+                {
+                    alglib.ap.assert(v0.g[i]==0.0, "VIPMComputeStep: G[i]<>0 for absent constraint");
+                    alglib.ap.assert(v0.z[i]==0.0, "VIPMComputeStep: Z[i]<>0 for absent constraint");
+                    state.rhsgammaz[i] = 0;
+                }
+            }
+            
+            //
+            // RhsGammaW = mu*inv(V)*e - w - inv(V)*DELTAV*deltaW
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                alglib.ap.assert(v0.v[i]>0.0, "VIPMComputeStep: V[i]<=0");
+                state.rhsgammaw[i] = mu/v0.v[i]-v0.w[i]-vd.v[i]*vd.w[i]/v0.v[i];
+            }
+            
+            //
+            // RhsGammaS = mu*inv(T)*e - s - inv(T)*DELTAT*deltaS
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndu[i] )
+                {
+                    
+                    //
+                    // Upper bound is present
+                    //
+                    alglib.ap.assert(v0.t[i]>0.0, "VIPMComputeStep: T[i]<=0");
+                    state.rhsgammas[i] = mu/v0.t[i]-v0.s[i]-vd.t[i]*vd.s[i]/v0.t[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Upper bound is absent
+                    //
+                    alglib.ap.assert(v0.t[i]==0.0, "VIPMComputeStep: T[i]<>0 for absent constraint");
+                    alglib.ap.assert(v0.s[i]==0.0, "VIPMComputeStep: S[i]<>0 for absent constraint");
+                    state.rhsgammas[i] = 0;
+                }
+            }
+            
+            //
+            // GammaQ = mu*inv(P)*e - q - inv(P)*DELTAP*deltaQ
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.hasr[i] )
+                {
+                    alglib.ap.assert(v0.p[i]>0.0, "VIPMComputeStep: P[i]<=0");
+                    state.rhsgammaq[i] = mu/v0.p[i]-v0.q[i]-vd.p[i]*vd.q[i]/v0.p[i];
+                }
+                else
+                {
+                    alglib.ap.assert(v0.p[i]==0.0, "VIPMComputeStep: P[i]<>0 for absent range");
+                    alglib.ap.assert(v0.q[i]==0.0, "VIPMComputeStep: Q[i]<>0 for absent range");
+                    state.rhsgammaq[i] = 0;
+                }
+            }
+            
+            //
+            // RhsAlphaCap = RhsAlpha - PInvQ*GammaQ
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                state.rhsalphacap[i] = state.rhsalpha[i]-state.diagpinvq[i]*state.rhsgammaq[i];
+            }
+            
+            //
+            // RhsNuCap = RhsNu + GinvZ*GammaZ
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                state.rhsnucap[i] = state.rhsnu[i]+state.diagginvz[i]*state.rhsgammaz[i];
+            }
+            
+            //
+            // RhsTauCap = RhsTau - TInvS*GammaS
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                state.rhstaucap[i] = state.rhstau[i]-state.diagtinvs[i]*state.rhsgammas[i];
+            }
+            
+            //
+            // RhsBetaCap = RhsBeta - VInvW*GammaW
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                state.rhsbetacap[i] = state.rhsbeta[i]-state.diagvinvw[i]*state.rhsgammaw[i];
+            }
+            
+            //
+            // Solve KKT system
+            //
+            state.deltaxy = new double[n+m];
+            for(i=0; i<=n-1; i++)
+            {
+                state.deltaxy[i] = state.rhssigma[i]-state.diagzinvg[i]*state.rhsnucap[i]-state.diagsinvt[i]*state.rhstaucap[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                state.deltaxy[n+i] = state.rhsrho[i]-state.diage[i]*(state.rhsbetacap[i]-state.diagqinvp[i]*state.rhsalphacap[i]);
+            }
+            vipmsolve(state, state.deltaxy, _params);
+            
+            //
+            // Perform backsubstitution
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                vd.x[i] = state.deltaxy[i];
+                vd.s[i] = state.diagsinvt[i]*(vd.x[i]-state.rhstaucap[i]);
+                vd.z[i] = state.diagzinvg[i]*(state.rhsnucap[i]-vd.x[i]);
+                vd.g[i] = state.diagginvz[i]*(state.rhsgammaz[i]-vd.z[i]);
+                vd.t[i] = state.diagtinvs[i]*(state.rhsgammas[i]-vd.s[i]);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vd.y[i] = state.deltaxy[n+i];
+                vd.w[i] = -(state.diage[i]*(state.rhsbetacap[i]-state.diagqinvp[i]*state.rhsalphacap[i]+vd.y[i]));
+                vd.q[i] = state.diagqinvp[i]*(vd.w[i]-state.rhsalphacap[i]);
+                vd.v[i] = state.diagvinvw[i]*(state.rhsgammaw[i]-vd.w[i]);
+                vd.p[i] = state.diagpinvq[i]*(state.rhsgammaq[i]-vd.q[i]);
+            }
+        }
+
+
+        /*************************************************************************
+        This function estimates primal and dual step lengths (subject to step
+        decay parameter, which should be in [0,1] range).
+
+        Current version returns same step lengths for primal and dual steps.
+
+        INPUT PARAMETERS:
+            State               -   solver state
+            V0                  -   current point (we ignore one stored in State.Current)
+            VS                  -   step direction
+            StepDecay           -   decay parameter, the step is multiplied by this
+                                    coefficient. 1.0 corresponds to full step
+                                    length being returned. Values in (0,1] range.
+            
+        OUTPUT PARAMETERS:
+            AlphaP              -   primal step (after applying decay coefficient)
+            AlphaD              -   dual   step (after applying decay coefficient)
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmcomputesteplength(vipmstate state,
+            vipmvars v0,
+            vipmvars vs,
+            double stepdecay,
+            ref double alphap,
+            ref double alphad,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            double alpha = 0;
+
+            alphap = 0;
+            alphad = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            alglib.ap.assert(n==v0.n && m==v0.m, "VIPMComputeStepLength: sizes mismatch");
+            alphap = 1;
+            alphad = 1;
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Primal
+                //
+                if( state.hasbndl[i] )
+                {
+                    alphap = apserv.safeminposrv(v0.g[i], -vs.g[i], alphap, _params);
+                }
+                if( state.hasbndu[i] )
+                {
+                    alphap = apserv.safeminposrv(v0.t[i], -vs.t[i], alphap, _params);
+                }
+                
+                //
+                // Dual
+                //
+                alphad = apserv.safeminposrv(v0.z[i], -vs.z[i], alphad, _params);
+                alphad = apserv.safeminposrv(v0.s[i], -vs.s[i], alphad, _params);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Primal
+                //
+                alphap = apserv.safeminposrv(v0.w[i], -vs.w[i], alphap, _params);
+                alphap = apserv.safeminposrv(v0.p[i], -vs.p[i], alphap, _params);
+                
+                //
+                // Dual
+                //
+                alphad = apserv.safeminposrv(v0.v[i], -vs.v[i], alphad, _params);
+                alphad = apserv.safeminposrv(v0.q[i], -vs.q[i], alphad, _params);
+            }
+            
+            //
+            // Because we solve QP problem, step length have to be same for primal and dual variables
+            //
+            alpha = Math.Min(alphap, alphad);
+            
+            //
+            // Apply decay
+            //
+            alphap = stepdecay*alpha;
+            alphad = stepdecay*alpha;
+        }
+
+
+        /*************************************************************************
+        Evaluate progress so far, sets following fields of State:
+        * ErrP and ErrD are set to primal and dual infeasibilities computed in L2 norm
+
+        Also outputs trace data, if requested to do so.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmevaluateprogress(vipmstate state,
+            bool dotrace,
+            bool dodetailedtrace,
+            double mu,
+            double muaff,
+            double sigma,
+            double alphap,
+            double alphad,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            double v = 0;
+            int cntp2 = 0;
+            int cntd2 = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            apserv.rvectorsetlengthatleast(ref state.evalprogressg, n, _params);
+            
+            //
+            // Compute primal and dual infeasibilities
+            //
+            vipmmultiply(state, state.current.x, state.current.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
+            cntp2 = 0;
+            state.errp2 = 0;
+            state.errpinf = 0;
+            for(i=0; i<=m-1; i++)
+            {
+                v = state.tmpax[i]-state.current.w[i]-state.b[i];
+                state.errp2 = state.errp2+v*v;
+                state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
+                apserv.inc(ref cntp2, _params);
+                if( state.hasr[i] )
+                {
+                    v = state.current.w[i]+state.current.p[i]-state.r[i];
+                    state.errp2 = state.errp2+v*v;
+                    state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
+                    apserv.inc(ref cntp2, _params);
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    v = state.current.x[i]-state.current.g[i]-state.bndl[i];
+                    state.errp2 = state.errp2+v*v;
+                    state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
+                    apserv.inc(ref cntp2, _params);
+                }
+                if( state.hasbndu[i] )
+                {
+                    v = state.current.x[i]+state.current.t[i]-state.bndu[i];
+                    state.errp2 = state.errp2+v*v;
+                    state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
+                    apserv.inc(ref cntp2, _params);
+                }
+            }
+            state.errp2 = Math.Sqrt(state.errp2/apserv.coalesce(cntp2, 1, _params));
+            cntd2 = 0;
+            state.errd2 = 0;
+            state.errdinf = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = state.tmphx[i]+state.c[i]-state.tmpaty[i];
+                if( state.hasbndl[i] )
+                {
+                    v = v-state.current.z[i];
+                }
+                if( state.hasbndu[i] )
+                {
+                    v = v+state.current.s[i];
+                }
+                state.evalprogressg[i] = v;
+                state.errd2 = state.errd2+v*v;
+                state.errdinf = Math.Max(state.errdinf, Math.Abs(v));
+                apserv.inc(ref cntd2, _params);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                v = state.current.y[i]-state.current.v[i];
+                if( state.hasr[i] )
+                {
+                    v = v+state.current.q[i];
+                }
+                state.errd2 = state.errd2+v*v;
+                state.errdinf = Math.Max(state.errdinf, Math.Abs(v));
+                apserv.inc(ref cntd2, _params);
+            }
+            state.errd2 = Math.Sqrt(state.errd2/apserv.coalesce(cntd2, 1, _params));
+            
+            //
+            // Trace
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace(System.String.Format("mu_init = {0,0:E3}    (at the beginning)\n", mu));
+                alglib.ap.trace(System.String.Format("mu_aff  = {0,0:E3}    (by affine scaling step)\n", muaff));
+                alglib.ap.trace(System.String.Format("sigma   = {0,0:E3}    (centering parameter)\n", sigma));
+                alglib.ap.trace(System.String.Format("errP    = {0,0:E3}    (primal infeasibility, 2-norm)\n", state.errp2));
+                alglib.ap.trace(System.String.Format("errD    = {0,0:E3}    (dual infeasibility,   2-norm)\n", state.errd2));
+                alglib.ap.trace(System.String.Format("alphaP  = {0,0:E3}    (primal step)\n", alphap));
+                alglib.ap.trace(System.String.Format("alphaD  = {0,0:E3}    (dual   step)\n", alphad));
+                alglib.ap.trace(System.String.Format("|X|={0,0:E1}, |G|={1,0:E1}, |W|={2,0:E1}, |T|={3,0:E1}, |P|={4,0:E1}\n", nrminf(state.current.x, n, _params), nrminf(state.current.g, n, _params), nrminf(state.current.w, m, _params), nrminf(state.current.t, n, _params), nrminf(state.current.p, m, _params)));
+                alglib.ap.trace(System.String.Format("|Y|={0,0:E1}, |Z|={1,0:E1}, |V|={2,0:E1}, |S|={3,0:E1}, |Q|={4,0:E1}\n", nrminf(state.current.y, m, _params), nrminf(state.current.z, n, _params), nrminf(state.current.v, m, _params), nrminf(state.current.s, n, _params), nrminf(state.current.q, m, _params)));
+                if( dodetailedtrace )
+                {
+                    alglib.ap.trace("--- printing raw data (prior to applying variable scales and shifting by XOrigin) ------------------\n");
+                    alglib.ap.trace("X (raw)         = ");
+                    apserv.tracevectorunscaledunshiftedautoprec(state.current.x, n, state.scl, true, state.xorigin, true, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("--- printing scaled data (after applying variable scales and shifting by XOrigin) ------------------\n");
+                    alglib.ap.trace("> reporting X, Lagrangian gradient\n");
+                    alglib.ap.trace("Xnew            = ");
+                    apserv.tracevectorautoprec(state.current.x, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("Lag-grad        = ");
+                    apserv.tracevectorautoprec(state.evalprogressg, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("> primal slacks and dual multipliers for box constraints\n");
+                    alglib.ap.trace("G (L prim slck) = ");
+                    apserv.tracevectorautoprec(state.current.g, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("Z (L dual mult) = ");
+                    apserv.tracevectorautoprec(state.current.z, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("T (U prim slck) = ");
+                    apserv.tracevectorautoprec(state.current.t, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("S (U dual mult) = ");
+                    apserv.tracevectorautoprec(state.current.s, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("> primal slacks and dual multipliers for linear constraints, B/R stand for B<=Ax<=B+R\n");
+                    alglib.ap.trace("Y (lag mult)    = ");
+                    apserv.tracevectorautoprec(state.current.y, 0, m, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("W (B prim slck) = ");
+                    apserv.tracevectorautoprec(state.current.w, 0, m, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("V (B dual mult) = ");
+                    apserv.tracevectorautoprec(state.current.v, 0, m, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("P (R prim slck) = ");
+                    apserv.tracevectorautoprec(state.current.p, 0, m, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("Q (R dual mult) = ");
+                    apserv.tracevectorautoprec(state.current.q, 0, m, _params);
+                    alglib.ap.trace("\n");
+                }
+                alglib.ap.trace("\n");
+            }
+        }
+
+
+    }
+    public class nlcsqp
+    {
+        /*************************************************************************
+        This object stores temporaries of SQP subsolver.
+        *************************************************************************/
+        public class minsqpsubsolver : apobject
+        {
+            public int algokind;
+            public vipmsolver.vipmstate ipmsolver;
+            public double[] curb;
+            public double[] curbndl;
+            public double[] curbndu;
+            public double[] cural;
+            public double[] curau;
+            public sparse.sparsematrix sparserawlc;
+            public sparse.sparsematrix sparseefflc;
+            public double[] d0;
+            public double[,] h;
+            public double[,] densedummy;
+            public sparse.sparsematrix sparsedummy;
+            public double[] tmp0;
+            public double[] tmp1;
+            public double[] tmp2;
+            public double[] sk;
+            public double[] yk;
+            public bool[] hasbndl;
+            public bool[] hasbndu;
+            public bool[] hasal;
+            public bool[] hasau;
+            public double[,] activea;
+            public double[] activerhs;
+            public int[] activeidx;
+            public int activesetsize;
+            public minsqpsubsolver()
+            {
+                init();
+            }
+            public override void init()
+            {
+                ipmsolver = new vipmsolver.vipmstate();
+                curb = new double[0];
+                curbndl = new double[0];
+                curbndu = new double[0];
+                cural = new double[0];
+                curau = new double[0];
+                sparserawlc = new sparse.sparsematrix();
+                sparseefflc = new sparse.sparsematrix();
+                d0 = new double[0];
+                h = new double[0,0];
+                densedummy = new double[0,0];
+                sparsedummy = new sparse.sparsematrix();
+                tmp0 = new double[0];
+                tmp1 = new double[0];
+                tmp2 = new double[0];
+                sk = new double[0];
+                yk = new double[0];
+                hasbndl = new bool[0];
+                hasbndu = new bool[0];
+                hasal = new bool[0];
+                hasau = new bool[0];
+                activea = new double[0,0];
+                activerhs = new double[0];
+                activeidx = new int[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqpsubsolver _result = new minsqpsubsolver();
+                _result.algokind = algokind;
+                _result.ipmsolver = (vipmsolver.vipmstate)ipmsolver.make_copy();
+                _result.curb = (double[])curb.Clone();
+                _result.curbndl = (double[])curbndl.Clone();
+                _result.curbndu = (double[])curbndu.Clone();
+                _result.cural = (double[])cural.Clone();
+                _result.curau = (double[])curau.Clone();
+                _result.sparserawlc = (sparse.sparsematrix)sparserawlc.make_copy();
+                _result.sparseefflc = (sparse.sparsematrix)sparseefflc.make_copy();
+                _result.d0 = (double[])d0.Clone();
+                _result.h = (double[,])h.Clone();
+                _result.densedummy = (double[,])densedummy.Clone();
+                _result.sparsedummy = (sparse.sparsematrix)sparsedummy.make_copy();
+                _result.tmp0 = (double[])tmp0.Clone();
+                _result.tmp1 = (double[])tmp1.Clone();
+                _result.tmp2 = (double[])tmp2.Clone();
+                _result.sk = (double[])sk.Clone();
+                _result.yk = (double[])yk.Clone();
+                _result.hasbndl = (bool[])hasbndl.Clone();
+                _result.hasbndu = (bool[])hasbndu.Clone();
+                _result.hasal = (bool[])hasal.Clone();
+                _result.hasau = (bool[])hasau.Clone();
+                _result.activea = (double[,])activea.Clone();
+                _result.activerhs = (double[])activerhs.Clone();
+                _result.activeidx = (int[])activeidx.Clone();
+                _result.activesetsize = activesetsize;
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries for LagrangianFG() function
+        *************************************************************************/
+        public class minsqptmplagrangian : apobject
+        {
+            public double[] sclagtmp0;
+            public double[] sclagtmp1;
+            public minsqptmplagrangian()
+            {
+                init();
+            }
+            public override void init()
+            {
+                sclagtmp0 = new double[0];
+                sclagtmp1 = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqptmplagrangian _result = new minsqptmplagrangian();
+                _result.sclagtmp0 = (double[])sclagtmp0.Clone();
+                _result.sclagtmp1 = (double[])sclagtmp1.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries for LagrangianFG() function
+        *************************************************************************/
+        public class minsqptmpmerit : apobject
+        {
+            public double[] mftmp0;
+            public minsqptmpmerit()
+            {
+                init();
+            }
+            public override void init()
+            {
+                mftmp0 = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqptmpmerit _result = new minsqptmpmerit();
+                _result.mftmp0 = (double[])mftmp0.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries of Phase 1 (merit function optimization).
+        *************************************************************************/
+        public class minsqpmeritphasestate : apobject
+        {
+            public int n;
+            public int nec;
+            public int nic;
+            public int nlec;
+            public int nlic;
+            public double[] d;
+            public double[] dx;
+            public double[] stepkx;
+            public double[] stepkxc;
+            public double[] stepkxn;
+            public double[] stepkfi;
+            public double[] stepkfic;
+            public double[] stepkfin;
+            public double[,] stepkj;
+            public double[,] stepkjc;
+            public double[,] stepkjn;
+            public double[] lagmult;
+            public double[] dummylagmult;
+            public minsqptmpmerit tmpmerit;
+            public minsqptmplagrangian tmplagrangianfg;
+            public double[] stepklaggrad;
+            public double[] stepknlaggrad;
+            public int status;
+            public rcommstate rmeritphasestate;
+            public minsqpmeritphasestate()
+            {
+                init();
+            }
+            public override void init()
+            {
+                d = new double[0];
+                dx = new double[0];
+                stepkx = new double[0];
+                stepkxc = new double[0];
+                stepkxn = new double[0];
+                stepkfi = new double[0];
+                stepkfic = new double[0];
+                stepkfin = new double[0];
+                stepkj = new double[0,0];
+                stepkjc = new double[0,0];
+                stepkjn = new double[0,0];
+                lagmult = new double[0];
+                dummylagmult = new double[0];
+                tmpmerit = new minsqptmpmerit();
+                tmplagrangianfg = new minsqptmplagrangian();
+                stepklaggrad = new double[0];
+                stepknlaggrad = new double[0];
+                rmeritphasestate = new rcommstate();
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqpmeritphasestate _result = new minsqpmeritphasestate();
+                _result.n = n;
+                _result.nec = nec;
+                _result.nic = nic;
+                _result.nlec = nlec;
+                _result.nlic = nlic;
+                _result.d = (double[])d.Clone();
+                _result.dx = (double[])dx.Clone();
+                _result.stepkx = (double[])stepkx.Clone();
+                _result.stepkxc = (double[])stepkxc.Clone();
+                _result.stepkxn = (double[])stepkxn.Clone();
+                _result.stepkfi = (double[])stepkfi.Clone();
+                _result.stepkfic = (double[])stepkfic.Clone();
+                _result.stepkfin = (double[])stepkfin.Clone();
+                _result.stepkj = (double[,])stepkj.Clone();
+                _result.stepkjc = (double[,])stepkjc.Clone();
+                _result.stepkjn = (double[,])stepkjn.Clone();
+                _result.lagmult = (double[])lagmult.Clone();
+                _result.dummylagmult = (double[])dummylagmult.Clone();
+                _result.tmpmerit = (minsqptmpmerit)tmpmerit.make_copy();
+                _result.tmplagrangianfg = (minsqptmplagrangian)tmplagrangianfg.make_copy();
+                _result.stepklaggrad = (double[])stepklaggrad.Clone();
+                _result.stepknlaggrad = (double[])stepknlaggrad.Clone();
+                _result.status = status;
+                _result.rmeritphasestate = (rcommstate)rmeritphasestate.make_copy();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries of SQP solver.
+        *************************************************************************/
+        public class minsqpstate : apobject
+        {
+            public int n;
+            public int nec;
+            public int nic;
+            public int nlec;
+            public int nlic;
+            public double[] s;
+            public double[,] scaledcleic;
+            public int[] lcsrcidx;
+            public bool[] hasbndl;
+            public bool[] hasbndu;
+            public double[] scaledbndl;
+            public double[] scaledbndu;
+            public double epsx;
+            public int maxits;
+            public double[] x;
+            public double[] fi;
+            public double[,] j;
+            public double f;
+            public bool needfij;
+            public bool xupdated;
+            public minsqpmeritphasestate meritstate;
+            public double trustrad;
+            public int fstagnationcnt;
+            public double[] step0x;
+            public double[] stepkx;
+            public double[] backupx;
+            public double[] step0fi;
+            public double[] stepkfi;
+            public double[] backupfi;
+            public double[,] step0j;
+            public double[,] stepkj;
+            public bool haslagmult;
+            public double[] meritlagmult;
+            public double[] dummylagmult;
+            public double[] fscales;
+            public minsqpsubsolver subsolver;
+            public minsqptmpmerit tmpmerit;
+            public int repsimplexiterations;
+            public int repsimplexiterations1;
+            public int repsimplexiterations2;
+            public int repsimplexiterations3;
+            public int repiterationscount;
+            public int repterminationtype;
+            public double repbcerr;
+            public int repbcidx;
+            public double replcerr;
+            public int replcidx;
+            public double repnlcerr;
+            public int repnlcidx;
+            public rcommstate rstate;
+            public minsqpstate()
+            {
+                init();
+            }
+            public override void init()
+            {
+                s = new double[0];
+                scaledcleic = new double[0,0];
+                lcsrcidx = new int[0];
+                hasbndl = new bool[0];
+                hasbndu = new bool[0];
+                scaledbndl = new double[0];
+                scaledbndu = new double[0];
+                x = new double[0];
+                fi = new double[0];
+                j = new double[0,0];
+                meritstate = new minsqpmeritphasestate();
+                step0x = new double[0];
+                stepkx = new double[0];
+                backupx = new double[0];
+                step0fi = new double[0];
+                stepkfi = new double[0];
+                backupfi = new double[0];
+                step0j = new double[0,0];
+                stepkj = new double[0,0];
+                meritlagmult = new double[0];
+                dummylagmult = new double[0];
+                fscales = new double[0];
+                subsolver = new minsqpsubsolver();
+                tmpmerit = new minsqptmpmerit();
+                rstate = new rcommstate();
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqpstate _result = new minsqpstate();
+                _result.n = n;
+                _result.nec = nec;
+                _result.nic = nic;
+                _result.nlec = nlec;
+                _result.nlic = nlic;
+                _result.s = (double[])s.Clone();
+                _result.scaledcleic = (double[,])scaledcleic.Clone();
+                _result.lcsrcidx = (int[])lcsrcidx.Clone();
+                _result.hasbndl = (bool[])hasbndl.Clone();
+                _result.hasbndu = (bool[])hasbndu.Clone();
+                _result.scaledbndl = (double[])scaledbndl.Clone();
+                _result.scaledbndu = (double[])scaledbndu.Clone();
+                _result.epsx = epsx;
+                _result.maxits = maxits;
+                _result.x = (double[])x.Clone();
+                _result.fi = (double[])fi.Clone();
+                _result.j = (double[,])j.Clone();
+                _result.f = f;
+                _result.needfij = needfij;
+                _result.xupdated = xupdated;
+                _result.meritstate = (minsqpmeritphasestate)meritstate.make_copy();
+                _result.trustrad = trustrad;
+                _result.fstagnationcnt = fstagnationcnt;
+                _result.step0x = (double[])step0x.Clone();
+                _result.stepkx = (double[])stepkx.Clone();
+                _result.backupx = (double[])backupx.Clone();
+                _result.step0fi = (double[])step0fi.Clone();
+                _result.stepkfi = (double[])stepkfi.Clone();
+                _result.backupfi = (double[])backupfi.Clone();
+                _result.step0j = (double[,])step0j.Clone();
+                _result.stepkj = (double[,])stepkj.Clone();
+                _result.haslagmult = haslagmult;
+                _result.meritlagmult = (double[])meritlagmult.Clone();
+                _result.dummylagmult = (double[])dummylagmult.Clone();
+                _result.fscales = (double[])fscales.Clone();
+                _result.subsolver = (minsqpsubsolver)subsolver.make_copy();
+                _result.tmpmerit = (minsqptmpmerit)tmpmerit.make_copy();
+                _result.repsimplexiterations = repsimplexiterations;
+                _result.repsimplexiterations1 = repsimplexiterations1;
+                _result.repsimplexiterations2 = repsimplexiterations2;
+                _result.repsimplexiterations3 = repsimplexiterations3;
+                _result.repiterationscount = repiterationscount;
+                _result.repterminationtype = repterminationtype;
+                _result.repbcerr = repbcerr;
+                _result.repbcidx = repbcidx;
+                _result.replcerr = replcerr;
+                _result.replcidx = replcidx;
+                _result.repnlcerr = repnlcerr;
+                _result.repnlcidx = repnlcidx;
+                _result.rstate = (rcommstate)rstate.make_copy();
+                return _result;
+            }
+        };
+
+
+
+
+        public const double sqpdeltadecrease = 0.20;
+        public const double sqpdeltaincrease = 0.80;
+        public const double maxtrustraddecay = 0.1;
+        public const double maxtrustradgrowth = 1.333;
+        public const double bigc = 500.0;
+        public const double meritfunctionbase = 0.0;
+        public const double meritfunctiongain = 2.0;
+        public const double augmentationfactor = 10.0;
+        public const double inittrustrad = 0.1;
+        public const double stagnationepsf = 1.0E-12;
+        public const int fstagnationlimit = 20;
+        public const double sqpbigscale = 5.0;
+        public const double sqpsmallscale = 0.2;
+
+
+        public static void minsqpinitbuf(double[] bndl,
+            double[] bndu,
+            double[] s,
+            double[] x0,
+            int n,
+            double[,] cleic,
+            int[] lcsrcidx,
+            int nec,
+            int nic,
+            int nlec,
+            int nlic,
+            double epsx,
+            int maxits,
+            minsqpstate state,
+            alglib.xparams _params)
+        {
+            int nslack = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            state.n = n;
+            state.nec = nec;
+            state.nic = nic;
+            state.nlec = nlec;
+            state.nlic = nlic;
+            
+            //
+            // Prepare RCOMM state
+            //
+            state.rstate.ia = new int[9+1];
+            state.rstate.ba = new bool[1+1];
+            state.rstate.ra = new double[7+1];
+            state.rstate.stage = -1;
+            state.needfij = false;
+            state.xupdated = false;
+            state.x = new double[n];
+            state.fi = new double[1+nlec+nlic];
+            state.j = new double[1+nlec+nlic, n];
+            
+            //
+            // Allocate memory.
+            //
+            apserv.rvectorsetlengthatleast(ref state.s, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.step0x, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.stepkx, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.backupx, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.step0fi, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.stepkfi, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.backupfi, 1+nlec+nlic, _params);
+            apserv.rmatrixsetlengthatleast(ref state.step0j, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref state.stepkj, 1+nlec+nlic, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.fscales, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.meritlagmult, nec+nic+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.dummylagmult, nec+nic+nlec+nlic, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.scaledbndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.scaledbndu, n, _params);
+            apserv.rmatrixsetlengthatleast(ref state.scaledcleic, nec+nic, n+1, _params);
+            apserv.ivectorsetlengthatleast(ref state.lcsrcidx, nec+nic, _params);
+            
+            //
+            // Prepare scaled problem
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                state.hasbndl[i] = math.isfinite(bndl[i]);
+                state.hasbndu[i] = math.isfinite(bndu[i]);
+                if( state.hasbndl[i] )
+                {
+                    state.scaledbndl[i] = bndl[i]/s[i];
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.scaledbndu[i] = bndu[i]/s[i];
+                }
+                if( state.hasbndl[i] && state.hasbndu[i] )
+                {
+                    alglib.ap.assert((double)(bndl[i])<=(double)(bndu[i]), "SQP: integrity check failed, box constraints are inconsistent");
+                }
+                state.step0x[i] = x0[i]/s[i];
+                state.s[i] = s[i];
+            }
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                
+                //
+                // Permutation
+                //
+                state.lcsrcidx[i] = lcsrcidx[i];
+                
+                //
+                // Scale and normalize linear constraints
+                //
+                vv = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = cleic[i,j]*s[j];
+                    state.scaledcleic[i,j] = v;
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                state.scaledcleic[i,n] = cleic[i,n];
+                if( (double)(vv)>(double)(0) )
+                {
+                    for(j=0; j<=n; j++)
+                    {
+                        state.scaledcleic[i,j] = state.scaledcleic[i,j]/vv;
+                    }
+                }
+            }
+            
+            //
+            // Initial enforcement of box constraints
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    state.step0x[i] = Math.Max(state.step0x[i], state.scaledbndl[i]);
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.step0x[i] = Math.Min(state.step0x[i], state.scaledbndu[i]);
+                }
+            }
+            
+            //
+            // Stopping criteria
+            //
+            state.epsx = epsx;
+            state.maxits = maxits;
+            
+            //
+            // Report fields
+            //
+            state.repsimplexiterations = 0;
+            state.repsimplexiterations1 = 0;
+            state.repsimplexiterations2 = 0;
+            state.repsimplexiterations3 = 0;
+            state.repterminationtype = 0;
+            state.repbcerr = 0;
+            state.repbcidx = -1;
+            state.replcerr = 0;
+            state.replcidx = -1;
+            state.repnlcerr = 0;
+            state.repnlcidx = -1;
+            state.repiterationscount = 0;
+            
+            //
+            // Integrity checks
+            //
+            alglib.ap.assert((double)(sqpdeltadecrease)<(double)(sqpdeltaincrease), "MinSQP: integrity check failed");
+        }
+
+
+        /*************************************************************************
+        This function performs actual processing for  SQP  algorithm.  It  expects
+        that caller redirects its reverse communication  requests NeedFiJ/XUpdated
+        to external user who will provide analytic derivative (or  handle  reports
+        about progress).
+
+        In case external user does not have analytic derivative, it is responsibility
+        of caller to intercept NeedFiJ request and  replace  it  with  appropriate
+        numerical differentiation scheme.
+
+        Results are stored:
+        * point - in State.StepKX
+
+        IMPORTANT: this function works with scaled problem formulation; it is
+                   responsibility of the caller to unscale request and scale
+                   Jacobian.
+                   
+        NOTE: SMonitor is expected to be correctly initialized smoothness monitor.
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        public static bool minsqpiteration(minsqpstate state,
+            optserv.smoothnessmonitor smonitor,
+            bool userterminationneeded,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+            double mx = 0;
+            double gammamax = 0;
+            int status = 0;
+            double deltamax = 0;
+            double multiplyby = 0;
+            double setscaleto = 0;
+            double prevtrustrad = 0;
+            int subiterationidx = 0;
+            bool dotrace = new bool();
+            bool dodetailedtrace = new bool();
+
+            
+            //
+            // Reverse communication preparations
+            // I know it looks ugly, but it works the same way
+            // anywhere from C++ to Python.
+            //
+            // This code initializes locals by:
+            // * random values determined during code
+            //   generation - on first subroutine call
+            // * values from previous call - on subsequent calls
+            //
+            if( state.rstate.stage>=0 )
+            {
+                n = state.rstate.ia[0];
+                nslack = state.rstate.ia[1];
+                nec = state.rstate.ia[2];
+                nic = state.rstate.ia[3];
+                nlec = state.rstate.ia[4];
+                nlic = state.rstate.ia[5];
+                i = state.rstate.ia[6];
+                j = state.rstate.ia[7];
+                status = state.rstate.ia[8];
+                subiterationidx = state.rstate.ia[9];
+                dotrace = state.rstate.ba[0];
+                dodetailedtrace = state.rstate.ba[1];
+                v = state.rstate.ra[0];
+                vv = state.rstate.ra[1];
+                mx = state.rstate.ra[2];
+                gammamax = state.rstate.ra[3];
+                deltamax = state.rstate.ra[4];
+                multiplyby = state.rstate.ra[5];
+                setscaleto = state.rstate.ra[6];
+                prevtrustrad = state.rstate.ra[7];
+            }
+            else
+            {
+                n = 359;
+                nslack = -58;
+                nec = -919;
+                nic = -909;
+                nlec = 81;
+                nlic = 255;
+                i = 74;
+                j = -788;
+                status = 809;
+                subiterationidx = 205;
+                dotrace = false;
+                dodetailedtrace = true;
+                v = -526;
+                vv = 763;
+                mx = -541;
+                gammamax = -698;
+                deltamax = -900;
+                multiplyby = -318;
+                setscaleto = -940;
+                prevtrustrad = 1016;
+            }
+            if( state.rstate.stage==0 )
+            {
+                goto lbl_0;
+            }
+            if( state.rstate.stage==1 )
+            {
+                goto lbl_1;
+            }
+            if( state.rstate.stage==2 )
+            {
+                goto lbl_2;
+            }
+            
+            //
+            // Routine body
+            //
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            dotrace = ap.istraceenabled("SQP", _params);
+            dodetailedtrace = dotrace && ap.istraceenabled("SQP.DETAILED", _params);
+            
+            //
+            // Prepare rcomm interface
+            //
+            state.needfij = false;
+            state.xupdated = false;
+            
+            //
+            // Initialize algorithm data:
+            // * Lagrangian and "Big C" estimates
+            // * trust region
+            // * initial function scales (vector of 1's)
+            // * current approximation of the Hessian matrix H (unit matrix)
+            // * initial linearized constraints
+            // * initial violation of linear/nonlinear constraints
+            //
+            state.fstagnationcnt = 0;
+            state.trustrad = inittrustrad;
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                state.fscales[i] = 1.0;
+            }
+            gammamax = 0.0;
+            state.haslagmult = false;
+            
+            //
+            // Avoid spurious warnings about possibly uninitialized vars
+            //
+            status = 0;
+            
+            //
+            // Evaluate function vector and Jacobian at Step0X, send first location report.
+            // Compute initial violation of constraints.
+            //
+            sqpsendx(state, state.step0x, _params);
+            state.needfij = true;
+            state.rstate.stage = 0;
+            goto lbl_rcomm;
+        lbl_0:
+            state.needfij = false;
+            if( !sqpretrievefij(state, state.step0fi, state.step0j, _params) )
+            {
+                
+                //
+                // Failed to retrieve function/Jaconian, infinities detected!
+                //
+                for(i=0; i<=n-1; i++)
+                {
+                    state.stepkx[i] = state.step0x[i];
+                }
+                state.repterminationtype = -8;
+                result = false;
+                return result;
+            }
+            sqpcopystate(state, state.step0x, state.step0fi, state.step0j, state.stepkx, state.stepkfi, state.stepkj, _params);
+            sqpsendx(state, state.stepkx, _params);
+            state.f = state.stepkfi[0]*state.fscales[0];
+            state.xupdated = true;
+            state.rstate.stage = 1;
+            goto lbl_rcomm;
+        lbl_1:
+            state.xupdated = false;
+            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, state.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
+            optserv.unscaleandchecknlcviolation(state.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+            
+            //
+            // Trace output (if needed)
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+                alglib.ap.trace("//  SQP SOLVER STARTED                                                                            //\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            }
+            
+            //
+            // Perform outer (NLC) iterations
+            //
+            initqpsubsolver(state, state.subsolver, _params);
+        lbl_3:
+            if( false )
+            {
+                goto lbl_4;
+            }
+            
+            //
+            // Before beginning new outer iteration:
+            // * renormalize target function and/or constraints, if some of them have too large magnitudes
+            // * save initial point for the outer iteration
+            //
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                
+                //
+                // Determine (a) multiplicative coefficient applied to function value
+                // and Jacobian row, and (b) new value of the function scale.
+                //
+                mx = 0;
+                for(j=0; j<=n-1; j++)
+                {
+                    mx = Math.Max(mx, Math.Abs(state.stepkj[i,j]));
+                }
+                multiplyby = 1.0;
+                setscaleto = state.fscales[i];
+                if( (double)(mx)>=(double)(sqpbigscale) )
+                {
+                    multiplyby = 1/mx;
+                    setscaleto = state.fscales[i]*mx;
+                }
+                if( (double)(mx)<=(double)(sqpsmallscale) && (double)(state.fscales[i])>(double)(1.0) )
+                {
+                    if( (double)(state.fscales[i]*mx)>(double)(1) )
+                    {
+                        multiplyby = 1/mx;
+                        setscaleto = state.fscales[i]*mx;
+                    }
+                    else
+                    {
+                        multiplyby = state.fscales[i];
+                        setscaleto = 1.0;
+                    }
+                }
+                if( (double)(multiplyby)!=(double)(1.0) )
+                {
+                    
+                    //
+                    // Function #I needs renormalization:
+                    // * update function vector element and Jacobian matrix row
+                    // * update FScales[] array
+                    //
+                    state.stepkfi[i] = state.stepkfi[i]*multiplyby;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        state.stepkj[i,j] = state.stepkj[i,j]*multiplyby;
+                    }
+                    state.fscales[i] = setscaleto;
+                }
+            }
+            
+            //
+            // Trace output (if needed)
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace(System.String.Format("\n=== OUTER ITERATION {0,5:d} STARTED ==================================================================\n", state.repiterationscount));
+                if( dodetailedtrace )
+                {
+                    alglib.ap.trace("> printing raw data (prior to applying variable and function scales)\n");
+                    alglib.ap.trace("X (raw)       = ");
+                    apserv.tracevectorunscaledunshiftedautoprec(state.step0x, n, state.s, true, state.s, false, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("> printing scaled data (after applying variable and function scales)\n");
+                    alglib.ap.trace("X (scaled)    = ");
+                    apserv.tracevectorautoprec(state.step0x, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("FScales       = ");
+                    apserv.tracevectorautoprec(state.fscales, 0, 1+nlec+nlic, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("Fi (scaled)   = ");
+                    apserv.tracevectorautoprec(state.stepkfi, 0, 1+nlec+nlic, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("|Ji| (scaled) = ");
+                    apserv.tracerownrm1autoprec(state.stepkj, 0, 1+nlec+nlic, 0, n, _params);
+                    alglib.ap.trace("\n");
+                }
+                mx = 0;
+                for(i=1; i<=nlec; i++)
+                {
+                    mx = Math.Max(mx, Math.Abs(state.stepkfi[i]));
+                }
+                for(i=nlec+1; i<=nlec+nlic; i++)
+                {
+                    mx = Math.Max(mx, state.stepkfi[i]);
+                }
+                alglib.ap.trace(System.String.Format("trustRad      = {0,0:E3}\n", state.trustrad));
+                alglib.ap.trace(System.String.Format("lin.violation = {0,0:E3}    (scaled violation of linear constraints)\n", state.replcerr));
+                alglib.ap.trace(System.String.Format("nlc.violation = {0,0:E3}    (scaled violation of nonlinear constraints)\n", mx));
+                alglib.ap.trace(System.String.Format("gammaMax      = {0,0:E3}\n", gammamax));
+            }
+            
+            //
+            // PHASE 2
+            //
+            // This phase is a primary part of the algorithm which is responsible for its
+            // convergence properties.
+            //
+            // It solves QP subproblem with possible activation and deactivation of constraints
+            // and then starts backtracking (step length is bounded by 1.0) merit function search
+            // (with second-order correction to deal with Maratos effect) on the direction produced
+            // by QP subproblem.
+            //
+            // This phase is everything we need to in order to have convergence; however,
+            // it has one performance-related issue: using "general" interior point QP solver
+            // results in slow solution times. Fast equality-constrained phase is essential for
+            // the convergence.
+            //
+            qpsubsolversetalgoipm(state.subsolver, _params);
+            sqpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.step0x, state.step0fi, state.step0j, _params);
+            meritphaseinit(state.meritstate, state.stepkx, state.stepkfi, state.stepkj, n, nec, nic, nlec, nlic, _params);
+        lbl_5:
+            if( !meritphaseiteration(state, state.meritstate, smonitor, userterminationneeded, _params) )
+            {
+                goto lbl_6;
+            }
+            state.rstate.stage = 2;
+            goto lbl_rcomm;
+        lbl_2:
+            goto lbl_5;
+        lbl_6:
+            meritphaseresults(state.meritstate, state.stepkx, state.stepkfi, state.stepkj, state.meritlagmult, ref status, _params);
+            if( status==0 )
+            {
+                goto lbl_4;
+            }
+            alglib.ap.assert(status>0, "MinSQPIteration: integrity check failed");
+            state.haslagmult = true;
+            
+            //
+            // Update trust region
+            //
+            prevtrustrad = state.trustrad;
+            deltamax = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                deltamax = Math.Max(deltamax, Math.Abs(state.step0x[i]-state.stepkx[i])/state.trustrad);
+            }
+            if( (double)(deltamax)<=(double)(sqpdeltadecrease) )
+            {
+                state.trustrad = state.trustrad*Math.Max(deltamax/sqpdeltadecrease, maxtrustraddecay);
+            }
+            if( (double)(deltamax)>=(double)(sqpdeltaincrease) )
+            {
+                state.trustrad = state.trustrad*Math.Min(deltamax/sqpdeltaincrease, maxtrustradgrowth);
+            }
+            
+            //
+            // Trace
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n--- outer iteration ends ---------------------------------------------------------------------------\n");
+                alglib.ap.trace(System.String.Format("deltaMax    = {0,0:F3} (ratio of step length to trust radius)\n", deltamax));
+                alglib.ap.trace(System.String.Format("newTrustRad = {0,0:E3}", state.trustrad));
+                if( (double)(state.trustrad)>(double)(prevtrustrad) )
+                {
+                    alglib.ap.trace(", trust radius increased");
+                }
+                if( (double)(state.trustrad)<(double)(prevtrustrad) )
+                {
+                    alglib.ap.trace(", trust radius decreased");
+                }
+                alglib.ap.trace("\n");
+            }
+            
+            //
+            // Advance outer iteration counter, test stopping criteria
+            //
+            apserv.inc(ref state.repiterationscount, _params);
+            if( (double)(Math.Abs(state.stepkfi[0]-state.step0fi[0]))<=(double)(stagnationepsf*Math.Abs(state.step0fi[0])) )
+            {
+                apserv.inc(ref state.fstagnationcnt, _params);
+            }
+            else
+            {
+                state.fstagnationcnt = 0;
+            }
+            if( (double)(state.trustrad)<=(double)(state.epsx) )
+            {
+                state.repterminationtype = 2;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping condition met: trust radius is smaller than {0,0:E3}\n", state.epsx));
+                }
+                goto lbl_4;
+            }
+            if( state.maxits>0 && state.repiterationscount>=state.maxits )
+            {
+                state.repterminationtype = 5;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping condition met: {0,0:d} iterations performed\n", state.repiterationscount));
+                }
+                goto lbl_4;
+            }
+            if( state.fstagnationcnt>=fstagnationlimit )
+            {
+                state.repterminationtype = 7;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping criteria are too stringent: F stagnated for {0,0:d} its, stopping\n", state.fstagnationcnt));
+                }
+                goto lbl_4;
+            }
+            goto lbl_3;
+        lbl_4:
+            optserv.smoothnessmonitortracestatus(smonitor, dotrace, _params);
+            result = false;
+            return result;
+            
+            //
+            // Saving state
+            //
+        lbl_rcomm:
+            result = true;
+            state.rstate.ia[0] = n;
+            state.rstate.ia[1] = nslack;
+            state.rstate.ia[2] = nec;
+            state.rstate.ia[3] = nic;
+            state.rstate.ia[4] = nlec;
+            state.rstate.ia[5] = nlic;
+            state.rstate.ia[6] = i;
+            state.rstate.ia[7] = j;
+            state.rstate.ia[8] = status;
+            state.rstate.ia[9] = subiterationidx;
+            state.rstate.ba[0] = dotrace;
+            state.rstate.ba[1] = dodetailedtrace;
+            state.rstate.ra[0] = v;
+            state.rstate.ra[1] = vv;
+            state.rstate.ra[2] = mx;
+            state.rstate.ra[3] = gammamax;
+            state.rstate.ra[4] = deltamax;
+            state.rstate.ra[5] = multiplyby;
+            state.rstate.ra[6] = setscaleto;
+            state.rstate.ra[7] = prevtrustrad;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes SQP subproblem.
+        Should be called once in the beginning of the optimization.
+
+        INPUT PARAMETERS:
+            SState          -   solver state
+            Subsolver       -   SQP subproblem to initialize
+                                
+                                
+        RETURN VALUE:
+            True on success
+            False on failure of the QP solver (unexpected... but possible due to numerical errors)
+                                
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void initqpsubsolver(minsqpstate sstate,
+            minsqpsubsolver subsolver,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int lccnt = 0;
+            int nnz = 0;
+            int offs = 0;
+            int i = 0;
+            int j = 0;
+
+            n = sstate.n;
+            nec = sstate.nec;
+            nic = sstate.nic;
+            nlec = sstate.nlec;
+            nlic = sstate.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            lccnt = nec+nic+nlec+nlic;
+            
+            //
+            // Allocate temporaries
+            //
+            apserv.rvectorsetlengthatleast(ref subsolver.cural, lccnt, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curau, lccnt, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curbndl, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curbndu, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curb, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.sk, n, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.yk, n, _params);
+            
+            //
+            // Initial state
+            //
+            subsolver.algokind = 0;
+            apserv.rmatrixsetlengthatleast(ref subsolver.h, n, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    subsolver.h[i,j] = 0;
+                }
+                subsolver.h[i,i] = 1;
+            }
+            
+            //
+            // Linear constraints do not change across subiterations, that's
+            // why we allocate storage for them at the start of the program.
+            //
+            // A full set of "raw" constraints is stored; later we will filter
+            // out inequality ones which are inactive anywhere in the current
+            // trust region.
+            //
+            // NOTE: because sparserawlc object stores only linear constraint
+            //       (linearizations of nonlinear ones are not stored) we
+            //       allocate only minimum necessary space.
+            //
+            nnz = 0;
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    if( sstate.scaledcleic[i,j]!=0.0 )
+                    {
+                        nnz = nnz+1;
+                    }
+                }
+            }
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.ridx, nec+nic+1, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.sparserawlc.vals, nnz, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.idx, nnz, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.didx, nec+nic, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.uidx, nec+nic, _params);
+            offs = 0;
+            subsolver.sparserawlc.ridx[0] = 0;
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    if( sstate.scaledcleic[i,j]!=0.0 )
+                    {
+                        
+                        //
+                        // Primary part of the matrix
+                        //
+                        subsolver.sparserawlc.vals[offs] = sstate.scaledcleic[i,j];
+                        subsolver.sparserawlc.idx[offs] = j;
+                        offs = offs+1;
+                    }
+                }
+                subsolver.sparserawlc.ridx[i+1] = offs;
+            }
+            subsolver.sparserawlc.matrixtype = 1;
+            subsolver.sparserawlc.ninitialized = subsolver.sparserawlc.ridx[nec+nic];
+            subsolver.sparserawlc.m = nec+nic;
+            subsolver.sparserawlc.n = n;
+            sparse.sparseinitduidx(subsolver.sparserawlc, _params);
+        }
+
+
+        /*************************************************************************
+        This function sets subsolver algorithm to interior point method (IPM)
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void qpsubsolversetalgoipm(minsqpsubsolver subsolver,
+            alglib.xparams _params)
+        {
+            subsolver.algokind = 0;
+        }
+
+
+        /*************************************************************************
+        This function sets subsolver algorithm to fast active set method
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void qpsubsolversetalgofastactiveset(minsqpsubsolver subsolver,
+            double[] lagmult,
+            alglib.xparams _params)
+        {
+            subsolver.algokind = 1;
+        }
+
+
+        /*************************************************************************
+        Updates Hessian estimate, uses regularized formula which prevents  Hessian
+        eigenvalues from decreasing below sqrt(Eps)  and  rejects  updates  larger
+        than 1/sqrt(Eps) in magnitude.
+
+        INPUT PARAMETERS:
+            SState          -   solver state
+            Subsolver       -   SQP subproblem to initialize
+            X0, G0          -   point #0 and gradient at #0, array[N]
+            X1, G1          -   point #1 and gradient at #1, array[N]
+                                
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool qpsubproblemupdatehessian(minsqpstate sstate,
+            minsqpsubsolver subsolver,
+            double[] x0,
+            double[] g0,
+            double[] x1,
+            double[] g1,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int i = 0;
+            int n = 0;
+            double shs = 0;
+            double rawsy = 0;
+            double sy = 0;
+            double snrm2 = 0;
+            double ynrm2 = 0;
+            double v2 = 0;
+            double gk = 0;
+            double sk = 0;
+            double yk = 0;
+            double mxs = 0;
+            double mxy = 0;
+            double mxhs = 0;
+            double reg = 0;
+            double big = 0;
+            double growth = 0;
+            double eigold = 0;
+            double eignew = 0;
+            double eigcorrection = 0;
+
+            
+            //
+            // Algorithm parameters
+            //
+            reg = 100*Math.Sqrt(math.machineepsilon);
+            big = 1/reg;
+            growth = 100.0;
+            
+            //
+            // Proceed
+            //
+            result = false;
+            n = sstate.n;
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, n, _params);
+            rawsy = 0;
+            sy = 0;
+            snrm2 = 0;
+            ynrm2 = 0;
+            v2 = 0;
+            mxs = 0;
+            mxy = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Fetch components
+                //
+                sk = x1[i]-x0[i];
+                yk = g1[i]-g0[i];
+                gk = g0[i];
+                
+                //
+                // Compute raw (S,Y) without regularization (to be used later
+                // during comparison with zero)
+                //
+                rawsy = rawsy+sk*yk;
+                
+                //
+                // Convexify Y
+                //
+                yk = yk+reg*sk;
+                
+                //
+                // Compute various coefficients using regularized values
+                //
+                sy = sy+sk*yk;
+                snrm2 = snrm2+sk*sk;
+                ynrm2 = ynrm2+yk*yk;
+                v2 = v2+gk*gk;
+                mxs = Math.Max(mxs, Math.Abs(sk));
+                mxy = Math.Max(mxy, Math.Abs(yk));
+                subsolver.sk[i] = sk;
+                subsolver.yk[i] = yk;
+            }
+            shs = ablas.rmatrixsyvmv(n, subsolver.h, 0, 0, true, subsolver.sk, 0, subsolver.tmp0, _params);
+            ablas.rmatrixgemv(n, n, 1.0, subsolver.h, 0, 0, 0, subsolver.sk, 0, 0.0, subsolver.tmp0, 0, _params);
+            mxhs = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                mxhs = Math.Max(mxhs, Math.Abs(subsolver.tmp0[i]));
+            }
+            
+            //
+            // Skip updates if (Sk,Yk)<=0 or Sk*H*Sk<=0
+            //
+            // NOTE: we use 0.5*(SY+RawSY) in place of (Sk,Yk) which allows us to have slight
+            //       nonconvexity due to numerical noise.
+            //
+            if( (double)(0.5*(sy+rawsy))<=(double)(0) )
+            {
+                return result;
+            }
+            if( (double)(shs)<=(double)(0) )
+            {
+                return result;
+            }
+            if( (double)(snrm2)<=(double)(0) )
+            {
+                return result;
+            }
+            alglib.ap.assert((double)(sy)>(double)(0), "UpdateHessian: integrity check failed");
+            
+            //
+            // Skip updates with too short steps
+            //
+            // NOTE: may prevent us from updating Hessian near the solution
+            //
+            if( (double)(mxs)<=(double)(sstate.epsx) )
+            {
+                return result;
+            }
+            
+            //
+            // Too large Hessian updates sometimes may come from noisy or nonsmooth problems.
+            // 
+            // Skip updates with max(Yk)^2/(Yk,Sk)>=BIG or max(H*Sk)^2/(Sk*H*Sk)>=BIG
+            //
+            if( (double)(math.sqr(mxy)/sy)>=(double)(big) )
+            {
+                return result;
+            }
+            if( (double)(math.sqr(mxhs)/shs)>=(double)(big) )
+            {
+                return result;
+            }
+            
+            //
+            // Compare eigenvalues of H: old one removed by update, and new one.
+            // We require that new eigenvalue is not much larger/smaller than the old one.
+            // In order to enforce this condition we compute correction coefficient and
+            // multiply one of the rank-1 updates by this coefficient.
+            //
+            eigold = shs/snrm2;
+            eignew = sy/snrm2;
+            eignew = Math.Min(eignew, eigold*growth);
+            eignew = Math.Max(eignew, eigold/growth);
+            eigcorrection = eignew/(sy/snrm2);
+            
+            //
+            // Update Hessian
+            //
+            ablas.rmatrixger(n, n, subsolver.h, 0, 0, -(1/shs), subsolver.tmp0, 0, subsolver.tmp0, 0, _params);
+            ablas.rmatrixger(n, n, subsolver.h, 0, 0, eigcorrection*(1/sy), subsolver.yk, 0, subsolver.yk, 0, _params);
+            result = true;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function solves QP subproblem given by initial point X, function vector Fi
+        and Jacobian Jac, and returns estimates of Lagrangian multipliers and search direction D[].
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void fassolve(minsqpsubsolver subsolver,
+            double[] d0,
+            double[,] h,
+            int nq,
+            double[] b,
+            int n,
+            double[] bndl,
+            double[] bndu,
+            sparse.sparsematrix a,
+            int m,
+            double[] al,
+            double[] au,
+            double trustrad,
+            ref int terminationtype,
+            double[] d,
+            double[] lagmult,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            terminationtype = 1;
+            
+            //
+            // Initial point, integrity check for constraints
+            //
+            apserv.bvectorsetlengthatleast(ref subsolver.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref subsolver.hasbndu, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.hasbndl[i] = math.isfinite(bndl[i]);
+                subsolver.hasbndu[i] = math.isfinite(bndu[i]);
+                alglib.ap.assert(!subsolver.hasbndl[i] || (double)(bndl[i])<=(double)(d0[i]), "FASSolve: integrity check failed");
+                alglib.ap.assert(!subsolver.hasbndu[i] || (double)(bndu[i])>=(double)(d0[i]), "FASSolve: integrity check failed");
+                d[i] = d0[i];
+            }
+            apserv.bvectorsetlengthatleast(ref subsolver.hasal, m, _params);
+            apserv.bvectorsetlengthatleast(ref subsolver.hasau, m, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                subsolver.hasal[i] = math.isfinite(al[i]);
+                subsolver.hasau[i] = math.isfinite(au[i]);
+                if( subsolver.hasal[i] && subsolver.hasau[i] )
+                {
+                    alglib.ap.assert((double)(al[i])<=(double)(au[i]), "FASSolve: integrity check failed");
+                }
+            }
+            apserv.rmatrixsetlengthatleast(ref subsolver.activea, n, n, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.activerhs, n, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.activeidx, n, _params);
+            subsolver.activesetsize = 0;
+            
+            //
+            // Activate equality constraints (at most N)
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                if( (subsolver.hasal[i] && subsolver.hasau[i]) && (double)(al[i])==(double)(au[i]) )
+                {
+                    
+                    //
+                    // Stop if full set of constraints is activated
+                    //
+                    if( subsolver.activesetsize>=n )
+                    {
+                        break;
+                    }
+                }
+            }
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, n, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp1, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.tmp0[i] = trustrad;
+                subsolver.tmp1[i] = 0.0;
+            }
+            vipmsolver.vipminitdensewithslacks(subsolver.ipmsolver, subsolver.tmp0, subsolver.tmp1, nq, n, _params);
+            vipmsolver.vipmsetquadraticlinear(subsolver.ipmsolver, h, subsolver.sparsedummy, 0, true, b, _params);
+            vipmsolver.vipmsetconstraints(subsolver.ipmsolver, bndl, bndu, a, m, subsolver.densedummy, 0, al, au, _params);
+            vipmsolver.vipmoptimize(subsolver.ipmsolver, ref subsolver.tmp0, ref subsolver.tmp1, ref subsolver.tmp2, ref terminationtype, _params);
+            if( terminationtype<=0 )
+            {
+                return;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                d[i] = subsolver.tmp0[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                lagmult[i] = subsolver.tmp2[i];
+            }
+        }
+
+
+        /*************************************************************************
+        This function solves QP subproblem given by initial point X, function vector Fi
+        and Jacobian Jac, and returns estimates of Lagrangian multipliers and search direction D[].
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool qpsubproblemsolve(minsqpstate state,
+            minsqpsubsolver subsolver,
+            double[] x,
+            double[] fi,
+            double[,] jac,
+            double[] d,
+            double[] lagmult,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            double v = 0;
+            double vv = 0;
+            double vright = 0;
+            double vmax = 0;
+            int lccnt = 0;
+            int offsslackec = 0;
+            int offsslacknlec = 0;
+            int offsslackic = 0;
+            int offsslacknlic = 0;
+            int offs = 0;
+            int nnz = 0;
+            int j0 = 0;
+            int j1 = 0;
+            int terminationtype = 0;
+
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            lccnt = nec+nic+nlec+nlic;
+            
+            //
+            // Locations of slack variables
+            //
+            offsslackec = n;
+            offsslacknlec = n+2*nec;
+            offsslackic = n+2*nec+2*nlec;
+            offsslacknlic = n+2*(nec+nlec)+nic;
+            
+            //
+            // Prepare temporary structures
+            //
+            apserv.rvectorgrowto(ref subsolver.cural, lccnt, _params);
+            apserv.rvectorgrowto(ref subsolver.curau, lccnt, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.d0, nslack, _params);
+            
+            //
+            // Prepare default solution: all zeros
+            //
+            result = true;
+            for(i=0; i<=nslack-1; i++)
+            {
+                d[i] = 0.0;
+                subsolver.d0[i] = 0;
+            }
+            for(i=0; i<=lccnt-1; i++)
+            {
+                lagmult[i] = 0;
+            }
+            
+            //
+            // Linear term B
+            //
+            // NOTE: elements [N,NSlack) are equal to bigC + perturbation to improve numeric properties of QP problem
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.curb[i] = jac[0,i];
+            }
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(jac[0,i]);
+            }
+            v = apserv.coalesce(Math.Sqrt(v), 1.0, _params);
+            for(i=n; i<=nslack-1; i++)
+            {
+                subsolver.curb[i] = (bigc+1.0/(1+i))*v;
+            }
+            
+            //
+            // Trust radius constraints for primary variables
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.curbndl[i] = -state.trustrad;
+                subsolver.curbndu[i] = state.trustrad;
+                if( state.hasbndl[i] )
+                {
+                    subsolver.curbndl[i] = Math.Max(subsolver.curbndl[i], state.scaledbndl[i]-x[i]);
+                }
+                if( state.hasbndu[i] )
+                {
+                    subsolver.curbndu[i] = Math.Min(subsolver.curbndu[i], state.scaledbndu[i]-x[i]);
+                }
+            }
+            
+            //
+            // Prepare storage for "effective" constraining matrix
+            //
+            nnz = subsolver.sparserawlc.ridx[nec+nic];
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    if( jac[1+i,j]!=0.0 )
+                    {
+                        nnz = nnz+1;
+                    }
+                }
+            }
+            nnz = nnz+2*nec+nic;
+            nnz = nnz+2*nlec+nlic;
+            apserv.ivectorgrowto(ref subsolver.sparseefflc.ridx, lccnt+1, _params);
+            apserv.rvectorgrowto(ref subsolver.sparseefflc.vals, nnz, _params);
+            apserv.ivectorgrowto(ref subsolver.sparseefflc.idx, nnz, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparseefflc.didx, lccnt, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparseefflc.uidx, lccnt, _params);
+            subsolver.sparseefflc.m = 0;
+            subsolver.sparseefflc.n = nslack;
+            subsolver.sparseefflc.matrixtype = 1;
+            
+            //
+            // Append linear equality/inequality constraints
+            //
+            // Scan sparsified linear constraints stored in sparserawlc[], skip ones
+            // which are inactive anywhere in the trust region.
+            //
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, nslack, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.tmp0[i] = x[i];
+            }
+            for(i=n; i<=nslack-1; i++)
+            {
+                subsolver.tmp0[i] = 0;
+            }
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                
+                //
+                // Calculate:
+                // * VRight - product of X[] (extended with zeros up to NSlack elements)
+                //            and AR[i] - Ith row of sparserawlc matrix.
+                // * VMax   - maximum value of X*ARi computed over trust region
+                //
+                vright = 0;
+                vmax = 0;
+                j0 = subsolver.sparserawlc.ridx[i];
+                j1 = subsolver.sparserawlc.ridx[i+1]-1;
+                for(k=j0; k<=j1; k++)
+                {
+                    j = subsolver.sparserawlc.idx[k];
+                    v = subsolver.tmp0[j];
+                    vv = subsolver.sparserawlc.vals[k];
+                    vright = vright+vv*v;
+                    if( vv>=0 )
+                    {
+                        vmax = vmax+vv*(v+subsolver.curbndu[j]);
+                    }
+                    else
+                    {
+                        vmax = vmax+vv*(v+subsolver.curbndl[j]);
+                    }
+                }
+                
+                //
+                // If constraint is an inequality one and guaranteed to be inactive
+                // within trust region, it is skipped (row itself is retained but
+                // filled by zeros).
+                //
+                if( i>=nec && vmax<=state.scaledcleic[i,n] )
+                {
+                    offs = subsolver.sparseefflc.ridx[i];
+                    subsolver.sparseefflc.vals[offs] = -1;
+                    subsolver.sparseefflc.idx[offs] = offsslackic+(i-nec);
+                    subsolver.sparseefflc.ridx[i+1] = offs+1;
+                    subsolver.cural[i] = 0.0;
+                    subsolver.curau[i] = 0.0;
+                    subsolver.curbndl[offsslackic+(i-nec)] = 0;
+                    subsolver.curbndu[offsslackic+(i-nec)] = 0;
+                    continue;
+                }
+                
+                //
+                // Start working on row I
+                //
+                offs = subsolver.sparseefflc.ridx[i];
+                
+                //
+                // Copy constraint from sparserawlc[] to sparseefflc[]
+                //
+                j0 = subsolver.sparserawlc.ridx[i];
+                j1 = subsolver.sparserawlc.ridx[i+1]-1;
+                for(k=j0; k<=j1; k++)
+                {
+                    subsolver.sparseefflc.idx[offs] = subsolver.sparserawlc.idx[k];
+                    subsolver.sparseefflc.vals[offs] = subsolver.sparserawlc.vals[k];
+                    offs = offs+1;
+                }
+                
+                //
+                // Set up slack variables
+                //
+                if( i<nec )
+                {
+                    subsolver.sparseefflc.vals[offs+0] = -1;
+                    subsolver.sparseefflc.vals[offs+1] = 1;
+                    subsolver.sparseefflc.idx[offs+0] = offsslackec+2*i+0;
+                    subsolver.sparseefflc.idx[offs+1] = offsslackec+2*i+1;
+                    offs = offs+2;
+                }
+                else
+                {
+                    
+                    //
+                    // Slack variables for inequality constraints
+                    //
+                    subsolver.sparseefflc.vals[offs] = -1;
+                    subsolver.sparseefflc.idx[offs] = offsslackic+(i-nec);
+                    offs = offs+1;
+                }
+                
+                //
+                // Finalize row
+                //
+                subsolver.sparseefflc.ridx[i+1] = offs;
+                
+                //
+                // Set up bounds and slack part of D0.
+                //
+                // NOTE: bounds for equality and inequality constraints are
+                //       handled differently
+                //
+                v = vright-state.scaledcleic[i,n];
+                if( i<nec )
+                {
+                    subsolver.cural[i] = -v;
+                    subsolver.curau[i] = -v;
+                    subsolver.curbndl[offsslackec+2*i+0] = 0;
+                    subsolver.curbndl[offsslackec+2*i+1] = 0;
+                    subsolver.curbndu[offsslackec+2*i+0] = Math.Abs(v);
+                    subsolver.curbndu[offsslackec+2*i+1] = Math.Abs(v);
+                    if( (double)(v)>=(double)(0) )
+                    {
+                        subsolver.d0[offsslackec+2*i+0] = Math.Abs(v);
+                        subsolver.d0[offsslackec+2*i+1] = 0;
+                    }
+                    else
+                    {
+                        subsolver.d0[offsslackec+2*i+0] = 0;
+                        subsolver.d0[offsslackec+2*i+1] = Math.Abs(v);
+                    }
+                }
+                else
+                {
+                    subsolver.cural[i] = Double.NegativeInfinity;
+                    subsolver.curau[i] = -v;
+                    subsolver.curbndl[offsslackic+(i-nec)] = 0;
+                    subsolver.curbndu[offsslackic+(i-nec)] = Math.Max(v, 0);
+                    subsolver.d0[offsslackic+(i-nec)] = Math.Max(v, 0);
+                }
+            }
+            subsolver.sparseefflc.m = subsolver.sparseefflc.m+(nec+nic);
+            
+            //
+            // Append nonlinear equality/inequality constraints
+            //
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                
+                //
+                // Calculate scale coefficient
+                //
+                vv = 0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = jac[1+i,j];
+                    vv = vv+v*v;
+                }
+                vv = 1/apserv.coalesce(Math.Sqrt(vv), 1, _params);
+                
+                //
+                // Copy scaled row
+                //
+                offs = subsolver.sparseefflc.ridx[subsolver.sparseefflc.m+i];
+                for(j=0; j<=n-1; j++)
+                {
+                    if( jac[1+i,j]!=0.0 )
+                    {
+                        subsolver.sparseefflc.vals[offs] = vv*jac[1+i,j];
+                        subsolver.sparseefflc.idx[offs] = j;
+                        offs = offs+1;
+                    }
+                }
+                if( i<nlec )
+                {
+                    
+                    //
+                    // Add slack terms for equality constraints
+                    //
+                    subsolver.sparseefflc.vals[offs+0] = -1;
+                    subsolver.sparseefflc.vals[offs+1] = 1;
+                    subsolver.sparseefflc.idx[offs+0] = offsslacknlec+2*i+0;
+                    subsolver.sparseefflc.idx[offs+1] = offsslacknlec+2*i+1;
+                    offs = offs+2;
+                }
+                else
+                {
+                    
+                    //
+                    // Add slack terms for inequality constraints
+                    //
+                    subsolver.sparseefflc.vals[offs] = -1;
+                    subsolver.sparseefflc.idx[offs] = offsslacknlic+(i-nlec);
+                    offs = offs+1;
+                }
+                subsolver.sparseefflc.ridx[subsolver.sparseefflc.m+i+1] = offs;
+                
+                //
+                // Set box constraints on slack variables and bounds on linear equality/inequality constraints
+                //
+                v = vv*fi[1+i];
+                if( i<nlec )
+                {
+                    
+                    //
+                    // Equality constraint
+                    //
+                    subsolver.cural[subsolver.sparseefflc.m+i] = -v;
+                    subsolver.curau[subsolver.sparseefflc.m+i] = -v;
+                    subsolver.curbndl[offsslacknlec+2*i+0] = 0;
+                    subsolver.curbndl[offsslacknlec+2*i+1] = 0;
+                    subsolver.curbndu[offsslacknlec+2*i+0] = Math.Abs(v);
+                    subsolver.curbndu[offsslacknlec+2*i+1] = Math.Abs(v);
+                    if( (double)(v)>=(double)(0) )
+                    {
+                        subsolver.d0[offsslacknlec+2*i+0] = Math.Abs(v);
+                        subsolver.d0[offsslacknlec+2*i+1] = 0;
+                    }
+                    else
+                    {
+                        subsolver.d0[offsslacknlec+2*i+0] = 0;
+                        subsolver.d0[offsslacknlec+2*i+1] = Math.Abs(v);
+                    }
+                }
+                else
+                {
+                    
+                    //
+                    // Inequality constraint
+                    //
+                    subsolver.cural[subsolver.sparseefflc.m+i] = Double.NegativeInfinity;
+                    subsolver.curau[subsolver.sparseefflc.m+i] = -v;
+                    subsolver.curbndl[offsslacknlic+(i-nlec)] = 0;
+                    subsolver.curbndu[offsslacknlic+(i-nlec)] = Math.Max(v, 0);
+                    subsolver.d0[offsslacknlic+(i-nlec)] = Math.Max(v, 0);
+                }
+            }
+            subsolver.sparseefflc.m = subsolver.sparseefflc.m+(nlec+nlic);
+            
+            //
+            // Finalize sparse matrix structure
+            //
+            alglib.ap.assert(subsolver.sparseefflc.ridx[subsolver.sparseefflc.m]<=alglib.ap.len(subsolver.sparseefflc.idx), "QPSubproblemSolve: critical integrity check failed");
+            alglib.ap.assert(subsolver.sparseefflc.ridx[subsolver.sparseefflc.m]<=alglib.ap.len(subsolver.sparseefflc.vals), "QPSubproblemSolve: critical integrity check failed");
+            subsolver.sparseefflc.ninitialized = subsolver.sparseefflc.ridx[subsolver.sparseefflc.m];
+            sparse.sparseinitduidx(subsolver.sparseefflc, _params);
+            
+            //
+            // Solve quadratic program
+            //
+            if( subsolver.algokind==0 )
+            {
+                
+                //
+                // Use dense IPM
+                //
+                apserv.rvectorsetlengthatleast(ref subsolver.tmp0, nslack, _params);
+                apserv.rvectorsetlengthatleast(ref subsolver.tmp1, nslack, _params);
+                for(i=0; i<=nslack-1; i++)
+                {
+                    subsolver.tmp0[i] = state.trustrad;
+                    subsolver.tmp1[i] = 0.0;
+                }
+                vipmsolver.vipminitdensewithslacks(subsolver.ipmsolver, subsolver.tmp0, subsolver.tmp1, n, nslack, _params);
+                vipmsolver.vipmsetquadraticlinear(subsolver.ipmsolver, subsolver.h, subsolver.sparsedummy, 0, true, subsolver.curb, _params);
+                vipmsolver.vipmsetconstraints(subsolver.ipmsolver, subsolver.curbndl, subsolver.curbndu, subsolver.sparseefflc, subsolver.sparseefflc.m, subsolver.densedummy, 0, subsolver.cural, subsolver.curau, _params);
+                vipmsolver.vipmoptimize(subsolver.ipmsolver, ref subsolver.tmp0, ref subsolver.tmp1, ref subsolver.tmp2, ref terminationtype, _params);
+                if( terminationtype<=0 )
+                {
+                    
+                    //
+                    // QP solver failed due to numerical errors; exit
+                    //
+                    result = false;
+                    return result;
+                }
+                for(i=0; i<=nslack-1; i++)
+                {
+                    d[i] = subsolver.tmp0[i];
+                }
+                for(i=0; i<=lccnt-1; i++)
+                {
+                    lagmult[i] = subsolver.tmp2[i];
+                }
+                return result;
+            }
+            if( subsolver.algokind==1 )
+            {
+                
+                //
+                // Use fast active set
+                //
+                fassolve(subsolver, subsolver.d0, subsolver.h, n, subsolver.curb, nslack, subsolver.curbndl, subsolver.curbndu, subsolver.sparseefflc, subsolver.sparseefflc.m, subsolver.cural, subsolver.curau, state.trustrad, ref terminationtype, d, lagmult, _params);
+                if( terminationtype<=0 )
+                {
+                    
+                    //
+                    // QP solver failed due to numerical errors; exit
+                    //
+                    result = false;
+                    return result;
+                }
+                return result;
+            }
+            
+            //
+            // Unexpected
+            //
+            alglib.ap.assert(false, "SQP: unexpected subsolver type");
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes MeritPhase temporaries. It should be called before
+        beginning of each new iteration. You may call it multiple  times  for  the
+        same instance of MeritPhase temporaries.
+
+        INPUT PARAMETERS:
+            MeritState          -   instance to be initialized.
+            N                   -   problem dimensionality
+            NEC, NIC            -   linear equality/inequality constraint count
+            NLEC, NLIC          -   nonlinear equality/inequality constraint count
+
+        OUTPUT PARAMETERS:
+            MeritState          -   instance being initialized
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void meritphaseinit(minsqpmeritphasestate meritstate,
+            double[] curx,
+            double[] curfi,
+            double[,] curj,
+            int n,
+            int nec,
+            int nic,
+            int nlec,
+            int nlic,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int nslack = 0;
+
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            meritstate.n = n;
+            meritstate.nec = nec;
+            meritstate.nic = nic;
+            meritstate.nlec = nlec;
+            meritstate.nlic = nlic;
+            apserv.rvectorsetlengthatleast(ref meritstate.d, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.dx, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkx, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkxc, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkxn, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkfi, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkfic, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkfin, 1+nlec+nlic, _params);
+            apserv.rmatrixsetlengthatleast(ref meritstate.stepkj, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref meritstate.stepkjc, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref meritstate.stepkjn, 1+nlec+nlic, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepklaggrad, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepknlaggrad, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.lagmult, nec+nic+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.dummylagmult, nec+nic+nlec+nlic, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                meritstate.stepkx[i] = curx[i];
+            }
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                meritstate.stepkfi[i] = curfi[i];
+                for(j=0; j<=n-1; j++)
+                {
+                    meritstate.stepkj[i,j] = curj[i,j];
+                }
+            }
+            meritstate.rmeritphasestate.ia = new int[7+1];
+            meritstate.rmeritphasestate.ba = new bool[3+1];
+            meritstate.rmeritphasestate.ra = new double[8+1];
+            meritstate.rmeritphasestate.stage = -1;
+        }
+
+
+        /*************************************************************************
+        This function tries to perform either phase #1 or phase #3 step.
+
+        Former corresponds to linear model step (without conjugacy constraints) with
+        correction for nonlinearity ("second order correction").  Such  correction
+        helps to overcome  Maratos  effect  (a  tendency  of  L1  penalized  merit
+        functions to reject nonzero steps).
+
+        Latter is a step using linear model with no second order correction.
+
+        INPUT PARAMETERS:
+            State       -   SQP solver state
+            SMonitor    -   smoothness monitor
+            UserTerminationNeeded-True if user requested termination
+            LagMult     -   array[NEC+NIC+NLEC+NLIC], contents ignored on input.
+
+        OUTPUT PARAMETERS:
+            State       -   RepTerminationType is set to current termination code (if Status=0).
+            LagMult     -   filled with current Lagrange multipliers
+            Status      -   when reverse communication is done, Status is set to:
+                            * positive value,  if we can proceed to the next stage
+                              of the outer iteration
+                            * zero, if algorithm is terminated (RepTerminationType
+                              is set to appropriate value)
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool meritphaseiteration(minsqpstate state,
+            minsqpmeritphasestate meritstate,
+            optserv.smoothnessmonitor smonitor,
+            bool userterminationneeded,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double mx = 0;
+            double f0 = 0;
+            double f1 = 0;
+            double nu = 0;
+            double localstp = 0;
+            double stepklagval = 0;
+            double stepknlagval = 0;
+            bool hessianupdateperformed = new bool();
+            bool dotrace = new bool();
+            bool doprobing = new bool();
+            bool dotracexd = new bool();
+            double stp = 0;
+
+            
+            //
+            // Reverse communication preparations
+            // I know it looks ugly, but it works the same way
+            // anywhere from C++ to Python.
+            //
+            // This code initializes locals by:
+            // * random values determined during code
+            //   generation - on first subroutine call
+            // * values from previous call - on subsequent calls
+            //
+            if( meritstate.rmeritphasestate.stage>=0 )
+            {
+                n = meritstate.rmeritphasestate.ia[0];
+                nslack = meritstate.rmeritphasestate.ia[1];
+                nec = meritstate.rmeritphasestate.ia[2];
+                nic = meritstate.rmeritphasestate.ia[3];
+                nlec = meritstate.rmeritphasestate.ia[4];
+                nlic = meritstate.rmeritphasestate.ia[5];
+                i = meritstate.rmeritphasestate.ia[6];
+                j = meritstate.rmeritphasestate.ia[7];
+                hessianupdateperformed = meritstate.rmeritphasestate.ba[0];
+                dotrace = meritstate.rmeritphasestate.ba[1];
+                doprobing = meritstate.rmeritphasestate.ba[2];
+                dotracexd = meritstate.rmeritphasestate.ba[3];
+                v = meritstate.rmeritphasestate.ra[0];
+                mx = meritstate.rmeritphasestate.ra[1];
+                f0 = meritstate.rmeritphasestate.ra[2];
+                f1 = meritstate.rmeritphasestate.ra[3];
+                nu = meritstate.rmeritphasestate.ra[4];
+                localstp = meritstate.rmeritphasestate.ra[5];
+                stepklagval = meritstate.rmeritphasestate.ra[6];
+                stepknlagval = meritstate.rmeritphasestate.ra[7];
+                stp = meritstate.rmeritphasestate.ra[8];
+            }
+            else
+            {
+                n = -229;
+                nslack = -536;
+                nec = 487;
+                nic = -115;
+                nlec = 886;
+                nlic = 346;
+                i = -722;
+                j = -413;
+                hessianupdateperformed = true;
+                dotrace = true;
+                doprobing = true;
+                dotracexd = false;
+                v = -154;
+                mx = 306;
+                f0 = -1011;
+                f1 = 951;
+                nu = -463;
+                localstp = 88;
+                stepklagval = -861;
+                stepknlagval = -678;
+                stp = -731;
+            }
+            if( meritstate.rmeritphasestate.stage==0 )
+            {
+                goto lbl_0;
+            }
+            if( meritstate.rmeritphasestate.stage==1 )
+            {
+                goto lbl_1;
+            }
+            if( meritstate.rmeritphasestate.stage==2 )
+            {
+                goto lbl_2;
+            }
+            if( meritstate.rmeritphasestate.stage==3 )
+            {
+                goto lbl_3;
+            }
+            
+            //
+            // Routine body
+            //
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            dotrace = ap.istraceenabled("SQP", _params);
+            dotracexd = dotrace && ap.istraceenabled("SQP.DETAILED", _params);
+            doprobing = ap.istraceenabled("SQP.PROBING", _params);
+            alglib.ap.assert(alglib.ap.len(meritstate.lagmult)>=nec+nic+nlec+nlic, "MeritPhaseIteration: integrity check failed");
+            
+            //
+            // Report iteration beginning
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n--- quadratic step with automatic second-order correction ------------------------------------------\n");
+            }
+            
+            //
+            // Default decision is to continue algorithm
+            //
+            meritstate.status = 1;
+            stp = 0;
+            
+            //
+            // Determine step direction using linearized model with no conjugacy terms
+            //
+            if( !qpsubproblemsolve(state, state.subsolver, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, meritstate.d, meritstate.lagmult, _params) )
+            {
+                if( dotrace )
+                {
+                    alglib.ap.trace("> [WARNING] QP subproblem failed\n");
+                }
+                result = false;
+                return result;
+            }
+            
+            //
+            // Perform merit function line search.
+            //
+            // First, we try unit step. If it does not decrease merit function,
+            // a second-order correction is tried (helps to combat Maratos effect).
+            //
+            localstp = 1.0;
+            f0 = meritfunction(state, meritstate.stepkx, meritstate.stepkfi, meritstate.lagmult, meritstate.tmpmerit, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                meritstate.stepkxn[i] = meritstate.stepkx[i]+localstp*meritstate.d[i];
+            }
+            sqpsendx(state, meritstate.stepkxn, _params);
+            state.needfij = true;
+            meritstate.rmeritphasestate.stage = 0;
+            goto lbl_rcomm;
+        lbl_0:
+            state.needfij = false;
+            if( !sqpretrievefij(state, meritstate.stepkfin, meritstate.stepkjn, _params) )
+            {
+                
+                //
+                // Failed to retrieve func/Jac, infinities detected
+                //
+                state.repterminationtype = -8;
+                meritstate.status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
+                }
+                result = false;
+                return result;
+            }
+            optserv.smoothnessmonitorstartlinesearch(smonitor, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, _params);
+            optserv.smoothnessmonitorenqueuepoint(smonitor, meritstate.d, localstp, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
+            f1 = meritfunction(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.lagmult, meritstate.tmpmerit, _params);
+            if( (double)(f1)<(double)(f0) )
+            {
+                goto lbl_4;
+            }
+            
+            //
+            // Full step increases merit function. Let's compute second order
+            // correction to the constraint model and recompute trial step D:
+            // * use original linearization of the target
+            // * extrapolate linearization of nonlinear constraints at StepKX+D back to origin
+            //
+            //
+            meritstate.stepkfic[0] = meritstate.stepkfi[0];
+            for(j=0; j<=n-1; j++)
+            {
+                meritstate.stepkjc[0,j] = meritstate.stepkj[0,j];
+            }
+            for(i=1; i<=nlec+nlic; i++)
+            {
+                v = 0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = v+meritstate.d[j]*meritstate.stepkj[i,j];
+                    meritstate.stepkjc[i,j] = meritstate.stepkj[i,j];
+                }
+                meritstate.stepkfic[i] = meritstate.stepkfin[i]-v;
+            }
+            if( !qpsubproblemsolve(state, state.subsolver, meritstate.stepkx, meritstate.stepkfic, meritstate.stepkjc, meritstate.dx, meritstate.dummylagmult, _params) )
+            {
+                if( dotrace )
+                {
+                    alglib.ap.trace("> [WARNING] second-order QP subproblem failed\n");
+                }
+                result = false;
+                return result;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                meritstate.d[i] = meritstate.dx[i];
+            }
+            
+            //
+            // Perform line search, we again try full step (maybe it will work after SOC)
+            //
+            // NOTE: we use MeritLagMult - Lagrange multipliers computed for initial,
+            //       uncorrected task - for the merit function model.
+            //       Using DummyLagMult can destabilize algorithm.
+            //
+            localstp = 1.0;
+            nu = 0.5;
+            f1 = f0;
+        lbl_6:
+            if( false )
+            {
+                goto lbl_7;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                meritstate.stepkxn[i] = meritstate.stepkx[i]+localstp*meritstate.d[i];
+            }
+            sqpsendx(state, meritstate.stepkxn, _params);
+            state.needfij = true;
+            meritstate.rmeritphasestate.stage = 1;
+            goto lbl_rcomm;
+        lbl_1:
+            state.needfij = false;
+            if( !sqpretrievefij(state, meritstate.stepkfin, meritstate.stepkjn, _params) )
+            {
+                
+                //
+                // Failed to retrieve func/Jac, infinities detected
+                //
+                state.repterminationtype = -8;
+                meritstate.status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
+                }
+                result = false;
+                return result;
+            }
+            optserv.smoothnessmonitorenqueuepoint(smonitor, meritstate.d, localstp, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
+            f1 = meritfunction(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.lagmult, meritstate.tmpmerit, _params);
+            if( (double)(f1)<(double)(f0) )
+            {
+                
+                //
+                // Step is found!
+                //
+                goto lbl_7;
+            }
+            if( (double)(localstp)<(double)(0.001) )
+            {
+                
+                //
+                // Step is shorter than 0.001 times current search direction,
+                // it means that no good step can be found.
+                //
+                localstp = 0;
+                sqpcopystate(state, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
+                goto lbl_7;
+            }
+            localstp = nu*localstp;
+            nu = Math.Max(0.1, 0.5*nu);
+            goto lbl_6;
+        lbl_7:
+        lbl_4:
+            optserv.smoothnessmonitorfinalizelinesearch(smonitor, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    meritstate.stepkxn[i] = Math.Max(meritstate.stepkxn[i], state.scaledbndl[i]);
+                }
+                if( state.hasbndu[i] )
+                {
+                    meritstate.stepkxn[i] = Math.Min(meritstate.stepkxn[i], state.scaledbndu[i]);
+                }
+            }
+            if( userterminationneeded )
+            {
+                
+                //
+                // User requested termination, break before we move to new point
+                //
+                state.repterminationtype = 8;
+                meritstate.status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("> user requested termination\n");
+                }
+                result = false;
+                return result;
+            }
+            lagrangianfg(state, meritstate.stepkx, state.trustrad, meritstate.stepkfi, meritstate.stepkj, meritstate.lagmult, meritstate.tmplagrangianfg, ref stepklagval, meritstate.stepklaggrad, _params);
+            lagrangianfg(state, meritstate.stepkxn, state.trustrad, meritstate.stepkfin, meritstate.stepkjn, meritstate.lagmult, meritstate.tmplagrangianfg, ref stepknlagval, meritstate.stepknlaggrad, _params);
+            
+            //
+            // Trace
+            //
+            if( !dotrace )
+            {
+                goto lbl_8;
+            }
+            if( !doprobing )
+            {
+                goto lbl_10;
+            }
+            optserv.smoothnessmonitorstartprobing(smonitor, 1.0, 2, state.trustrad, _params);
+        lbl_12:
+            if( !optserv.smoothnessmonitorprobe(smonitor, _params) )
+            {
+                goto lbl_13;
+            }
+            for(j=0; j<=n-1; j++)
+            {
+                meritstate.stepkxc[j] = meritstate.stepkx[j]+smonitor.probingstp*meritstate.d[j];
+                if( state.hasbndl[j] )
+                {
+                    meritstate.stepkxc[j] = Math.Max(meritstate.stepkxc[j], state.scaledbndl[j]);
+                }
+                if( state.hasbndu[j] )
+                {
+                    meritstate.stepkxc[j] = Math.Min(meritstate.stepkxc[j], state.scaledbndu[j]);
+                }
+            }
+            sqpsendx(state, meritstate.stepkxc, _params);
+            state.needfij = true;
+            meritstate.rmeritphasestate.stage = 2;
+            goto lbl_rcomm;
+        lbl_2:
+            state.needfij = false;
+            if( !sqpretrievefij(state, meritstate.stepkfic, meritstate.stepkjc, _params) )
+            {
+                goto lbl_13;
+            }
+            smonitor.probingf[0] = rawlagrangian(state, meritstate.stepkxc, meritstate.stepkfic, meritstate.lagmult, meritstate.tmpmerit, _params);
+            smonitor.probingf[1] = meritstate.stepkfic[0];
+            goto lbl_12;
+        lbl_13:
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |   probing search direction suggested by QP subproblem    |\n");
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |  Step  | Lagrangian (unaugmentd)|    Target  function    |\n");
+            alglib.ap.trace("*** |along  D|     must be smooth     |     must be smooth     |\n");
+            alglib.ap.trace("*** |        | function   |    slope  | function   |    slope  |\n");
+            optserv.smoothnessmonitortraceprobingresults(smonitor, _params);
+        lbl_10:
+            mx = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                mx = Math.Max(mx, Math.Abs(meritstate.d[i])/state.trustrad);
+            }
+            if( (double)(localstp)>(double)(0) )
+            {
+                alglib.ap.trace("> nonzero linear step was performed\n");
+            }
+            else
+            {
+                alglib.ap.trace("> zero linear step was performed\n");
+            }
+            alglib.ap.trace(System.String.Format("max(|Di|)/TrustRad = {0,0:F6}\n", mx));
+            alglib.ap.trace(System.String.Format("stp = {0,0:F6}\n", localstp));
+            if( dotracexd )
+            {
+                alglib.ap.trace("X0 (scaled) = ");
+                apserv.tracevectorautoprec(meritstate.stepkx, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("D  (scaled) = ");
+                apserv.tracevectorautoprec(meritstate.d, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("X1 (scaled) = ");
+                apserv.tracevectorautoprec(meritstate.stepkxn, 0, n, _params);
+                alglib.ap.trace("\n");
+            }
+            alglib.ap.trace(System.String.Format("meritF:         {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", f0, f1, f1-f0));
+            alglib.ap.trace(System.String.Format("scaled-targetF: {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", meritstate.stepkfi[0], meritstate.stepkfin[0], meritstate.stepkfin[0]-meritstate.stepkfi[0]));
+            alglib.ap.trace("> evaluating possible Hessian update\n");
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+(meritstate.stepkxn[i]-meritstate.stepkx[i])*(meritstate.stepknlaggrad[i]-meritstate.stepklaggrad[i]);
+            }
+            alglib.ap.trace(System.String.Format("(Sk,Yk)     = {0,0:E3}\n", v));
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(meritstate.stepkxn[i]-meritstate.stepkx[i]);
+            }
+            alglib.ap.trace(System.String.Format("(Sk,Sk)     = {0,0:E3}\n", v));
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(meritstate.stepknlaggrad[i]-meritstate.stepklaggrad[i]);
+            }
+            alglib.ap.trace(System.String.Format("(Yk,Yk)     = {0,0:E3}\n", v));
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(meritstate.stepkxn[i]-meritstate.stepkx[i])*state.subsolver.h[i,i];
+                for(j=i+1; j<=n-1; j++)
+                {
+                    v = v+2*(meritstate.stepkxn[i]-meritstate.stepkx[i])*state.subsolver.h[i,j]*(meritstate.stepkxn[j]-meritstate.stepkx[j]);
+                }
+            }
+            alglib.ap.trace(System.String.Format("Sk*Bk*Sk    = {0,0:E3}\n", v));
+            v = state.subsolver.h[0,0];
+            for(i=0; i<=n-1; i++)
+            {
+                v = Math.Min(v, state.subsolver.h[i,i]);
+            }
+            alglib.ap.trace(System.String.Format("mindiag(Bk) = {0,0:E3}\n", v));
+            v = state.subsolver.h[0,0];
+            for(i=0; i<=n-1; i++)
+            {
+                v = Math.Max(v, state.subsolver.h[i,i]);
+            }
+            alglib.ap.trace(System.String.Format("maxdiag(Bk) = {0,0:E3}\n", v));
+        lbl_8:
+            
+            //
+            // Perform Hessian update
+            //
+            hessianupdateperformed = false;
+            if( (double)(localstp)>(double)(0) )
+            {
+                hessianupdateperformed = qpsubproblemupdatehessian(state, state.subsolver, meritstate.stepkx, meritstate.stepklaggrad, meritstate.stepkxn, meritstate.stepknlaggrad, _params);
+            }
+            if( dotrace )
+            {
+                if( hessianupdateperformed )
+                {
+                    alglib.ap.trace("> Hessian updated\n");
+                    v = state.subsolver.h[0,0];
+                    for(i=0; i<=n-1; i++)
+                    {
+                        v = Math.Min(v, state.subsolver.h[i,i]);
+                    }
+                    alglib.ap.trace(System.String.Format("mindiag(Bk) = {0,0:E3}\n", v));
+                    v = state.subsolver.h[0,0];
+                    for(i=0; i<=n-1; i++)
+                    {
+                        v = Math.Max(v, state.subsolver.h[i,i]);
+                    }
+                    alglib.ap.trace(System.String.Format("maxdiag(Bk) = {0,0:E3}\n", v));
+                }
+                else
+                {
+                    alglib.ap.trace("> skipping Hessian update\n");
+                }
+            }
+            
+            //
+            // Move to new point
+            //
+            stp = localstp;
+            sqpcopystate(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, _params);
+            if( (double)(localstp)<=(double)(0) )
+            {
+                goto lbl_14;
+            }
+            
+            //
+            // Report one more inner iteration
+            //
+            sqpsendx(state, meritstate.stepkx, _params);
+            state.f = meritstate.stepkfi[0]*state.fscales[0];
+            state.xupdated = true;
+            meritstate.rmeritphasestate.stage = 3;
+            goto lbl_rcomm;
+        lbl_3:
+            state.xupdated = false;
+            
+            //
+            // Update constraint violations
+            //
+            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, meritstate.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
+            optserv.unscaleandchecknlcviolation(meritstate.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+        lbl_14:
+            result = false;
+            return result;
+            
+            //
+            // Saving state
+            //
+        lbl_rcomm:
+            result = true;
+            meritstate.rmeritphasestate.ia[0] = n;
+            meritstate.rmeritphasestate.ia[1] = nslack;
+            meritstate.rmeritphasestate.ia[2] = nec;
+            meritstate.rmeritphasestate.ia[3] = nic;
+            meritstate.rmeritphasestate.ia[4] = nlec;
+            meritstate.rmeritphasestate.ia[5] = nlic;
+            meritstate.rmeritphasestate.ia[6] = i;
+            meritstate.rmeritphasestate.ia[7] = j;
+            meritstate.rmeritphasestate.ba[0] = hessianupdateperformed;
+            meritstate.rmeritphasestate.ba[1] = dotrace;
+            meritstate.rmeritphasestate.ba[2] = doprobing;
+            meritstate.rmeritphasestate.ba[3] = dotracexd;
+            meritstate.rmeritphasestate.ra[0] = v;
+            meritstate.rmeritphasestate.ra[1] = mx;
+            meritstate.rmeritphasestate.ra[2] = f0;
+            meritstate.rmeritphasestate.ra[3] = f1;
+            meritstate.rmeritphasestate.ra[4] = nu;
+            meritstate.rmeritphasestate.ra[5] = localstp;
+            meritstate.rmeritphasestate.ra[6] = stepklagval;
+            meritstate.rmeritphasestate.ra[7] = stepknlagval;
+            meritstate.rmeritphasestate.ra[8] = stp;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes MeritPhase temporaries. It should be called before
+        beginning of each new iteration. You may call it multiple  times  for  the
+        same instance of MeritPhase temporaries.
+
+        INPUT PARAMETERS:
+            MeritState          -   instance to be initialized.
+            N                   -   problem dimensionality
+            NEC, NIC            -   linear equality/inequality constraint count
+            NLEC, NLIC          -   nonlinear equality/inequality constraint count
+
+        OUTPUT PARAMETERS:
+            MeritState          -   instance being initialized
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void meritphaseresults(minsqpmeritphasestate meritstate,
+            double[] curx,
+            double[] curfi,
+            double[,] curj,
+            double[] lagmult,
+            ref int status,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+
+            status = meritstate.status;
+            for(i=0; i<=meritstate.n-1; i++)
+            {
+                curx[i] = meritstate.stepkx[i];
+            }
+            for(i=0; i<=meritstate.nlec+meritstate.nlic; i++)
+            {
+                curfi[i] = meritstate.stepkfi[i];
+                for(j=0; j<=meritstate.n-1; j++)
+                {
+                    curj[i,j] = meritstate.stepkj[i,j];
+                }
+            }
+            alglib.ap.assert(alglib.ap.len(lagmult)>=meritstate.nec+meritstate.nic+meritstate.nlec+meritstate.nlic, "MeritPhaseResults: LagMult too short");
+            for(i=0; i<=meritstate.nec+meritstate.nic+meritstate.nlec+meritstate.nlic-1; i++)
+            {
+                lagmult[i] = meritstate.lagmult[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies X to State.X
+        *************************************************************************/
+        private static void sqpsendx(minsqpstate state,
+            double[] xs,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+
+            n = state.n;
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] && xs[i]<=state.scaledbndl[i] )
+                {
+                    state.x[i] = state.scaledbndl[i];
+                    continue;
+                }
+                if( state.hasbndu[i] && xs[i]>=state.scaledbndu[i] )
+                {
+                    state.x[i] = state.scaledbndu[i];
+                    continue;
+                }
+                state.x[i] = xs[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Retrieves F-vector and scaled Jacobian, copies them to FiS and JS.
+
+        Returns True on success, False on failure (when F or J are not finite numbers).
+        *************************************************************************/
+        private static bool sqpretrievefij(minsqpstate state,
+            double[] fis,
+            double[,] js,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int nlec = 0;
+            int nlic = 0;
+            int n = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            n = state.n;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            v = 0;
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                vv = 1/state.fscales[i];
+                fis[i] = vv*state.fi[i];
+                v = 0.1*v+fis[i];
+                for(j=0; j<=n-1; j++)
+                {
+                    js[i,j] = vv*state.j[i,j];
+                    v = 0.1*v+js[i,j];
+                }
+            }
+            result = math.isfinite(v);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Copies state (X point, Fi vector, J jacobian) to preallocated storage.
+        *************************************************************************/
+        private static void sqpcopystate(minsqpstate state,
+            double[] x0,
+            double[] fi0,
+            double[,] j0,
+            double[] x1,
+            double[] fi1,
+            double[,] j1,
+            alglib.xparams _params)
+        {
+            int nlec = 0;
+            int nlic = 0;
+            int n = 0;
+            int i = 0;
+            int j = 0;
+
+            n = state.n;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            for(i=0; i<=n-1; i++)
+            {
+                x1[i] = x0[i];
+            }
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                fi1[i] = fi0[i];
+                for(j=0; j<=n-1; j++)
+                {
+                    j1[i,j] = j0[i,j];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function calculates Lagrangian of the problem (in scaled variables):
+        its value and gradient.
+
+        Additionally it also estimates violation of linear constraints at the point
+        as well as index of the most violated constraint
+        *************************************************************************/
+        private static void lagrangianfg(minsqpstate state,
+            double[] x,
+            double trustrad,
+            double[] fi,
+            double[,] j,
+            double[] lagmult,
+            minsqptmplagrangian tmp,
+            ref double f,
+            double[] g,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            double v = 0;
+            double vlag = 0;
+            double vact = 0;
+            double vd = 0;
+            bool usesparsegemv = new bool();
+
+            f = 0;
+
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            
+            //
+            // Target function
+            //
+            f = fi[0];
+            for(i=0; i<=n-1; i++)
+            {
+                g[i] = j[0,i];
+            }
+            
+            //
+            // Lagrangian terms for linear constraints, constraint violations
+            //
+            if( nec+nic>0 )
+            {
+                usesparsegemv = state.subsolver.sparserawlc.ridx[nec+nic]<apserv.sparselevel2density(_params)*n*(nec+nic);
+                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp0, Math.Max(nec+nic, n), _params);
+                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, Math.Max(nec+nic, n), _params);
+                if( usesparsegemv )
+                {
+                    sparse.sparsemv(state.subsolver.sparserawlc, x, ref tmp.sclagtmp0, _params);
+                }
+                else
+                {
+                    ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.sclagtmp0, 0, _params);
+                }
+                for(i=0; i<=nec+nic-1; i++)
+                {
+                    
+                    //
+                    // Prepare
+                    //
+                    v = tmp.sclagtmp0[i]-state.scaledcleic[i,n];
+                    vlag = lagmult[i];
+                    tmp.sclagtmp1[i] = 0;
+                    
+                    //
+                    // Primary Lagrangian term
+                    //
+                    vact = v;
+                    vd = 1;
+                    f = f+vlag*vact;
+                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
+                    
+                    //
+                    // Quadratic augmentation term
+                    //
+                    if( i<nec || v>0 )
+                    {
+                        vact = v;
+                    }
+                    else
+                    {
+                        vact = 0;
+                    }
+                    f = f+0.5*augmentationfactor*vact*vact;
+                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
+                }
+                if( usesparsegemv )
+                {
+                    sparse.sparsemtv(state.subsolver.sparserawlc, tmp.sclagtmp1, ref tmp.sclagtmp0, _params);
+                    for(i=0; i<=n-1; i++)
+                    {
+                        g[i] = g[i]+tmp.sclagtmp0[i];
+                    }
+                }
+                else
+                {
+                    ablas.rmatrixgemv(n, nec+nic, 1.0, state.scaledcleic, 0, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
+                }
+            }
+            
+            //
+            // Lagrangian terms for nonlinear constraints
+            //
+            apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, nlec+nlic, _params);
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                v = fi[1+i];
+                vlag = lagmult[nec+nic+i];
+                tmp.sclagtmp1[i] = 0;
+                
+                //
+                // Lagrangian term
+                //
+                vact = v;
+                vd = 1;
+                f = f+vlag*vact;
+                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
+                
+                //
+                // Augmentation term
+                //
+                if( i<nlec || v>0 )
+                {
+                    vact = v;
+                }
+                else
+                {
+                    vact = 0;
+                }
+                f = f+0.5*augmentationfactor*vact*vact;
+                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
+            }
+            ablas.rmatrixgemv(n, nlec+nlic, 1.0, j, 1, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
+        }
+
+
+        /*************************************************************************
+        This function calculates L1-penalized merit function
+        *************************************************************************/
+        private static double meritfunction(minsqpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            minsqptmpmerit tmp,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double tmp0 = 0;
+            double tmp1 = 0;
+
+            meritfunctionandrawlagrangian(state, x, fi, lagmult, tmp, ref tmp0, ref tmp1, _params);
+            result = tmp0;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function calculates raw (unaugmented and smooth) Lagrangian
+        *************************************************************************/
+        private static double rawlagrangian(minsqpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            minsqptmpmerit tmp,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double tmp0 = 0;
+            double tmp1 = 0;
+
+            meritfunctionandrawlagrangian(state, x, fi, lagmult, tmp, ref tmp0, ref tmp1, _params);
+            result = tmp1;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function calculates L1-penalized merit function and raw  (smooth  and
+        un-augmented) Lagrangian
+        *************************************************************************/
+        private static void meritfunctionandrawlagrangian(minsqpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            minsqptmpmerit tmp,
+            ref double meritf,
+            ref double rawlag,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            double v = 0;
+
+            meritf = 0;
+            rawlag = 0;
+
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            
+            //
+            // Merit function and Lagrangian: primary term
+            //
+            meritf = fi[0];
+            rawlag = fi[0];
+            
+            //
+            // Merit function: augmentation and penalty for linear constraints
+            //
+            apserv.rvectorsetlengthatleast(ref tmp.mftmp0, nec+nic, _params);
+            ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.mftmp0, 0, _params);
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                v = tmp.mftmp0[i]-state.scaledcleic[i,n];
+                if( i<nec )
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*v*v;
+                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[i]))*Math.Abs(v);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[i]*v;
+                }
+                else
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[i]))*Math.Max(v, 0);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[i]*v;
+                }
+            }
+            
+            //
+            // Merit function: augmentation and penalty for nonlinear constraints
+            //
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                v = fi[1+i];
+                if( i<nlec )
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*v*v;
+                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[nec+nic+i]))*Math.Abs(v);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[nec+nic+i]*v;
+                }
+                else
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[nec+nic+i]))*Math.Max(v, 0);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[nec+nic+i]*v;
+                }
+            }
+        }
+
+
+    }
     public class minlbfgs
     {
         public class minlbfgsstate : apobject
@@ -25964,6 +34420,8 @@ public partial class alglib
             public double[] sclsftbndu;
             public double[] sclsftxc;
             public double[,] sclsftcleic;
+            public int[] cidx;
+            public double[] cscales;
             public double[,] exa;
             public double[] exb;
             public double[] exxc;
@@ -25974,6 +34432,7 @@ public partial class alglib
             public qqpsolver.qqpsettings qqpsettingsuser;
             public qqpsolver.qqpbuffers qqpbuf;
             public double[] nulcest;
+            public double[] tmpg;
             public double[] tmp0;
             public double[,] tmp2;
             public double[] modelg;
@@ -26011,6 +34470,8 @@ public partial class alglib
                 sclsftbndu = new double[0];
                 sclsftxc = new double[0];
                 sclsftcleic = new double[0,0];
+                cidx = new int[0];
+                cscales = new double[0];
                 exa = new double[0,0];
                 exb = new double[0];
                 exxc = new double[0];
@@ -26021,6 +34482,7 @@ public partial class alglib
                 qqpsettingsuser = new qqpsolver.qqpsettings();
                 qqpbuf = new qqpsolver.qqpbuffers();
                 nulcest = new double[0];
+                tmpg = new double[0];
                 tmp0 = new double[0];
                 tmp2 = new double[0,0];
                 modelg = new double[0];
@@ -26048,6 +34510,8 @@ public partial class alglib
                 _result.sclsftbndu = (double[])sclsftbndu.Clone();
                 _result.sclsftxc = (double[])sclsftxc.Clone();
                 _result.sclsftcleic = (double[,])sclsftcleic.Clone();
+                _result.cidx = (int[])cidx.Clone();
+                _result.cscales = (double[])cscales.Clone();
                 _result.exa = (double[,])exa.Clone();
                 _result.exb = (double[])exb.Clone();
                 _result.exxc = (double[])exxc.Clone();
@@ -26058,6 +34522,7 @@ public partial class alglib
                 _result.qqpsettingsuser = (qqpsolver.qqpsettings)qqpsettingsuser.make_copy();
                 _result.qqpbuf = (qqpsolver.qqpbuffers)qqpbuf.make_copy();
                 _result.nulcest = (double[])nulcest.Clone();
+                _result.tmpg = (double[])tmpg.Clone();
                 _result.tmp0 = (double[])tmp0.Clone();
                 _result.tmp2 = (double[,])tmp2.Clone();
                 _result.modelg = (double[])modelg.Clone();
@@ -26182,6 +34647,8 @@ public partial class alglib
             qpdenseaulsettings settings,
             qpdenseaulbuffers state,
             ref double[] xs,
+            ref double[] lagbc,
+            ref double[] laglc,
             ref int terminationtype,
             alglib.xparams _params)
         {
@@ -26210,6 +34677,7 @@ public partial class alglib
             int nwork = 0;
             bool allowwseviction = new bool();
             bool workingsetextended = new bool();
+            double targetscale = 0;
             int i_ = 0;
 
             terminationtype = 0;
@@ -26251,6 +34719,7 @@ public partial class alglib
             state.repnwrk1 = 0;
             state.repnwrkf = 0;
             terminationtype = 0;
+            apserv.ivectorsetlengthatleast(ref state.cidx, ktotal, _params);
             apserv.rvectorsetlengthatleast(ref state.nulc, ktotal, _params);
             apserv.rvectorsetlengthatleast(ref state.nulcest, ktotal, _params);
             apserv.rvectorsetlengthatleast(ref state.exb, ntotal, _params);
@@ -26264,8 +34733,22 @@ public partial class alglib
             apserv.ivectorsetlengthatleast(ref state.nicnact, nictotal, _params);
             
             //
+            // Allocate Lagrange multipliers, fill by default values (zeros)
+            //
+            apserv.rvectorsetlengthatleast(ref lagbc, nmain, _params);
+            apserv.rvectorsetlengthatleast(ref laglc, ktotal, _params);
+            for(i=0; i<=nmain-1; i++)
+            {
+                lagbc[i] = 0.0;
+            }
+            for(i=0; i<=ktotal-1; i++)
+            {
+                laglc[i] = 0.0;
+            }
+            
+            //
             // Prepare scaled/shifted model in dense format - input parameters
-            // are converted and stored in State.SclSftA/B/HasBndL/HasBndU/BndL/BndU/CLEIC/XC
+            // are converted and stored in State.SclSftA/B/HasBndL/HasBndU/BndL/BndU/CLEIC/XC/CScales
             //
             scaleshiftoriginalproblem(a, sparsea, akind, sparseaupper, b, bndl, bndu, s, xorigin, nmain, cleic, dnec, dnic, scleic, snec, snic, renormlc, state, xs, _params);
             
@@ -26280,7 +34763,7 @@ public partial class alglib
             // of them is prone to different failure modes. Then, we divide A and B
             // by this estimate.
             //
-            normalizequadraticterm(state.sclsfta, state.sclsftb, nmain, state.sclsftcleic, nectotal, nictotal, renormlc, ref state.tmp2, _params);
+            targetscale = normalizequadraticterm(state.sclsfta, state.sclsftb, nmain, state.sclsftcleic, nectotal, nictotal, renormlc, ref state.tmp2, _params);
             
             //
             // Select working set of inequality constraints.
@@ -26320,6 +34803,10 @@ public partial class alglib
             for(i=nicwork; i<=nictotal-1; i++)
             {
                 state.nicnact[i] = 0;
+            }
+            for(i=0; i<=ktotal-1; i++)
+            {
+                state.cidx[i] = i;
             }
             
             //
@@ -26433,6 +34920,8 @@ public partial class alglib
                             apserv.swaprows(state.sclsftcleic, nectotal+nicwork, nectotal+k, -1, _params);
                             apserv.swapelements(state.nicerr, nicwork, k, _params);
                             apserv.swapelementsi(state.nicnact, nicwork, k, _params);
+                            apserv.swapelementsi(state.cidx, nectotal+nicwork, nectotal+k, _params);
+                            apserv.swapelements(state.cscales, nectotal+nicwork, nectotal+k, _params);
                             state.exxc[nmain+nicwork] = 0.0;
                             state.nulc[nectotal+nicwork] = 0.0;
                             state.nicnact[nicwork] = state.nicnact[nicwork]+1;
@@ -26463,6 +34952,8 @@ public partial class alglib
                             if( (double)(state.nicerr[k])<(double)(evictionlevel) && state.nicnact[k]<=1 )
                             {
                                 apserv.swaprows(state.sclsftcleic, nectotal+nicwork-1, nectotal+k, -1, _params);
+                                apserv.swapelementsi(state.cidx, nectotal+nicwork-1, nectotal+k, _params);
+                                apserv.swapelements(state.cscales, nectotal+nicwork-1, nectotal+k, _params);
                                 apserv.swapelements(state.nicerr, nicwork-1, k, _params);
                                 apserv.swapelementsi(state.nicnact, nicwork-1, k, _params);
                                 apserv.swapelements(state.exxc, nmain+nicwork-1, nmain+k, _params);
@@ -26562,6 +35053,41 @@ public partial class alglib
                 {
                     rho = Math.Min(rho*1.41, maxrho);
                 }
+            }
+            
+            //
+            // Convert Lagrange multipliers from internal format to one expected
+            // by caller:
+            // * reorder multipliers for linear constraints
+            // * compute residual from gradient+linearconstraints
+            // * compute multipliers for box constraints from residual
+            // * rescale everything
+            //
+            for(i=0; i<=nectotal+nicwork-1; i++)
+            {
+                laglc[state.cidx[i]] = -(state.nulc[i]*targetscale/state.cscales[i]);
+            }
+            apserv.rvectorsetlengthatleast(ref state.tmpg, nmain, _params);
+            for(i=0; i<=nmain-1; i++)
+            {
+                v = state.sclsftb[i];
+                for(j=0; j<=nmain-1; j++)
+                {
+                    v = v+state.sclsfta[i,j]*state.exxc[j];
+                }
+                state.tmpg[i] = v;
+            }
+            ablas.rmatrixgemv(nmain, nectotal+nicwork, -1.0, state.sclsftcleic, 0, 0, 1, state.nulc, 0, 1.0, state.tmpg, 0, _params);
+            for(i=0; i<=nmain-1; i++)
+            {
+                if( (state.sclsfthasbndl[i] && (double)(state.exxc[i])==(double)(state.sclsftbndl[i])) || (state.sclsfthasbndu[i] && (double)(state.exxc[i])==(double)(state.sclsftbndu[i])) )
+                {
+                    lagbc[i] = -state.tmpg[i];
+                }
+            }
+            for(i=0; i<=nmain-1; i++)
+            {
+                lagbc[i] = lagbc[i]*targetscale/s[i];
             }
             
             //
@@ -27162,6 +35688,7 @@ public partial class alglib
             apserv.bvectorsetlengthatleast(ref state.sclsfthasbndl, nmain, _params);
             apserv.bvectorsetlengthatleast(ref state.sclsfthasbndu, nmain, _params);
             apserv.rmatrixsetlengthatleast(ref state.sclsftcleic, ktotal, nmain+1, _params);
+            apserv.rvectorsetlengthatleast(ref state.cscales, ktotal, _params);
             if( akind==0 )
             {
                 
@@ -27244,34 +35771,13 @@ public partial class alglib
             for(i=0; i<=nmain-1; i++)
             {
                 state.sclsftb[i] = b[i]*s[i];
-            }
-            for(i=0; i<=nmain-1; i++)
-            {
-                alglib.ap.assert(math.isfinite(bndl[i]) || Double.IsNegativeInfinity(bndl[i]), "QPDENSEAULOptimize: integrity check failure (7)");
-                alglib.ap.assert(math.isfinite(bndu[i]) || Double.IsPositiveInfinity(bndu[i]), "QPDENSEAULOptimize: integrity check failure (8)");
                 state.sclsftxc[i] = (xs[i]-xorigin[i])/s[i];
                 state.sclsfthasbndl[i] = math.isfinite(bndl[i]);
                 state.sclsfthasbndu[i] = math.isfinite(bndu[i]);
-                if( (state.sclsfthasbndl[i] && state.sclsfthasbndu[i]) && (double)(bndl[i])==(double)(bndu[i]) )
-                {
-                    
-                    //
-                    // Make sure that SclSftBndL[I]=SclSftBndU[I] bit-to-bit
-                    // even with CRAZY optimizing compiler.
-                    //
-                    state.sclsftbndu[i] = (bndu[i]-xorigin[i])/s[i];
-                    state.sclsftbndl[i] = state.sclsftbndu[i];
-                    continue;
-                }
-                if( state.sclsfthasbndl[i] )
-                {
-                    state.sclsftbndl[i] = (bndl[i]-xorigin[i])/s[i];
-                }
-                if( state.sclsfthasbndu[i] )
-                {
-                    state.sclsftbndu[i] = (bndu[i]-xorigin[i])/s[i];
-                }
+                state.sclsftbndl[i] = bndl[i];
+                state.sclsftbndu[i] = bndu[i];
             }
+            lpqpserv.scaleshiftbcinplace(s, xorigin, state.sclsftbndl, state.sclsftbndu, nmain, _params);
             for(i=0; i<=ktotal-1; i++)
             {
                 for(j=0; j<=nmain; j++)
@@ -27357,6 +35863,7 @@ public partial class alglib
                         vv = vv+v*v;
                     }
                     vv = Math.Sqrt(vv);
+                    state.cscales[i] = vv;
                     if( (double)(vv)>(double)(0) )
                     {
                         vv = 1/vv;
@@ -27365,6 +35872,17 @@ public partial class alglib
                             state.sclsftcleic[i,j] = state.sclsftcleic[i,j]*vv;
                         }
                     }
+                }
+            }
+            else
+            {
+                
+                //
+                // Load unit scales
+                //
+                for(i=0; i<=ktotal-1; i++)
+                {
+                    state.cscales[i] = 1.0;
                 }
             }
             for(i=0; i<=ktotal-1; i++)
@@ -27407,12 +35925,15 @@ public partial class alglib
             Tmp2-       additional buffer, possibly preallocated
             
         OUTPUT PARAMETERS:
-            A, B - appropriately rescaled
+            A, B - appropriately rescaled by 1/SCL
+            
+        RESULT:
+            multiplier SCL
 
           -- ALGLIB --
              Copyright 01.10.2017 by Bochkanov Sergey
         *************************************************************************/
-        private static void normalizequadraticterm(double[,] a,
+        private static double normalizequadraticterm(double[,] a,
             double[] b,
             int n,
             double[,] cleic,
@@ -27422,6 +35943,7 @@ public partial class alglib
             ref double[,] tmp2,
             alglib.xparams _params)
         {
+            double result = 0;
             int i = 0;
             int j = 0;
             double anorm = 0;
@@ -27468,7 +35990,8 @@ public partial class alglib
             {
                 maxcac = 0;
             }
-            v = 1/apserv.coalesce(Math.Max(maxcac, anorm/nmain), 1, _params);
+            result = apserv.coalesce(Math.Max(maxcac, anorm/nmain), 1, _params);
+            v = 1/result;
             for(i=0; i<=nmain-1; i++)
             {
                 for(j=0; j<=nmain-1; j++)
@@ -27480,6 +36003,7 @@ public partial class alglib
             {
                 b[i] = b[i]*v;
             }
+            return result;
         }
 
 
@@ -31024,6 +39548,7 @@ public partial class alglib
             public qqpsolver.qqpsettings qqpsettingsuser;
             public qpbleicsolver.qpbleicsettings qpbleicsettingsuser;
             public qpdenseaulsolver.qpdenseaulsettings qpdenseaulsettingsuser;
+            public double veps;
             public bool dbgskipconstraintnormalization;
             public int algokind;
             public int akind;
@@ -31043,26 +39568,34 @@ public partial class alglib
             public double[] xorigin;
             public double[] startx;
             public bool havex;
-            public double[,] cleic;
-            public int nec;
-            public int nic;
-            public sparse.sparsematrix scleic;
-            public int snec;
-            public int snic;
+            public double[,] densec;
+            public sparse.sparsematrix sparsec;
+            public double[] cl;
+            public double[] cu;
+            public int mdense;
+            public int msparse;
             public double[] xs;
             public int repinneriterationscount;
             public int repouteriterationscount;
             public int repncholesky;
             public int repnmv;
             public int repterminationtype;
+            public double[] replagbc;
+            public double[] replaglc;
             public double[] effectives;
             public double[] tmp0;
             public double[,] ecleic;
+            public double[] elaglc;
+            public double[] elagmlt;
+            public int[] elagidx;
             public double[,] dummyr2;
+            public sparse.sparsematrix dummysparse;
+            public double[,] tmpr2;
             public bool qpbleicfirstcall;
             public qpbleicsolver.qpbleicbuffers qpbleicbuf;
             public qqpsolver.qqpbuffers qqpbuf;
             public qpdenseaulsolver.qpdenseaulbuffers qpdenseaulbuf;
+            public vipmsolver.vipmstate vsolver;
             public minqpstate()
             {
                 init();
@@ -31082,16 +39615,26 @@ public partial class alglib
                 havebndu = new bool[0];
                 xorigin = new double[0];
                 startx = new double[0];
-                cleic = new double[0,0];
-                scleic = new sparse.sparsematrix();
+                densec = new double[0,0];
+                sparsec = new sparse.sparsematrix();
+                cl = new double[0];
+                cu = new double[0];
                 xs = new double[0];
+                replagbc = new double[0];
+                replaglc = new double[0];
                 effectives = new double[0];
                 tmp0 = new double[0];
                 ecleic = new double[0,0];
+                elaglc = new double[0];
+                elagmlt = new double[0];
+                elagidx = new int[0];
                 dummyr2 = new double[0,0];
+                dummysparse = new sparse.sparsematrix();
+                tmpr2 = new double[0,0];
                 qpbleicbuf = new qpbleicsolver.qpbleicbuffers();
                 qqpbuf = new qqpsolver.qqpbuffers();
                 qpdenseaulbuf = new qpdenseaulsolver.qpdenseaulbuffers();
+                vsolver = new vipmsolver.vipmstate();
             }
             public override alglib.apobject make_copy()
             {
@@ -31100,6 +39643,7 @@ public partial class alglib
                 _result.qqpsettingsuser = (qqpsolver.qqpsettings)qqpsettingsuser.make_copy();
                 _result.qpbleicsettingsuser = (qpbleicsolver.qpbleicsettings)qpbleicsettingsuser.make_copy();
                 _result.qpdenseaulsettingsuser = (qpdenseaulsolver.qpdenseaulsettings)qpdenseaulsettingsuser.make_copy();
+                _result.veps = veps;
                 _result.dbgskipconstraintnormalization = dbgskipconstraintnormalization;
                 _result.algokind = algokind;
                 _result.akind = akind;
@@ -31119,26 +39663,34 @@ public partial class alglib
                 _result.xorigin = (double[])xorigin.Clone();
                 _result.startx = (double[])startx.Clone();
                 _result.havex = havex;
-                _result.cleic = (double[,])cleic.Clone();
-                _result.nec = nec;
-                _result.nic = nic;
-                _result.scleic = (sparse.sparsematrix)scleic.make_copy();
-                _result.snec = snec;
-                _result.snic = snic;
+                _result.densec = (double[,])densec.Clone();
+                _result.sparsec = (sparse.sparsematrix)sparsec.make_copy();
+                _result.cl = (double[])cl.Clone();
+                _result.cu = (double[])cu.Clone();
+                _result.mdense = mdense;
+                _result.msparse = msparse;
                 _result.xs = (double[])xs.Clone();
                 _result.repinneriterationscount = repinneriterationscount;
                 _result.repouteriterationscount = repouteriterationscount;
                 _result.repncholesky = repncholesky;
                 _result.repnmv = repnmv;
                 _result.repterminationtype = repterminationtype;
+                _result.replagbc = (double[])replagbc.Clone();
+                _result.replaglc = (double[])replaglc.Clone();
                 _result.effectives = (double[])effectives.Clone();
                 _result.tmp0 = (double[])tmp0.Clone();
                 _result.ecleic = (double[,])ecleic.Clone();
+                _result.elaglc = (double[])elaglc.Clone();
+                _result.elagmlt = (double[])elagmlt.Clone();
+                _result.elagidx = (int[])elagidx.Clone();
                 _result.dummyr2 = (double[,])dummyr2.Clone();
+                _result.dummysparse = (sparse.sparsematrix)dummysparse.make_copy();
+                _result.tmpr2 = (double[,])tmpr2.Clone();
                 _result.qpbleicfirstcall = qpbleicfirstcall;
                 _result.qpbleicbuf = (qpbleicsolver.qpbleicbuffers)qpbleicbuf.make_copy();
                 _result.qqpbuf = (qqpsolver.qqpbuffers)qqpbuf.make_copy();
                 _result.qpdenseaulbuf = (qpdenseaulsolver.qpdenseaulbuffers)qpdenseaulbuf.make_copy();
+                _result.vsolver = (vipmsolver.vipmstate)vsolver.make_copy();
                 return _result;
             }
         };
@@ -31153,6 +39705,12 @@ public partial class alglib
                                     (only products calculated as part of iterative
                                     process are counted)
         * TerminationType           completion code (see below)
+        * LagBC                     Lagrange multipliers for box constraints,
+                                    array[N], not filled by QP-BLEIC solver
+        * LagLC                     Lagrange multipliers for linear constraints,
+                                    array[MSparse+MDense], ignored by QP-BLEIC solver
+
+        === COMPLETION CODES =====================================================
 
         Completion codes:
         * -9    failure of the automatic scale evaluation:  one  of  the  diagonal
@@ -31173,6 +39731,38 @@ public partial class alglib
         *  7    stopping conditions are too stringent,
                 further improvement is impossible,
                 X contains best point found so far.
+                
+        === LAGRANGE MULTIPLIERS =================================================
+
+        Some  optimizers  report  values of  Lagrange  multipliers  on  successful
+        completion (positive completion code):
+        * DENSE-IPM-QP and SPARSE-IPM-QP return very precise Lagrange  multipliers
+          as determined during solution process.
+        * DENSE-AUL-QP returns approximate Lagrange multipliers  (which  are  very
+          close to "true"  Lagrange  multipliers  except  for  overconstrained  or
+          degenerate problems)
+
+        Two arrays of multipliers are returned:
+        * LagBC is array[N] which is loaded with multipliers from box constraints;
+          LagBC[i]>0 means that I-th constraint is at the  upper bound, LagBC[I]<0
+          means that I-th constraint is at the lower bound, LagBC[I]=0 means  that
+          I-th box constraint is inactive.
+        * LagLC is array[MSparse+MDense] which is  loaded  with  multipliers  from
+          general  linear  constraints  (former  MSparse  elements  corresponds to
+          sparse part of the constraint matrix, latter MDense are  for  the  dense
+          constraints, as was specified by user).
+          LagLC[i]>0 means that I-th constraint at  the  upper  bound,  LagLC[i]<0
+          means that I-th constraint is at the lower bound, LagLC[i]=0 means  that
+          I-th linear constraint is inactive.
+          
+        On failure (or when optimizer does not support Lagrange multipliers) these
+        arrays are zero-filled.
+
+        NOTE: methods  from  IPM  family  may  also  return  meaningful   Lagrange
+              multipliers on completion with codes -3 (infeasibility detected) and
+              -4  (unboundedness  detected).   It   is   possible   that   seeming
+              infeasibility/unboundedness of the problem is due to rounding errors
+              In this case last values of Lagrange multipliers are returned.
         *************************************************************************/
         public class minqpreport : apobject
         {
@@ -31181,12 +39771,16 @@ public partial class alglib
             public int nmv;
             public int ncholesky;
             public int terminationtype;
+            public double[] lagbc;
+            public double[] laglc;
             public minqpreport()
             {
                 init();
             }
             public override void init()
             {
+                lagbc = new double[0];
+                laglc = new double[0];
             }
             public override alglib.apobject make_copy()
             {
@@ -31196,6 +39790,8 @@ public partial class alglib
                 _result.nmv = nmv;
                 _result.ncholesky = ncholesky;
                 _result.terminationtype = terminationtype;
+                _result.lagbc = (double[])lagbc.Clone();
+                _result.laglc = (double[])laglc.Clone();
                 return _result;
             }
         };
@@ -31208,21 +39804,47 @@ public partial class alglib
 
         The subroutine creates QP optimizer. After initial creation,  it  contains
         default optimization problem with zero quadratic and linear terms  and  no
-        constraints. You should set quadratic/linear terms with calls to functions
-        provided by MinQP subpackage.
+        constraints.
 
-        You should also choose appropriate QP solver and set it  and  its stopping
-        criteria by means of MinQPSetAlgo??????() function. Then, you should start
-        solution process by means of MinQPOptimize() call. Solution itself can  be
-        obtained with MinQPResults() function.
+        In order to actually solve something you should:
+        * set cost vector with minqpsetlinearterm()
+        * set variable bounds with minqpsetbc() or minqpsetbcall()
+        * specify constraint matrix with one of the following functions:
+          * modern API:
+            * minqpsetlc2()       for sparse two-sided constraints AL <= A*x <= AU
+            * minqpsetlc2dense()  for dense  two-sided constraints AL <= A*x <= AU
+            * minqpsetlc2mixed()  for mixed  two-sided constraints AL <= A*x <= AU
+            * minqpaddlc2dense()  to add one dense row to dense constraint submatrix
+            * minqpaddlc2()       to add one sparse row to sparse constraint submatrix
+          * legacy API:
+            * minqpsetlc()        for dense one-sided equality/inequality constraints
+            * minqpsetlcsparse()  for sparse one-sided equality/inequality constraints
+            * minqpsetlcmixed()   for mixed dense/sparse one-sided equality/inequality constraints
+        * choose appropriate QP solver and set it  and  its stopping  criteria  by
+          means of minqpsetalgo??????() function
+        * call minqpoptimize() to run the solver and  minqpresults()  to  get  the
+          solution vector and additional information.
 
-        Following solvers are recommended:
+        Following solvers are recommended for convex and semidefinite problems:
         * QuickQP for dense problems with box-only constraints (or no constraints
           at all)
-        * QP-BLEIC for dense/sparse problems with moderate (up to 50) number of
-          general linear constraints
-        * DENSE-AUL-QP for dense problems with any (small or large) number of
-          general linear constraints
+        * DENSE-IPM-QP for  convex  or  semidefinite  problems  with   medium  (up
+          to several thousands) variable count, dense/sparse  quadratic  term  and
+          any number  (up  to  many  thousands)  of  dense/sparse  general  linear
+          constraints
+        * SPARSE-IPM-QP for convex  or  semidefinite  problems  with   large (many
+          thousands) variable count, sparse quadratic term AND linear constraints.
+
+        If your problem happens to be nonconvex,  but  either  (a) is  effectively
+        convexified under constraints,  or  (b)  has  unique  solution  even  with
+        nonconvex target, then you can use:
+        * QuickQP for dense nonconvex problems with box-only constraints
+        * DENSE-AUL-QP  for   dense   nonconvex   problems  which  are effectively
+          convexified under constraints with up to several thousands of  variables
+          and any (small or large) number of general linear constraints
+        * QP-BLEIC for dense/sparse problems with small (up to  several  hundreds)
+          number of general linear  constraints  and  arbitrarily  large  variable
+          count.
 
         INPUT PARAMETERS:
             N       -   problem size
@@ -31246,10 +39868,8 @@ public partial class alglib
             // initialize QP solver
             //
             state.n = n;
-            state.nec = 0;
-            state.nic = 0;
-            state.snec = 0;
-            state.snic = 0;
+            state.mdense = 0;
+            state.msparse = 0;
             state.repterminationtype = 0;
             state.absamax = 1;
             state.absasum = 1;
@@ -31266,6 +39886,7 @@ public partial class alglib
             state.startx = new double[n];
             state.xorigin = new double[n];
             state.xs = new double[n];
+            apserv.rvectorsetlengthatleast(ref state.replagbc, n, _params);
             for(i=0; i<=n-1; i++)
             {
                 state.bndl[i] = Double.NegativeInfinity;
@@ -31276,6 +39897,7 @@ public partial class alglib
                 state.startx[i] = 0.0;
                 state.xorigin[i] = 0.0;
                 state.s[i] = 1.0;
+                state.replagbc[i] = 0.0;
             }
             state.stype = 0;
             state.havex = false;
@@ -31285,6 +39907,7 @@ public partial class alglib
             qpdenseaulsolver.qpdenseaulloaddefaults(n, state.qpdenseaulsettingsuser, _params);
             state.qpbleicfirstcall = true;
             state.dbgskipconstraintnormalization = false;
+            state.veps = 0.0;
         }
 
 
@@ -31316,13 +39939,6 @@ public partial class alglib
         /*************************************************************************
         This  function  sets  dense  quadratic  term  for  QP solver. By  default,
         quadratic term is zero.
-
-        SUPPORT BY QP SOLVERS:
-
-        Dense quadratic term can be handled by following QP solvers:
-        * QuickQP
-        * BLEIC-QP
-        * Dense-AUL-QP
 
         IMPORTANT:
 
@@ -31368,12 +39984,8 @@ public partial class alglib
         quadratic  term  is  zero.  This  function  overrides  previous  calls  to
         minqpsetquadraticterm() or minqpsetquadratictermsparse().
 
-        SUPPORT BY QP SOLVERS:
-
-        Sparse quadratic term can be handled by following QP solvers:
-        * QuickQP
-        * BLEIC-QP
-        * Dense-AUL-QP (internally converts sparse matrix to dense format)
+        NOTE: dense solvers like DENSE-AUL-QP or DENSE-IPM-QP  will  convert  this
+              matrix to dense storage anyway.
 
         IMPORTANT:
 
@@ -31454,9 +40066,11 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function sets starting point for QP solver. It is useful to have
-        good initial approximation to the solution, because it will increase
-        speed of convergence and identification of active constraints.
+        This function sets starting point for QP solver. It is useful to have good
+        initial approximation to the solution, because it will increase  speed  of
+        convergence and identification of active constraints.
+
+        NOTE: interior point solvers ignore initial point provided by user.
 
         INPUT PARAMETERS:
             State   -   structure which stores algorithm state
@@ -31597,16 +40211,15 @@ public partial class alglib
         This function tells solver to use BLEIC-based algorithm and sets  stopping
         criteria for the algorithm.
 
-        This algorithm is fast  enough  for large-scale  problems  with  following
-        properties:
-        a) feasible initial point, moderate amount of general linear constraints
-        b) arbitrary (can be infeasible) initial point, small  amount  of  general
-           linear constraints (say, hundred or less)
+        This algorithm is intended for large-scale  problems,  possibly nonconvex,
+        with small number of general linear constraints. Feasible initial point is
+        essential for good performance.
 
-        If you solve large-scale QP problem with many inequality  constraints  and
-        without initial feasibility guarantees, consider  using  DENSE-AUL  solver
-        instead. Initial feasibility detection stage by BLEIC may take too long on
-        such problems.
+        IMPORTANT: when DENSE-IPM (or DENSE-AUL for  nonconvex  problems)  solvers
+                   are applicable, their performance is much better than  that  of
+                   BLEIC-QP.
+                   We recommend  you to use BLEIC only when other solvers can  not
+                   be used.
 
         ALGORITHM FEATURES:
 
@@ -31630,7 +40243,7 @@ public partial class alglib
         * This algorithm is inefficient on  problems with hundreds  and  thousands
           of general inequality constraints and infeasible initial point.  Initial
           feasibility detection stage may take too long on such constraint sets.
-          Consider using DENSE-AUL instead.
+          Consider using DENSE-IPM or DENSE-AUL instead.
         * unlike QuickQP solver, this algorithm does not perform Newton steps  and
           does not use Level 3 BLAS. Being general-purpose active set  method,  it
           can activate constraints only one-by-one. Thus, its performance is lower
@@ -31705,8 +40318,18 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function tells QP solver to use Dense-AUL algorithm and sets stopping
+        This function tells QP solver to use DENSE-AUL algorithm and sets stopping
         criteria for the algorithm.
+
+        This  algorithm  is  intended  for  non-convex problems with moderate  (up
+        to several thousands) variable count and arbitrary number  of  constraints
+        which are either (a) effectively convexified under constraints or (b) have
+        unique solution even with nonconvex target.
+
+        IMPORTANT: when DENSE-IPM solver is applicable, its performance is usually
+                   much better than that of DENSE-AUL.
+                   We recommend  you to use DENSE-AUL only when other solvers  can
+                   not be used.
 
         ALGORITHM FEATURES:
 
@@ -31716,14 +40339,11 @@ public partial class alglib
           problems. Semidefinite and non-convex problems can be solved as long  as
           they  are   bounded  from  below  under  constraints,  although  without
           theoretical guarantees.
-        * this solver is better than QP-BLEIC on problems  with  large  number  of
-          general linear constraints. It better handles infeasible initial points.
 
         ALGORITHM OUTLINE:
 
         * this  algorithm   is   an   augmented   Lagrangian   method  with  dense
-          preconditioner (hence  its  name).  It  is  similar  to  barrier/penalty
-          methods, but much more precise and faster.
+          preconditioner (hence  its  name).
         * it performs several outer iterations in order to refine  values  of  the
           Lagrange multipliers. Single outer  iteration  is  a  solution  of  some
           unconstrained optimization problem: first  it  performs  dense  Cholesky
@@ -31803,13 +40423,182 @@ public partial class alglib
 
 
         /*************************************************************************
+        This function tells QP solver to  use  DENSE-IPM  QP  algorithm  and  sets
+        stopping criteria for the algorithm.
+
+        This  algorithm  is  intended  for convex and semidefinite  problems  with
+        moderate (up to several thousands) variable count and arbitrary number  of
+        constraints.
+
+        IMPORTANT: this algorithm won't work for nonconvex problems, use DENSE-AUL
+                   or BLEIC-QP instead. If you try to  run  DENSE-IPM  on  problem
+                   with  indefinite  matrix  (matrix having  at least one negative
+                   eigenvalue) then depending on circumstances it may  either  (a)
+                   stall at some  arbitrary  point,  or  (b)  throw  exception  on
+                   failure of Cholesky decomposition.
+
+        ALGORITHM FEATURES:
+
+        * supports  box  and  dense/sparse  general   linear   equality/inequality
+          constraints
+
+        ALGORITHM OUTLINE:
+
+        * this  algorithm  is  an  implementation  of  interior  point  method  as
+          formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
+          (damped Newton directions are extensively used)
+        * like all interior point methods, this algorithm  tends  to  converge  in
+          roughly same number of iterations (between 15 and 30) independently from
+          the problem dimensionality
+          
+        ALGORITHM LIMITATIONS:
+
+        * because dense Cholesky driver is used, for  N-dimensional  problem  with
+          M dense constaints this algorithm has O(N^2+N*M) memory requirements and
+          O(N^3+N*M^2) running time.
+          Having sparse constraints with Z nonzeros per row  relaxes  storage  and
+          running time down to O(N^2+M*Z) and O(N^3+N*Z^2)
+          From the practical  point  of  view,  it  limits  its  applicability  by
+          several thousands of variables.
+          From  the  other  side,  variables  count  is  the most limiting factor,
+          and dependence on constraint count is  much  more  lower. Assuming  that
+          constraint matrix is sparse, it may handle tens of thousands  of general
+          linear constraints.
+
+        INPUT PARAMETERS:
+            State   -   structure which stores algorithm state
+            Eps     -   >=0, stopping criteria. The algorithm stops  when   primal
+                        and dual infeasiblities as well as complementarity gap are
+                        less than Eps.
+
+        IT IS VERY IMPORTANT TO CALL minqpsetscale() WHEN YOU USE THIS  ALGORITHM
+        BECAUSE ITS CONVERGENCE PROPERTIES AND STOPPING CRITERIA ARE SCALE-DEPENDENT!
+
+        NOTE: Passing EpsX=0 will lead to automatic selection of small epsilon.
+
+        ===== TRACING IPM SOLVER =================================================
+
+        IPM solver supports advanced tracing capabilities. You can trace algorithm
+        output by specifying following trace symbols (case-insensitive)  by  means
+        of trace_file() call:
+        * 'IPM'         - for basic trace of algorithm  steps and decisions.  Only
+                          short scalars (function values and deltas) are  printed.
+                          N-dimensional quantities like search directions are  NOT
+                          printed.
+        * 'IPM.DETAILED'- for output of points being visited and search directions
+                          This  symbol  also  implicitly  defines  'IPM'. You  can
+                          control output format by additionally specifying:
+                          * nothing     to output in  6-digit exponential format
+                          * 'PREC.E15'  to output in 15-digit exponential format
+                          * 'PREC.F6'   to output in  6-digit fixed-point format
+
+        By default trace is disabled and adds  no  overhead  to  the  optimization
+        process. However, specifying any of the symbols adds some  formatting  and
+        output-related overhead.
+
+        You may specify multiple symbols by separating them with commas:
+        >
+        > alglib::trace_file("IPM.DETAILED,PREC.F6", "path/to/trace.log")
+        > 
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetalgodenseipm(minqpstate state,
+            double eps,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(math.isfinite(eps), "MinQPSetAlgoDenseIPM: Eps is not finite number");
+            alglib.ap.assert((double)(eps)>=(double)(0), "MinQPSetAlgoDenseIPM: negative Eps");
+            state.algokind = 5;
+            state.veps = eps;
+        }
+
+
+        /*************************************************************************
+        This function tells QP solver to  use  SPARSE-IPM  QP algorithm  and  sets
+        stopping criteria for the algorithm.
+
+        This  algorithm  is  intended  for convex and semidefinite  problems  with
+        large  variable  and  constraint  count  and  sparse  quadratic  term  and
+        constraints. It is possible to have  some  limited  set  of  dense  linear
+        constraints - they will be handled separately by dense BLAS - but the more
+        dense constraints you have, the more time solver needs.
+
+        IMPORTANT: internally this solver performs large  and  sparse  (N+M)x(N+M)
+                   triangular factorization. So it expects both quadratic term and
+                   constraints to be highly sparse. However, its  running  time is
+                   influenced by BOTH fill factor and sparsity pattern.
+
+                   Generally we expect that no more than few nonzero  elements per
+                   row are present. However different sparsity patterns may result
+                   in completely different running  times  even  given  same  fill
+                   factor.
+                   
+                   In many cases this algorithm outperforms DENSE-IPM by order  of
+                   magnitude. However, in some cases you may  get  better  results
+                   with DENSE-IPM even when solving sparse task.
+
+        IMPORTANT: this algorithm won't work for nonconvex problems, use DENSE-AUL
+                   or BLEIC-QP instead. If you try to  run  DENSE-IPM  on  problem
+                   with  indefinite  matrix  (matrix having  at least one negative
+                   eigenvalue) then depending on circumstances it may  either  (a)
+                   stall at some  arbitrary  point,  or  (b)  throw  exception  on
+                   failure of Cholesky decomposition.
+
+        ALGORITHM FEATURES:
+
+        * supports  box  and  dense/sparse  general   linear   equality/inequality
+          constraints
+        * specializes on large-scale sparse problems
+
+        ALGORITHM OUTLINE:
+
+        * this  algorithm  is  an  implementation  of  interior  point  method  as
+          formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
+          (damped Newton directions are extensively used)
+        * like all interior point methods, this algorithm  tends  to  converge  in
+          roughly same number of iterations (between 15 and 30) independently from
+          the problem dimensionality
+          
+        ALGORITHM LIMITATIONS:
+
+        * this algorithm may handle moderate number  of dense constraints, usually
+          no more than a thousand of dense ones without losing its efficiency.
+
+        INPUT PARAMETERS:
+            State   -   structure which stores algorithm state
+            Eps     -   >=0, stopping criteria. The algorithm stops  when   primal
+                        and dual infeasiblities as well as complementarity gap are
+                        less than Eps.
+
+        IT IS VERY IMPORTANT TO CALL minqpsetscale() WHEN YOU USE THIS  ALGORITHM
+        BECAUSE ITS CONVERGENCE PROPERTIES AND STOPPING CRITERIA ARE SCALE-DEPENDENT!
+
+        NOTE: Passing EpsX=0 will lead to automatic selection of small epsilon.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetalgosparseipm(minqpstate state,
+            double eps,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(math.isfinite(eps), "MinQPSetAlgoSparseIPM: Eps is not finite number");
+            alglib.ap.assert((double)(eps)>=(double)(0), "MinQPSetAlgoSparseIPM: negative Eps");
+            state.algokind = 6;
+            state.veps = eps;
+        }
+
+
+        /*************************************************************************
         This function tells solver to use QuickQP  algorithm:  special  extra-fast
         algorithm for problems with box-only constrants. It may  solve  non-convex
         problems as long as they are bounded from below under constraints.
 
         ALGORITHM FEATURES:
-        * many times (from 5x to 50x!) faster than BLEIC-based QP solver; utilizes
-          accelerated methods for activation of constraints.
+        * several times faster than DENSE-IPM when running on box-only problem
+        * utilizes accelerated methods for activation of constraints.
         * supports dense and sparse QP problems
         * supports ONLY box constraints; general linear constraints are NOT
           supported by this solver
@@ -31934,10 +40723,18 @@ public partial class alglib
         This function sets box constraints for QP solver
 
         Box constraints are inactive by default (after  initial  creation).  After
-        being  set,  they  are  preserved until explicitly turned off with another
-        SetBC() call.
+        being  set,  they are  preserved until explicitly overwritten with another
+        minqpsetbc()  or  minqpsetbcall()  call,  or  partially  overwritten  with
+        minqpsetbci() call.
 
-        All QP solvers may handle box constraints.
+        Following types of constraints are supported:
+
+            DESCRIPTION         CONSTRAINT              HOW TO SPECIFY
+            fixed variable      x[i]=Bnd[i]             BndL[i]=BndU[i]
+            lower bound         BndL[i]<=x[i]           BndU[i]=+INF
+            upper bound         x[i]<=BndU[i]           BndL[i]=-INF
+            range               BndL[i]<=x[i]<=BndU[i]  ...
+            free variable       -                       BndL[I]=-INF, BndU[I]+INF
 
         INPUT PARAMETERS:
             State   -   structure stores algorithm state
@@ -31949,9 +40746,19 @@ public partial class alglib
                         If some (all) variables are unbounded, you may specify
                         very large number or +INF (latter is recommended because
                         it will allow solver to use better algorithm).
-                        
-        NOTE: it is possible to specify BndL[i]=BndU[i]. In this case I-th
-        variable will be "frozen" at X[i]=BndL[i]=BndU[i].
+
+        NOTE: infinite values can be specified by means of Double.PositiveInfinity
+              and  Double.NegativeInfinity  (in  C#)  and  alglib::fp_posinf   and
+              alglib::fp_neginf (in C++).
+              
+        NOTE: you may replace infinities by very small/very large values,  but  it
+              is not recommended because large numbers may introduce large numerical
+              errors in the algorithm.
+              
+        NOTE: if constraints for all variables are same you may use minqpsetbcall()
+              which allows to specify constraints without using arrays.
+              
+        NOTE: BndL>BndU will result in QP problem being recognized as infeasible.
 
           -- ALGLIB --
              Copyright 11.01.2011 by Bochkanov Sergey
@@ -31980,26 +40787,119 @@ public partial class alglib
 
 
         /*************************************************************************
+        This function sets box constraints for QP solver (all variables  at  once,
+        same constraints for all variables)
+
+        Box constraints are inactive by default (after  initial  creation).  After
+        being  set,  they are  preserved until explicitly overwritten with another
+        minqpsetbc()  or  minqpsetbcall()  call,  or  partially  overwritten  with
+        minqpsetbci() call.
+
+        Following types of constraints are supported:
+
+            DESCRIPTION         CONSTRAINT              HOW TO SPECIFY
+            fixed variable      x[i]=Bnd                BndL=BndU
+            lower bound         BndL<=x[i]              BndU=+INF
+            upper bound         x[i]<=BndU              BndL=-INF
+            range               BndL<=x[i]<=BndU        ...
+            free variable       -                       BndL=-INF, BndU+INF
+
+        INPUT PARAMETERS:
+            State   -   structure stores algorithm state
+            BndL    -   lower bound, same for all variables
+            BndU    -   upper bound, same for all variables
+
+        NOTE: infinite values can be specified by means of Double.PositiveInfinity
+              and  Double.NegativeInfinity  (in  C#)  and  alglib::fp_posinf   and
+              alglib::fp_neginf (in C++).
+              
+        NOTE: you may replace infinities by very small/very large values,  but  it
+              is not recommended because large numbers may introduce large numerical
+              errors in the algorithm.
+              
+        NOTE: BndL>BndU will result in QP problem being recognized as infeasible.
+
+          -- ALGLIB --
+             Copyright 11.01.2011 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetbcall(minqpstate state,
+            double bndl,
+            double bndu,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+
+            n = state.n;
+            alglib.ap.assert(math.isfinite(bndl) || Double.IsNegativeInfinity(bndl), "MinQPSetBCAll: BndL is NAN or +INF");
+            alglib.ap.assert(math.isfinite(bndu) || Double.IsPositiveInfinity(bndu), "MinQPSetBCAll: BndU is NAN or -INF");
+            for(i=0; i<=n-1; i++)
+            {
+                state.bndl[i] = bndl;
+                state.bndu[i] = bndu;
+                state.havebndl[i] = math.isfinite(bndl);
+                state.havebndu[i] = math.isfinite(bndu);
+            }
+        }
+
+
+        /*************************************************************************
+        This function sets box constraints for I-th variable (other variables are
+        not modified).
+
+        Following types of constraints are supported:
+
+            DESCRIPTION         CONSTRAINT              HOW TO SPECIFY
+            fixed variable      x[i]=Bnd                BndL=BndU
+            lower bound         BndL<=x[i]              BndU=+INF
+            upper bound         x[i]<=BndU              BndL=-INF
+            range               BndL<=x[i]<=BndU        ...
+            free variable       -                       BndL=-INF, BndU+INF
+
+        INPUT PARAMETERS:
+            State   -   structure stores algorithm state
+            BndL    -   lower bound
+            BndU    -   upper bound
+
+        NOTE: infinite values can be specified by means of Double.PositiveInfinity
+              and  Double.NegativeInfinity  (in  C#)  and  alglib::fp_posinf   and
+              alglib::fp_neginf (in C++).
+              
+        NOTE: you may replace infinities by very small/very large values,  but  it
+              is not recommended because large numbers may introduce large numerical
+              errors in the algorithm.
+              
+        NOTE: BndL>BndU will result in QP problem being recognized as infeasible.
+
+          -- ALGLIB --
+             Copyright 11.01.2011 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetbci(minqpstate state,
+            int i,
+            double bndl,
+            double bndu,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(i>=0 && i<state.n, "MinQPSetBCi: I is outside of [0,N)");
+            alglib.ap.assert(math.isfinite(bndl) || Double.IsNegativeInfinity(bndl), "MinQPSetBCi: BndL is NAN or +INF");
+            alglib.ap.assert(math.isfinite(bndu) || Double.IsPositiveInfinity(bndu), "MinQPSetBCi: BndU is NAN or -INF");
+            state.bndl[i] = bndl;
+            state.bndu[i] = bndu;
+            state.havebndl[i] = math.isfinite(bndl);
+            state.havebndu[i] = math.isfinite(bndu);
+        }
+
+
+        /*************************************************************************
         This function sets dense linear constraints for QP optimizer.
 
         This  function  overrides  results  of  previous  calls  to  minqpsetlc(),
         minqpsetlcsparse() and minqpsetlcmixed().  After  call  to  this  function
-        sparse constraints are dropped, and you have only those constraints  which
-        were specified in the present call.
+        all non-box constraints are dropped, and you have only  those  constraints
+        which were specified in the present call.
 
         If you want  to  specify  mixed  (with  dense  and  sparse  terms)  linear
         constraints, you should call minqpsetlcmixed().
-
-        SUPPORT BY QP SOLVERS:
-
-        Following QP solvers can handle dense linear constraints:
-        * BLEIC-QP          -   handles them  with  high  precision,  but  may  be
-                                inefficient for problems with hundreds of constraints
-        * Dense-AUL-QP      -   handles them with moderate precision (approx. 10^-6),
-                                may efficiently handle thousands of constraints.
-
-        Following QP solvers can NOT handle dense linear constraints:
-        * QuickQP           -   can not handle general linear constraints
 
         INPUT PARAMETERS:
             State   -   structure previously allocated with MinQPCreate call.
@@ -32034,7 +40934,7 @@ public partial class alglib
             sparse.sparsematrix dummyc = new sparse.sparsematrix();
             int[] dummyct = new int[0];
 
-            minqpsetlcmixed(state, c, ct, k, dummyc, dummyct, 0, _params);
+            minqpsetlcmixed(state, dummyc, dummyct, 0, c, ct, k, _params);
         }
 
 
@@ -32043,30 +40943,11 @@ public partial class alglib
 
         This  function  overrides  results  of  previous  calls  to  minqpsetlc(),
         minqpsetlcsparse() and minqpsetlcmixed().  After  call  to  this  function
-        dense constraints are dropped, and you have only those  constraints  which
-        were specified in the present call.
+        all non-box constraints are dropped, and you have only  those  constraints
+        which were specified in the present call.
 
         If you want  to  specify  mixed  (with  dense  and  sparse  terms)  linear
         constraints, you should call minqpsetlcmixed().
-
-        SUPPORT BY QP SOLVERS:
-
-        Following QP solvers can handle sparse linear constraints:
-        * BLEIC-QP          -   handles them  with  high  precision,  but can  not
-                                utilize their sparsity - sparse constraint  matrix
-                                is silently converted to dense  format.  Thus,  it
-                                may be inefficient for problems with  hundreds  of
-                                constraints.
-        * Dense-AUL-QP      -   although this solver uses dense linear algebra  to
-                                calculate   Cholesky   preconditioner,   it    may
-                                efficiently  handle  sparse  constraints.  It  may
-                                solve problems  with  hundreds  and  thousands  of
-                                constraints. The only drawback is  that  precision
-                                of constraint handling is typically within 1E-4...
-                                ..1E-6 range.
-
-        Following QP solvers can NOT handle sparse linear constraints:
-        * QuickQP           -   can not handle general linear constraints
 
         INPUT PARAMETERS:
             State   -   structure previously allocated with MinQPCreate call.
@@ -32101,7 +40982,7 @@ public partial class alglib
             double[,] dummyc = new double[0,0];
             int[] dummyct = new int[0];
 
-            minqpsetlcmixed(state, dummyc, dummyct, 0, c, ct, k, _params);
+            minqpsetlcmixed(state, c, ct, k, dummyc, dummyct, 0, _params);
         }
 
 
@@ -32118,27 +40999,19 @@ public partial class alglib
         Similarly, if you have just a few dense rows, you may store them in sparse
         format with almost same performance.
 
-        SUPPORT BY QP SOLVERS:
-
-        Following QP solvers can handle mixed dense/sparse linear constraints:
-        * BLEIC-QP          -   handles them  with  high  precision,  but can  not
-                                utilize their sparsity - sparse constraint  matrix
-                                is silently converted to dense  format.  Thus,  it
-                                may be inefficient for problems with  hundreds  of
-                                constraints.
-        * Dense-AUL-QP      -   although this solver uses dense linear algebra  to
-                                calculate   Cholesky   preconditioner,   it    may
-                                efficiently  handle  sparse  constraints.  It  may
-                                solve problems  with  hundreds  and  thousands  of
-                                constraints. The only drawback is  that  precision
-                                of constraint handling is typically within 1E-4...
-                                ..1E-6 range.
-
-        Following QP solvers can NOT handle mixed linear constraints:
-        * QuickQP           -   can not handle general linear constraints at all
-
         INPUT PARAMETERS:
             State   -   structure previously allocated with MinQPCreate call.
+            SparseC -   linear constraints, sparse  matrix with dimensions EXACTLY
+                        EQUAL TO [SparseK,N+1].  Each  row  of  C  represents  one
+                        constraint, either equality or inequality (see below):
+                        * first N elements correspond to coefficients,
+                        * last element corresponds to the right part.
+                        All elements of C (including right part) must be finite.
+            SparseCT-   type of sparse constraints, array[K]:
+                        * if SparseCT[i]>0, then I-th constraint is SparseC[i,*]*x >= SparseC[i,n+1]
+                        * if SparseCT[i]=0, then I-th constraint is SparseC[i,*]*x  = SparseC[i,n+1]
+                        * if SparseCT[i]<0, then I-th constraint is SparseC[i,*]*x <= SparseC[i,n+1]
+            SparseK -   number of sparse equality/inequality constraints, K>=0
             DenseC  -   dense linear constraints, array[K,N+1].
                         Each row of DenseC represents one constraint, either equality
                         or inequality (see below):
@@ -32150,35 +41023,28 @@ public partial class alglib
                         * if DenseCT[i]=0, then I-th constraint is DenseC[i,*]*x  = DenseC[i,n+1]
                         * if DenseCT[i]<0, then I-th constraint is DenseC[i,*]*x <= DenseC[i,n+1]
             DenseK  -   number of equality/inequality constraints, DenseK>=0
-            SparseC -   linear  constraints,  sparse  matrix  with  dimensions  at
-                        least [SparseK,N+1]. If matrix has  larger  size,  only  leading
-                        SPARSEKx(N+1) rectangle is used.
-                        Each row of C represents one constraint, either equality
-                        or inequality (see below):
-                        * first N elements correspond to coefficients,
-                        * last element corresponds to the right part.
-                        All elements of C (including right part) must be finite.
-            SparseCT-   type of sparse constraints, array[K]:
-                        * if SparseCT[i]>0, then I-th constraint is SparseC[i,*]*x >= SparseC[i,n+1]
-                        * if SparseCT[i]=0, then I-th constraint is SparseC[i,*]*x  = SparseC[i,n+1]
-                        * if SparseCT[i]<0, then I-th constraint is SparseC[i,*]*x <= SparseC[i,n+1]
-            SparseK -   number of sparse equality/inequality constraints, K>=0
 
-        NOTE 1: linear (non-bound) constraints are satisfied only approximately  -
+        NOTE 1: linear (non-box) constraints  are  satisfied only approximately  -
                 there always exists some violation due  to  numerical  errors  and
                 algorithmic limitations (BLEIC-QP solver is most  precise,  AUL-QP
                 solver is less precise).
+
+        NOTE 2: due to backward compatibility reasons SparseC can be  larger  than
+                [SparseK,N+1]. In this case only leading  [SparseK,N+1]  submatrix
+                will be  used.  However,  the  rest  of  ALGLIB  has  more  strict
+                requirements on the input size, so we recommend you to pass sparse
+                term whose size exactly matches algorithm expectations.
 
           -- ALGLIB --
              Copyright 22.08.2016 by Bochkanov Sergey
         *************************************************************************/
         public static void minqpsetlcmixed(minqpstate state,
-            double[,] densec,
-            int[] densect,
-            int densek,
             sparse.sparsematrix sparsec,
             int[] sparsect,
             int sparsek,
+            double[,] densec,
+            int[] densect,
+            int densek,
             alglib.xparams _params)
         {
             int n = 0;
@@ -32198,7 +41064,6 @@ public partial class alglib
             int t0 = 0;
             int t1 = 0;
             int nnz = 0;
-            int i_ = 0;
 
             n = state.n;
             
@@ -32216,236 +41081,593 @@ public partial class alglib
             alglib.ap.assert(alglib.ap.len(sparsect)>=sparsek, "MinQPSetLCMixed: Length(SparseCT)<SparseK");
             
             //
-            // Init.
-            // Handle zero number of constraints
+            // Allocate place for Lagrange multipliers, fill by zero
             //
-            state.nec = 0;
-            state.nic = 0;
-            state.snec = 0;
-            state.snic = 0;
-            if( densek+sparsek==0 )
+            apserv.rvectorsetlengthatleast(ref state.replaglc, densek+sparsek, _params);
+            for(i=0; i<=densek+sparsek-1; i++)
             {
-                return;
+                state.replaglc[i] = 0.0;
             }
             
             //
-            // If we have dense constraints
+            // Init
             //
-            if( densek>0 )
-            {
-                
-                //
-                // Equality constraints are stored first, in the upper
-                // NEC rows of State.CLEIC matrix. Inequality constraints
-                // are stored in the next NIC rows.
-                //
-                // NOTE: we convert inequality constraints to the form
-                // A*x<=b before copying them.
-                //
-                apserv.rmatrixsetlengthatleast(ref state.cleic, densek, n+1, _params);
-                for(i=0; i<=densek-1; i++)
-                {
-                    if( densect[i]==0 )
-                    {
-                        for(i_=0; i_<=n;i_++)
-                        {
-                            state.cleic[state.nec,i_] = densec[i,i_];
-                        }
-                        state.nec = state.nec+1;
-                    }
-                }
-                for(i=0; i<=densek-1; i++)
-                {
-                    if( densect[i]!=0 )
-                    {
-                        if( densect[i]>0 )
-                        {
-                            for(i_=0; i_<=n;i_++)
-                            {
-                                state.cleic[state.nec+state.nic,i_] = -densec[i,i_];
-                            }
-                        }
-                        else
-                        {
-                            for(i_=0; i_<=n;i_++)
-                            {
-                                state.cleic[state.nec+state.nic,i_] = densec[i,i_];
-                            }
-                        }
-                        state.nic = state.nic+1;
-                    }
-                }
-                
-                //
-                // Normalize rows of State.CLEIC: each row must have unit norm.
-                // Norm is calculated using first N elements (i.e. right part is
-                // not counted when we calculate norm).
-                //
-                if( !state.dbgskipconstraintnormalization )
-                {
-                    for(i=0; i<=densek-1; i++)
-                    {
-                        v = 0;
-                        for(j=0; j<=n-1; j++)
-                        {
-                            v = v+math.sqr(state.cleic[i,j]);
-                        }
-                        if( (double)(v)==(double)(0) )
-                        {
-                            continue;
-                        }
-                        v = 1/Math.Sqrt(v);
-                        for(i_=0; i_<=n;i_++)
-                        {
-                            state.cleic[i,i_] = v*state.cleic[i,i_];
-                        }
-                    }
-                }
-            }
-            
-            //
-            // If we have sparse constraints
-            //
-            // NOTE: we have to write our own conversion code
-            //       because standard implementation converts whole
-            //       matrix, and we need just leading rectangle.
-            //
+            state.cl = new double[densek+sparsek];
+            state.cu = new double[densek+sparsek];
+            state.mdense = densek;
+            state.msparse = sparsek;
             if( sparsek>0 )
             {
                 
                 //
-                // Calculate metrics:
-                // * row sizes for CRS storage.
-                // * row norms for scaling
-                // * number of non-zero elements
-                // * in addition, we check for finiteness of matrix elements
+                // Evaluate row sizes for new storage
                 //
                 rs = new int[sparsek];
-                v2 = new double[sparsek];
                 for(i=0; i<=sparsek-1; i++)
                 {
                     rs[i] = 0;
-                    v2[i] = 0;
                 }
                 t0 = 0;
                 t1 = 0;
                 nnz = 0;
                 while( sparse.sparseenumerate(sparsec, ref t0, ref t1, ref i, ref j, ref v, _params) )
                 {
-                    if( i>sparsek-1 || j>n )
+                    if( i>sparsek-1 || j>n-1 )
                     {
                         continue;
                     }
                     alglib.ap.assert(math.isfinite(v), "MinQPSetLCSparse: C contains infinite or NAN values");
                     nnz = nnz+1;
                     rs[i] = rs[i]+1;
-                    if( j<n )
-                    {
-                        v2[i] = v2[i]+v*v;
-                    }
                 }
                 
                 //
-                // If we have at least one non-zero element
+                // Prepare new sparse CRS storage, copy leading SparseK*N submatrix into the storage
                 //
-                if( nnz>0 )
+                for(i=0; i<=sparsek-1; i++)
                 {
-                    
-                    //
-                    // Determine actual order in which constraints are stored.
-                    //
-                    // Equality constraints are stored first, in the upper
-                    // SNEC rows of State.CLEIC matrix. Inequality constraints
-                    // are stored in the next NIC rows.
-                    //
-                    // NOTE: we convert inequality constraints to the form
-                    // A*x<=b before copying them.
-                    //
-                    srcidx = new int[sparsek];
-                    dstidx = new int[sparsek];
-                    s = new double[sparsek];
-                    for(i=0; i<=sparsek-1; i++)
+                    state.cl[i] = 0;
+                    state.cu[i] = 0;
+                }
+                state.sparsec.m = sparsek;
+                state.sparsec.n = n;
+                apserv.ivectorsetlengthatleast(ref state.sparsec.ridx, sparsek+1, _params);
+                apserv.ivectorsetlengthatleast(ref state.sparsec.idx, nnz, _params);
+                apserv.rvectorsetlengthatleast(ref state.sparsec.vals, nnz, _params);
+                eoffs = new int[sparsek+1];
+                state.sparsec.ridx[0] = 0;
+                eoffs[0] = 0;
+                for(i=1; i<=sparsek; i++)
+                {
+                    state.sparsec.ridx[i] = state.sparsec.ridx[i-1]+rs[i-1];
+                    eoffs[i] = state.sparsec.ridx[i];
+                }
+                t0 = 0;
+                t1 = 0;
+                while( sparse.sparseenumerate(sparsec, ref t0, ref t1, ref i, ref j, ref v, _params) )
+                {
+                    if( i>sparsek-1 || j>n )
                     {
-                        srcidx[i] = -1;
+                        continue;
                     }
-                    for(i=0; i<=sparsek-1; i++)
+                    if( j<n )
                     {
-                        if( sparsect[i]==0 )
-                        {
-                            s[i] = 1;
-                            srcidx[state.snec] = i;
-                            state.snec = state.snec+1;
-                        }
-                        else
-                        {
-                            if( sparsect[i]>0 )
-                            {
-                                s[i] = -1;
-                            }
-                            else
-                            {
-                                s[i] = 1;
-                            }
-                            srcidx[sparsek-1-state.snic] = i;
-                            state.snic = state.snic+1;
-                        }
+                        
+                        //
+                        // Copy left part of constraint
+                        //
+                        j0 = eoffs[i];
+                        state.sparsec.idx[j0] = j;
+                        state.sparsec.vals[j0] = v;
+                        eoffs[i] = j0+1;
                     }
-                    for(i=0; i<=sparsek-1; i++)
+                    else
                     {
-                        alglib.ap.assert(srcidx[i]>=0, "MinQPSetLCSparse: integrity check failed");
+                        
+                        //
+                        // Handle right part of the constraint
+                        //
+                        state.cl[i] = v;
+                        state.cu[i] = v;
                     }
-                    for(i=0; i<=sparsek-1; i++)
+                }
+                for(i=0; i<=sparsek-1; i++)
+                {
+                    alglib.ap.assert(eoffs[i]==state.sparsec.ridx[i+1], "MinQP: critical integrity check failed (sparse copying)");
+                }
+                sparse.sparsecreatecrsinplace(state.sparsec, _params);
+                for(i=0; i<=sparsek-1; i++)
+                {
+                    if( sparsect[i]>0 )
                     {
-                        dstidx[srcidx[i]] = i;
+                        state.cu[i] = Double.PositiveInfinity;
                     }
-                    
-                    //
-                    // Prepare CRS conversion.
-                    //
-                    state.scleic.m = sparsek;
-                    state.scleic.n = n+1;
-                    apserv.ivectorsetlengthatleast(ref state.scleic.ridx, sparsek+1, _params);
-                    eoffs = new int[sparsek+1];
-                    state.scleic.ridx[0] = 0;
-                    eoffs[0] = 0;
-                    for(i=1; i<=sparsek; i++)
+                    if( sparsect[i]<0 )
                     {
-                        state.scleic.ridx[i] = state.scleic.ridx[i-1]+rs[srcidx[i-1]];
-                        eoffs[i] = state.scleic.ridx[i];
+                        state.cl[i] = Double.NegativeInfinity;
                     }
-                    for(i=0; i<=sparsek-1; i++)
-                    {
-                        if( (double)(v2[i])>(double)(0) && !state.dbgskipconstraintnormalization )
-                        {
-                            v2[i] = s[i]/Math.Sqrt(v2[i]);
-                        }
-                        else
-                        {
-                            v2[i] = s[i];
-                        }
-                    }
-                    apserv.ivectorsetlengthatleast(ref state.scleic.idx, nnz, _params);
-                    apserv.rvectorsetlengthatleast(ref state.scleic.vals, nnz, _params);
-                    t0 = 0;
-                    t1 = 0;
-                    while( sparse.sparseenumerate(sparsec, ref t0, ref t1, ref i, ref j, ref v, _params) )
-                    {
-                        if( i>sparsek-1 || j>n )
-                        {
-                            continue;
-                        }
-                        j0 = eoffs[dstidx[i]];
-                        state.scleic.idx[j0] = j;
-                        state.scleic.vals[j0] = v*v2[i];
-                        eoffs[dstidx[i]] = j0+1;
-                    }
-                    for(i=0; i<=sparsek-1; i++)
-                    {
-                        alglib.ap.assert(eoffs[i]==state.scleic.ridx[i+1], "MinQPSetLCSparse: integrity check failed");
-                    }
-                    sparse.sparsecreatecrsinplace(state.scleic, _params);
                 }
             }
+            if( densek>0 )
+            {
+                
+                //
+                // Copy dense constraints
+                //
+                apserv.rmatrixsetlengthatleast(ref state.densec, densek, n, _params);
+                for(i=0; i<=densek-1; i++)
+                {
+                    for(j=0; j<=n-1; j++)
+                    {
+                        state.densec[i,j] = densec[i,j];
+                    }
+                    if( densect[i]>0 )
+                    {
+                        state.cl[sparsek+i] = densec[i,n];
+                        state.cu[sparsek+i] = Double.PositiveInfinity;
+                        continue;
+                    }
+                    if( densect[i]<0 )
+                    {
+                        state.cl[sparsek+i] = Double.NegativeInfinity;
+                        state.cu[sparsek+i] = densec[i,n];
+                        continue;
+                    }
+                    state.cl[sparsek+i] = densec[i,n];
+                    state.cu[sparsek+i] = densec[i,n];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function provides legacy API for specification of mixed  dense/sparse
+        linear constraints.
+
+        New conventions used by ALGLIB since release  3.16.0  state  that  set  of
+        sparse constraints comes first,  followed  by  set  of  dense  ones.  This
+        convention is essential when you talk about things like order of  Lagrange
+        multipliers.
+
+        However, legacy API accepted mixed  constraints  in  reverse  order.  This
+        function is here to simplify situation with code relying on legacy API. It
+        simply accepts constraints in one order (old) and passes them to new  API,
+        now in correct order.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetlcmixedlegacy(minqpstate state,
+            double[,] densec,
+            int[] densect,
+            int densek,
+            sparse.sparsematrix sparsec,
+            int[] sparsect,
+            int sparsek,
+            alglib.xparams _params)
+        {
+            minqpsetlcmixed(state, sparsec, sparsect, sparsek, densec, densect, densek, _params);
+        }
+
+
+        /*************************************************************************
+        This function sets two-sided linear constraints AL <= A*x <= AU with dense
+        constraint matrix A.
+
+        NOTE: knowing  that  constraint  matrix  is  dense  helps  some QP solvers
+              (especially modern IPM method) to utilize efficient  dense  Level  3
+              BLAS for dense parts of the problem. If your problem has both  dense
+              and sparse constraints, you  can  use  minqpsetlc2mixed()  function,
+              which will result in dense algebra being applied to dense terms, and
+              sparse sparse linear algebra applied to sparse terms.
+
+        INPUT PARAMETERS:
+            State   -   structure previously allocated with minqpcreate() call.
+            A       -   linear constraints, array[K,N]. Each row of  A  represents
+                        one  constraint. One-sided  inequality   constraints, two-
+                        sided inequality  constraints,  equality  constraints  are
+                        supported (see below)
+            AL, AU  -   lower and upper bounds, array[K];
+                        * AL[i]=AU[i] => equality constraint Ai*x
+                        * AL[i]<AU[i] => two-sided constraint AL[i]<=Ai*x<=AU[i]
+                        * AL[i]=-INF  => one-sided constraint Ai*x<=AU[i]
+                        * AU[i]=+INF  => one-sided constraint AL[i]<=Ai*x
+                        * AL[i]=-INF, AU[i]=+INF => constraint is ignored
+            K       -   number of equality/inequality constraints,  K>=0;  if  not
+                        given, inferred from sizes of A, AL, AU.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetlc2dense(minqpstate state,
+            double[,] a,
+            double[] al,
+            double[] au,
+            int k,
+            alglib.xparams _params)
+        {
+            minqpsetlc2mixed(state, state.dummysparse, 0, a, k, al, au, _params);
+        }
+
+
+        /*************************************************************************
+        This  function  sets  two-sided linear  constraints  AL <= A*x <= AU  with
+        sparse constraining matrix A. Recommended for large-scale problems.
+
+        This  function  overwrites  linear  (non-box)  constraints set by previous
+        calls (if such calls were made).
+
+        INPUT PARAMETERS:
+            State   -   structure previously allocated with minqpcreate() call.
+            A       -   sparse matrix with size [K,N] (exactly!).
+                        Each row of A represents one general linear constraint.
+                        A can be stored in any sparse storage format.
+            AL, AU  -   lower and upper bounds, array[K];
+                        * AL[i]=AU[i] => equality constraint Ai*x
+                        * AL[i]<AU[i] => two-sided constraint AL[i]<=Ai*x<=AU[i]
+                        * AL[i]=-INF  => one-sided constraint Ai*x<=AU[i]
+                        * AU[i]=+INF  => one-sided constraint AL[i]<=Ai*x
+                        * AL[i]=-INF, AU[i]=+INF => constraint is ignored
+            K       -   number  of equality/inequality constraints, K>=0.  If  K=0
+                        is specified, A, AL, AU are ignored.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetlc2(minqpstate state,
+            sparse.sparsematrix a,
+            double[] al,
+            double[] au,
+            int k,
+            alglib.xparams _params)
+        {
+            minqpsetlc2mixed(state, a, k, state.dummyr2, 0, al, au, _params);
+        }
+
+
+        /*************************************************************************
+        This  function  sets  two-sided linear  constraints  AL <= A*x <= AU  with
+        mixed constraining matrix A including sparse part (first SparseK rows) and
+        dense part (last DenseK rows). Recommended for large-scale problems.
+
+        This  function  overwrites  linear  (non-box)  constraints set by previous
+        calls (if such calls were made).
+
+        This function may be useful if constraint matrix includes large number  of
+        both types of rows - dense and sparse. If you have just a few sparse rows,
+        you  may  represent  them  in  dense  format  without loosing performance.
+        Similarly, if you have just a few dense rows, you may store them in sparse
+        format with almost same performance.
+
+        INPUT PARAMETERS:
+            State   -   structure previously allocated with minqpcreate() call.
+            SparseA -   sparse matrix with size [K,N] (exactly!).
+                        Each row of A represents one general linear constraint.
+                        A can be stored in any sparse storage format.
+            SparseK -   number of sparse constraints, SparseK>=0
+            DenseA  -   linear constraints, array[K,N], set of dense constraints.
+                        Each row of A represents one general linear constraint.
+            DenseK  -   number of dense constraints, DenseK>=0
+            AL, AU  -   lower and upper bounds, array[SparseK+DenseK], with former
+                        SparseK elements corresponding to sparse constraints,  and
+                        latter DenseK elements corresponding to dense constraints;
+                        * AL[i]=AU[i] => equality constraint Ai*x
+                        * AL[i]<AU[i] => two-sided constraint AL[i]<=Ai*x<=AU[i]
+                        * AL[i]=-INF  => one-sided constraint Ai*x<=AU[i]
+                        * AU[i]=+INF  => one-sided constraint AL[i]<=Ai*x
+                        * AL[i]=-INF, AU[i]=+INF => constraint is ignored
+            K       -   number  of equality/inequality constraints, K>=0.  If  K=0
+                        is specified, A, AL, AU are ignored.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpsetlc2mixed(minqpstate state,
+            sparse.sparsematrix sparsea,
+            int ksparse,
+            double[,] densea,
+            int kdense,
+            double[] al,
+            double[] au,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = kdense+ksparse;
+            
+            //
+            // Check input arguments
+            //
+            alglib.ap.assert(ksparse>=0, "MinQPSetLC2Mixed: KSparse<0");
+            alglib.ap.assert(ksparse==0 || sparse.sparsegetncols(sparsea, _params)==n, "MinQPSetLC2: Cols(SparseA)<>N");
+            alglib.ap.assert(ksparse==0 || sparse.sparsegetnrows(sparsea, _params)==ksparse, "MinQPSetLC2: Rows(SparseA)<>K");
+            alglib.ap.assert(kdense>=0, "MinQPSetLC2Mixed: KDense<0");
+            alglib.ap.assert(kdense==0 || alglib.ap.cols(densea)>=n, "MinQPSetLC2Mixed: Cols(DenseA)<N");
+            alglib.ap.assert(kdense==0 || alglib.ap.rows(densea)>=kdense, "MinQPSetLC2Mixed: Rows(DenseA)<K");
+            alglib.ap.assert(apserv.apservisfinitematrix(densea, kdense, n, _params), "MinQPSetLC2Mixed: DenseA contains infinite or NaN values!");
+            alglib.ap.assert(alglib.ap.len(al)>=kdense+ksparse, "MinQPSetLC2Mixed: Length(AL)<K");
+            alglib.ap.assert(alglib.ap.len(au)>=kdense+ksparse, "MinQPSetLC2Mixed: Length(AU)<K");
+            for(i=0; i<=m-1; i++)
+            {
+                alglib.ap.assert(math.isfinite(al[i]) || Double.IsNegativeInfinity(al[i]), "MinQPSetLC2Mixed: AL contains NAN or +INF");
+                alglib.ap.assert(math.isfinite(au[i]) || Double.IsPositiveInfinity(au[i]), "MinQPSetLC2Mixed: AU contains NAN or -INF");
+            }
+            
+            //
+            // Allocate place for Lagrange multipliers, fill by zero
+            //
+            apserv.rvectorsetlengthatleast(ref state.replaglc, kdense+ksparse, _params);
+            for(i=0; i<=kdense+ksparse-1; i++)
+            {
+                state.replaglc[i] = 0.0;
+            }
+            
+            //
+            // Quick exit if needed
+            //
+            if( m==0 )
+            {
+                state.mdense = 0;
+                state.msparse = 0;
+                return;
+            }
+            
+            //
+            // Prepare
+            //
+            apserv.rvectorsetlengthatleast(ref state.cl, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.cu, m, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                state.cl[i] = al[i];
+                state.cu[i] = au[i];
+            }
+            state.mdense = kdense;
+            state.msparse = ksparse;
+            
+            //
+            // Copy dense and sparse terms
+            //
+            if( ksparse>0 )
+            {
+                sparse.sparsecopytocrsbuf(sparsea, state.sparsec, _params);
+            }
+            if( kdense>0 )
+            {
+                apserv.rmatrixsetlengthatleast(ref state.densec, kdense, n, _params);
+                ablas.rmatrixcopy(kdense, n, densea, 0, 0, state.densec, 0, 0, _params);
+            }
+        }
+
+
+        /*************************************************************************
+        This function appends two-sided linear constraint  AL <= A*x <= AU  to the
+        list of currently present dense constraints.
+
+        INPUT PARAMETERS:
+            State   -   structure previously allocated with minqpcreate() call.
+            A       -   linear constraint coefficient, array[N], right side is NOT
+                        included.
+            AL, AU  -   lower and upper bounds;
+                        * AL=AU    => equality constraint Ai*x
+                        * AL<AU    => two-sided constraint AL<=A*x<=AU
+                        * AL=-INF  => one-sided constraint Ai*x<=AU
+                        * AU=+INF  => one-sided constraint AL<=Ai*x
+                        * AL=-INF, AU=+INF => constraint is ignored
+
+          -- ALGLIB --
+             Copyright 19.07.2018 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpaddlc2dense(minqpstate state,
+            double[] a,
+            double al,
+            double au,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+
+            n = state.n;
+            alglib.ap.assert(alglib.ap.len(a)>=n, "MinQPAddLC2Dense: Length(A)<N");
+            alglib.ap.assert(apserv.isfinitevector(a, n, _params), "MinQPAddLC2Dense: A contains infinite or NaN values!");
+            alglib.ap.assert(math.isfinite(al) || Double.IsNegativeInfinity(al), "MinQPAddLC2Dense: AL is NAN or +INF");
+            alglib.ap.assert(math.isfinite(au) || Double.IsPositiveInfinity(au), "MinQPAddLC2Dense: AU is NAN or -INF");
+            apserv.rvectorgrowto(ref state.cl, state.msparse+state.mdense+1, _params);
+            apserv.rvectorgrowto(ref state.cu, state.msparse+state.mdense+1, _params);
+            apserv.rvectorgrowto(ref state.replaglc, state.msparse+state.mdense+1, _params);
+            apserv.rmatrixgrowrowsto(ref state.densec, state.mdense+1, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.densec[state.mdense,i] = a[i];
+            }
+            state.cl[state.msparse+state.mdense] = al;
+            state.cu[state.msparse+state.mdense] = au;
+            state.replaglc[state.msparse+state.mdense] = 0.0;
+            apserv.inc(ref state.mdense, _params);
+        }
+
+
+        /*************************************************************************
+        This function appends two-sided linear constraint  AL <= A*x <= AU  to the
+        list of currently present sparse constraints.
+
+        Constraint is passed in compressed format: as list of non-zero entries  of
+        coefficient vector A. Such approach is more efficient than  dense  storage
+        for highly sparse constraint vectors.
+
+        INPUT PARAMETERS:
+            State   -   structure previously allocated with minqpcreate() call.
+            IdxA    -   array[NNZ], indexes of non-zero elements of A:
+                        * can be unsorted
+                        * can include duplicate indexes (corresponding entries  of
+                          ValA[] will be summed)
+            ValA    -   array[NNZ], values of non-zero elements of A
+            NNZ     -   number of non-zero coefficients in A
+            AL, AU  -   lower and upper bounds;
+                        * AL=AU    => equality constraint A*x
+                        * AL<AU    => two-sided constraint AL<=A*x<=AU
+                        * AL=-INF  => one-sided constraint A*x<=AU
+                        * AU=+INF  => one-sided constraint AL<=A*x
+                        * AL=-INF, AU=+INF => constraint is ignored
+
+          -- ALGLIB --
+             Copyright 19.07.2018 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minqpaddlc2(minqpstate state,
+            int[] idxa,
+            double[] vala,
+            int nnz,
+            double al,
+            double au,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int offs = 0;
+            int offsdst = 0;
+            int n = 0;
+            int didx = 0;
+            int uidx = 0;
+
+            n = state.n;
+            
+            //
+            // Check inputs
+            //
+            alglib.ap.assert(nnz>=0, "MinQPAddLC2: NNZ<0");
+            alglib.ap.assert(alglib.ap.len(idxa)>=nnz, "MinQPAddLC2: Length(IdxA)<NNZ");
+            alglib.ap.assert(alglib.ap.len(vala)>=nnz, "MinQPAddLC2: Length(ValA)<NNZ");
+            for(i=0; i<=nnz-1; i++)
+            {
+                alglib.ap.assert(idxa[i]>=0 && idxa[i]<n, "MinQPAddLC2: IdxA contains indexes outside of [0,N) range");
+            }
+            alglib.ap.assert(apserv.isfinitevector(vala, nnz, _params), "MinQPAddLC2: ValA contains infinite or NaN values!");
+            alglib.ap.assert(math.isfinite(al) || Double.IsNegativeInfinity(al), "MinQPAddLC2Dense: AL is NAN or +INF");
+            alglib.ap.assert(math.isfinite(au) || Double.IsPositiveInfinity(au), "MinQPAddLC2Dense: AU is NAN or -INF");
+            
+            //
+            // If M=0, it means that A is uninitialized.
+            // Prepare sparse matrix structure
+            //
+            if( state.msparse==0 )
+            {
+                state.sparsec.matrixtype = 1;
+                state.sparsec.m = 0;
+                state.sparsec.n = n;
+                state.sparsec.ninitialized = 0;
+                apserv.ivectorsetlengthatleast(ref state.sparsec.ridx, 1, _params);
+                state.sparsec.ridx[0] = 0;
+            }
+            alglib.ap.assert(state.sparsec.matrixtype==1 && state.sparsec.m==state.msparse, "MinQPAddLC2Dense: integrity check failed!");
+            
+            //
+            // Reallocate inequality bounds
+            //
+            apserv.rvectorgrowto(ref state.cl, state.msparse+state.mdense+1, _params);
+            apserv.rvectorgrowto(ref state.cu, state.msparse+state.mdense+1, _params);
+            apserv.rvectorgrowto(ref state.replaglc, state.msparse+state.mdense+1, _params);
+            for(i=state.msparse+state.mdense; i>=state.msparse+1; i--)
+            {
+                state.cl[i] = state.cl[i-1];
+                state.cu[i] = state.cu[i-1];
+                state.replaglc[i] = state.replaglc[i-1];
+            }
+            state.cl[state.msparse] = al;
+            state.cu[state.msparse] = au;
+            state.replaglc[state.msparse] = 0.0;
+            
+            //
+            // Reallocate sparse storage
+            //
+            offs = state.sparsec.ridx[state.msparse];
+            apserv.ivectorgrowto(ref state.sparsec.idx, offs+nnz, _params);
+            apserv.rvectorgrowto(ref state.sparsec.vals, offs+nnz, _params);
+            apserv.ivectorgrowto(ref state.sparsec.didx, state.msparse+1, _params);
+            apserv.ivectorgrowto(ref state.sparsec.uidx, state.msparse+1, _params);
+            apserv.ivectorgrowto(ref state.sparsec.ridx, state.msparse+2, _params);
+            
+            //
+            // If NNZ=0, perform quick and simple row append. 
+            //
+            if( nnz==0 )
+            {
+                state.sparsec.didx[state.msparse] = state.sparsec.ridx[state.msparse];
+                state.sparsec.uidx[state.msparse] = state.sparsec.ridx[state.msparse];
+                state.sparsec.ridx[state.msparse+1] = state.sparsec.ridx[state.msparse];
+                apserv.inc(ref state.sparsec.m, _params);
+                apserv.inc(ref state.msparse, _params);
+                return;
+            }
+            
+            //
+            // Now we are sure that SparseC contains properly initialized sparse
+            // matrix (or some appropriate dummy for M=0) and we have NNZ>0
+            // (no need to care about degenerate cases).
+            //
+            // Append rows to SparseC:
+            // * append data
+            // * sort in place
+            // * merge duplicate indexes
+            // * compute DIdx and UIdx
+            //
+            //
+            for(i=0; i<=nnz-1; i++)
+            {
+                state.sparsec.idx[offs+i] = idxa[i];
+                state.sparsec.vals[offs+i] = vala[i];
+            }
+            tsort.tagsortmiddleir(ref state.sparsec.idx, ref state.sparsec.vals, offs, nnz, _params);
+            offsdst = offs;
+            for(i=1; i<=nnz-1; i++)
+            {
+                if( state.sparsec.idx[offsdst]!=state.sparsec.idx[offs+i] )
+                {
+                    offsdst = offsdst+1;
+                    state.sparsec.idx[offsdst] = state.sparsec.idx[offs+i];
+                    state.sparsec.vals[offsdst] = state.sparsec.vals[offs+i];
+                }
+                else
+                {
+                    state.sparsec.vals[offsdst] = state.sparsec.vals[offsdst]+state.sparsec.vals[offs+i];
+                }
+            }
+            nnz = offsdst-offs+1;
+            uidx = -1;
+            didx = -1;
+            for(j=offs; j<=offsdst; j++)
+            {
+                k = state.sparsec.idx[j];
+                if( k==state.msparse )
+                {
+                    didx = j;
+                }
+                else
+                {
+                    if( k>state.msparse && uidx==-1 )
+                    {
+                        uidx = j;
+                        break;
+                    }
+                }
+            }
+            if( uidx==-1 )
+            {
+                uidx = offsdst+1;
+            }
+            if( didx==-1 )
+            {
+                didx = uidx;
+            }
+            state.sparsec.didx[state.msparse] = didx;
+            state.sparsec.uidx[state.msparse] = uidx;
+            state.sparsec.ridx[state.msparse+1] = offsdst+1;
+            state.sparsec.ninitialized = state.sparsec.ridx[state.msparse+1];
+            apserv.inc(ref state.sparsec.m, _params);
+            apserv.inc(ref state.msparse, _params);
         }
 
 
@@ -32458,6 +41680,7 @@ public partial class alglib
         * minqpsetalgoquickqp()     - for QuickQP solver
         * minqpsetalgobleic()       - for BLEIC-QP solver
         * minqpsetalgodenseaul()    - for Dense-AUL-QP solver
+        * minqpsetalgodenseipm()    - for Dense-IPM-QP solver
 
         These functions also allow you to control stopping criteria of the solver.
         If you did not set solver,  MinQP  subpackage  will  automatically  select
@@ -32480,16 +41703,19 @@ public partial class alglib
             alglib.xparams _params)
         {
             int n = 0;
+            int m = 0;
             int i = 0;
             int j = 0;
-            int idst = 0;
-            int isrc = 0;
             int j0 = 0;
             int j1 = 0;
             int nbc = 0;
-            int i_ = 0;
+            int neq = 0;
+            int nineq = 0;
+            int curecpos = 0;
+            int curicpos = 0;
 
             n = state.n;
+            m = state.mdense+state.msparse;
             state.repterminationtype = -5;
             state.repinneriterationscount = 0;
             state.repouteriterationscount = 0;
@@ -32497,34 +41723,15 @@ public partial class alglib
             state.repnmv = 0;
             
             //
-            // check correctness of constraints
+            // Zero-fill Lagrange multipliers (their initial value)
             //
             for(i=0; i<=n-1; i++)
             {
-                if( state.havebndl[i] && state.havebndu[i] )
-                {
-                    if( (double)(state.bndl[i])>(double)(state.bndu[i]) )
-                    {
-                        state.repterminationtype = -3;
-                        return;
-                    }
-                }
+                state.replagbc[i] = 0.0;
             }
-            
-            //
-            // count number of bound and linear constraints
-            //
-            nbc = 0;
-            for(i=0; i<=n-1; i++)
+            for(i=0; i<=m-1; i++)
             {
-                if( state.havebndl[i] )
-                {
-                    nbc = nbc+1;
-                }
-                if( state.havebndu[i] )
-                {
-                    nbc = nbc+1;
-                }
+                state.replaglc[i] = 0.0;
             }
             
             //
@@ -32567,6 +41774,37 @@ public partial class alglib
                         continue;
                     }
                     state.xs[i] = 0;
+                }
+            }
+            
+            //
+            // check correctness of constraints
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.havebndl[i] && state.havebndu[i] )
+                {
+                    if( (double)(state.bndl[i])>(double)(state.bndu[i]) )
+                    {
+                        state.repterminationtype = -3;
+                        return;
+                    }
+                }
+            }
+            
+            //
+            // count number of bound and linear constraints
+            //
+            nbc = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.havebndl[i] )
+                {
+                    nbc = nbc+1;
+                }
+                if( state.havebndu[i] )
+                {
+                    nbc = nbc+1;
                 }
             }
             
@@ -32634,70 +41872,164 @@ public partial class alglib
             }
             
             //
-            // QP-BLEIC solver
+            // Solvers which can not handle new two-sided constraints need them to be
+            // converted into legacy equality/inequality one-sided format
             //
-            if( state.algokind==2 )
+            if( state.algokind==2 || state.algokind==4 )
             {
                 
                 //
-                // Combine dense and sparse constraints in temporary dense storage
+                // Scan constraint left/right sides, count equality ones and one/two-sided inequality ones
                 //
-                apserv.rmatrixsetlengthatleast(ref state.ecleic, state.nec+state.nic+state.snec+state.snic, n+1, _params);
-                for(i=0; i<=state.nec-1; i++)
+                neq = 0;
+                nineq = 0;
+                for(i=0; i<=m-1; i++)
                 {
-                    for(i_=0; i_<=n;i_++)
+                    if( (math.isfinite(state.cl[i]) && math.isfinite(state.cu[i])) && (double)(state.cl[i])==(double)(state.cu[i]) )
                     {
-                        state.ecleic[i,i_] = state.cleic[i,i_];
+                        apserv.inc(ref neq, _params);
+                        continue;
                     }
-                }
-                for(i=0; i<=state.snec-1; i++)
-                {
-                    alglib.ap.assert(state.scleic.matrixtype==1, "MinQPOptimize: integrity check failed");
-                    idst = i+state.nec;
-                    for(j=0; j<=n; j++)
+                    if( math.isfinite(state.cl[i]) )
                     {
-                        state.ecleic[idst,j] = 0;
+                        apserv.inc(ref nineq, _params);
                     }
-                    j0 = state.scleic.ridx[i];
-                    j1 = state.scleic.ridx[i+1];
-                    for(j=j0; j<=j1-1; j++)
+                    if( math.isfinite(state.cu[i]) )
                     {
-                        state.ecleic[idst,state.scleic.idx[j]] = state.scleic.vals[j];
-                    }
-                }
-                for(i=0; i<=state.nic-1; i++)
-                {
-                    idst = i+state.nec+state.snec;
-                    isrc = i+state.nec;
-                    for(i_=0; i_<=n;i_++)
-                    {
-                        state.ecleic[idst,i_] = state.cleic[isrc,i_];
-                    }
-                }
-                for(i=0; i<=state.snic-1; i++)
-                {
-                    alglib.ap.assert(state.scleic.matrixtype==1, "MinQPOptimize: integrity check failed");
-                    idst = i+state.nec+state.snec+state.nic;
-                    isrc = i+state.snec;
-                    for(j=0; j<=n; j++)
-                    {
-                        state.ecleic[idst,j] = 0;
-                    }
-                    j0 = state.scleic.ridx[isrc];
-                    j1 = state.scleic.ridx[isrc+1];
-                    for(j=j0; j<=j1-1; j++)
-                    {
-                        state.ecleic[idst,state.scleic.idx[j]] = state.scleic.vals[j];
+                        apserv.inc(ref nineq, _params);
                     }
                 }
                 
                 //
-                // Solve
+                // Perform conversion
                 //
-                qpbleicsolver.qpbleicoptimize(state.a, state.sparsea, state.akind, state.sparseaupper, state.absasum, state.absasum2, state.b, state.bndl, state.bndu, state.effectives, state.xorigin, n, state.ecleic, state.nec+state.snec, state.nic+state.snic, state.qpbleicsettingsuser, state.qpbleicbuf, ref state.qpbleicfirstcall, ref state.xs, ref state.repterminationtype, _params);
-                state.repinneriterationscount = state.qpbleicbuf.repinneriterationscount;
-                state.repouteriterationscount = state.qpbleicbuf.repouteriterationscount;
-                return;
+                apserv.rmatrixsetlengthatleast(ref state.ecleic, neq+nineq, n+1, _params);
+                apserv.rvectorsetlengthatleast(ref state.elagmlt, neq+nineq, _params);
+                apserv.ivectorsetlengthatleast(ref state.elagidx, neq+nineq, _params);
+                curecpos = 0;
+                curicpos = neq;
+                for(i=0; i<=m-1; i++)
+                {
+                    if( (math.isfinite(state.cl[i]) && math.isfinite(state.cu[i])) && (double)(state.cl[i])==(double)(state.cu[i]) )
+                    {
+                        
+                        //
+                        // Offload equality constraint
+                        //
+                        if( i<state.msparse )
+                        {
+                            for(j=0; j<=n-1; j++)
+                            {
+                                state.ecleic[curecpos,j] = 0;
+                            }
+                            j0 = state.sparsec.ridx[i];
+                            j1 = state.sparsec.ridx[i+1]-1;
+                            for(j=j0; j<=j1; j++)
+                            {
+                                state.ecleic[curecpos,state.sparsec.idx[j]] = state.sparsec.vals[j];
+                            }
+                        }
+                        else
+                        {
+                            for(j=0; j<=n-1; j++)
+                            {
+                                state.ecleic[curecpos,j] = state.densec[i-state.msparse,j];
+                            }
+                        }
+                        state.ecleic[curecpos,n] = state.cu[i];
+                        state.elagidx[curecpos] = i;
+                        state.elagmlt[curecpos] = 1.0;
+                        apserv.inc(ref curecpos, _params);
+                        continue;
+                    }
+                    if( math.isfinite(state.cl[i]) )
+                    {
+                        
+                        //
+                        // Offload inequality constraint of the form CL<=C*x, convert it to -C*x<=-CL
+                        //
+                        if( i<state.msparse )
+                        {
+                            for(j=0; j<=n-1; j++)
+                            {
+                                state.ecleic[curicpos,j] = 0;
+                            }
+                            j0 = state.sparsec.ridx[i];
+                            j1 = state.sparsec.ridx[i+1]-1;
+                            for(j=j0; j<=j1; j++)
+                            {
+                                state.ecleic[curicpos,state.sparsec.idx[j]] = -state.sparsec.vals[j];
+                            }
+                        }
+                        else
+                        {
+                            for(j=0; j<=n-1; j++)
+                            {
+                                state.ecleic[curicpos,j] = -state.densec[i-state.msparse,j];
+                            }
+                        }
+                        state.ecleic[curicpos,n] = -state.cl[i];
+                        state.elagidx[curicpos] = i;
+                        state.elagmlt[curicpos] = -1.0;
+                        apserv.inc(ref curicpos, _params);
+                    }
+                    if( math.isfinite(state.cu[i]) )
+                    {
+                        
+                        //
+                        // Offload inequality constraint of the form C*x<=CU
+                        //
+                        if( i<state.msparse )
+                        {
+                            for(j=0; j<=n-1; j++)
+                            {
+                                state.ecleic[curicpos,j] = 0;
+                            }
+                            j0 = state.sparsec.ridx[i];
+                            j1 = state.sparsec.ridx[i+1]-1;
+                            for(j=j0; j<=j1; j++)
+                            {
+                                state.ecleic[curicpos,state.sparsec.idx[j]] = state.sparsec.vals[j];
+                            }
+                        }
+                        else
+                        {
+                            for(j=0; j<=n-1; j++)
+                            {
+                                state.ecleic[curicpos,j] = state.densec[i-state.msparse,j];
+                            }
+                        }
+                        state.ecleic[curicpos,n] = state.cu[i];
+                        state.elagidx[curicpos] = i;
+                        state.elagmlt[curicpos] = 1.0;
+                        apserv.inc(ref curicpos, _params);
+                    }
+                }
+                alglib.ap.assert(curecpos==neq && curicpos==neq+nineq, "MinQPOptimize: critical integrity check failed (ECLEIC conversion)");
+                
+                //
+                // Run solvers
+                //
+                if( state.algokind==2 )
+                {
+                    qpbleicsolver.qpbleicoptimize(state.a, state.sparsea, state.akind, state.sparseaupper, state.absasum, state.absasum2, state.b, state.bndl, state.bndu, state.effectives, state.xorigin, n, state.ecleic, neq, nineq, state.qpbleicsettingsuser, state.qpbleicbuf, ref state.qpbleicfirstcall, ref state.xs, ref state.repterminationtype, _params);
+                    state.repinneriterationscount = state.qpbleicbuf.repinneriterationscount;
+                    state.repouteriterationscount = state.qpbleicbuf.repouteriterationscount;
+                    return;
+                }
+                if( state.algokind==4 )
+                {
+                    qpdenseaulsolver.qpdenseauloptimize(state.a, state.sparsea, state.akind, state.sparseaupper, state.b, state.bndl, state.bndu, state.effectives, state.xorigin, n, state.ecleic, neq, nineq, state.dummysparse, 0, 0, !state.dbgskipconstraintnormalization, state.qpdenseaulsettingsuser, state.qpdenseaulbuf, ref state.xs, ref state.replagbc, ref state.elaglc, ref state.repterminationtype, _params);
+                    for(i=0; i<=neq+nineq-1; i++)
+                    {
+                        state.replaglc[state.elagidx[i]] = state.replaglc[state.elagidx[i]]+state.elaglc[i]*state.elagmlt[i];
+                    }
+                    state.repinneriterationscount = state.qpdenseaulbuf.repinneriterationscount;
+                    state.repouteriterationscount = state.qpdenseaulbuf.repouteriterationscount;
+                    state.repncholesky = state.qpdenseaulbuf.repncholesky;
+                    return;
+                }
+                alglib.ap.assert(false, "MinQPOptimize: integrity check failed - unknown solver");
             }
             
             //
@@ -32705,12 +42037,7 @@ public partial class alglib
             //
             if( state.algokind==3 )
             {
-                if( state.nec+state.nic>0 )
-                {
-                    state.repterminationtype = -5;
-                    return;
-                }
-                if( state.snec+state.snic>0 )
+                if( state.mdense+state.msparse>0 )
                 {
                     state.repterminationtype = -5;
                     return;
@@ -32723,18 +42050,34 @@ public partial class alglib
             }
             
             //
-            // QP-DenseAUL solver
+            // QP-DENSE-IPM and QP-SPARSE-IPM solvers
             //
-            if( state.algokind==4 )
+            if( state.algokind==5 || state.algokind==6 )
             {
                 
                 //
                 // Solve
                 //
-                qpdenseaulsolver.qpdenseauloptimize(state.a, state.sparsea, state.akind, state.sparseaupper, state.b, state.bndl, state.bndu, state.effectives, state.xorigin, n, state.cleic, state.nec, state.nic, state.scleic, state.snec, state.snic, !state.dbgskipconstraintnormalization, state.qpdenseaulsettingsuser, state.qpdenseaulbuf, ref state.xs, ref state.repterminationtype, _params);
-                state.repinneriterationscount = state.qpdenseaulbuf.repinneriterationscount;
-                state.repouteriterationscount = state.qpdenseaulbuf.repouteriterationscount;
-                state.repncholesky = state.qpdenseaulbuf.repncholesky;
+                alglib.ap.assert(state.akind==0 || state.akind==1, "MinQPOptimize: unexpected AKind");
+                if( state.akind==0 )
+                {
+                    cqmodels.cqmgeta(state.a, ref state.tmpr2, _params);
+                }
+                if( state.algokind==5 )
+                {
+                    vipmsolver.vipminitdense(state.vsolver, state.effectives, state.xorigin, n, _params);
+                }
+                if( state.algokind==6 )
+                {
+                    vipmsolver.vipminitsparse(state.vsolver, state.effectives, state.xorigin, n, _params);
+                }
+                vipmsolver.vipmsetquadraticlinear(state.vsolver, state.tmpr2, state.sparsea, state.akind, state.sparseaupper, state.b, _params);
+                vipmsolver.vipmsetconstraints(state.vsolver, state.bndl, state.bndu, state.sparsec, state.msparse, state.densec, state.mdense, state.cl, state.cu, _params);
+                vipmsolver.vipmsetcond(state.vsolver, state.veps, state.veps, state.veps, _params);
+                vipmsolver.vipmoptimize(state.vsolver, ref state.xs, ref state.replagbc, ref state.replaglc, ref state.repterminationtype, _params);
+                state.repinneriterationscount = state.vsolver.repiterationscount;
+                state.repouteriterationscount = state.vsolver.repiterationscount;
+                state.repncholesky = state.vsolver.repncholesky;
                 return;
             }
             
@@ -32755,35 +42098,12 @@ public partial class alglib
             X       -   array[0..N-1], solution.
                         This array is allocated and initialized only when
                         Rep.TerminationType parameter is positive (success).
-            Rep     -   optimization report. You should check Rep.TerminationType,
-                        which contains completion code, and you may check  another
-                        fields which contain another information  about  algorithm
-                        functioning.
-                        
-                        Failure codes returned by algorithm are:
-                        * -9    failure of the automatic scale evaluation:  one of
-                                the diagonal elements of  the  quadratic  term  is
-                                non-positive.  Specify variable scales manually!
-                        * -5    inappropriate solver was used:
-                                * QuickQP solver for problem with  general  linear
-                                  constraints
-                        * -4    BLEIC-QP/QuickQP   solver    found   unconstrained
-                                direction  of   negative  curvature  (function  is
-                                unbounded from below even under constraints),   no
-                                meaningful minimum can be found.
-                        * -3    inconsistent constraints (or maybe  feasible point
-                                is too  hard  to  find).  If  you  are  sure  that
-                                constraints are feasible, try to restart optimizer
-                                with better initial approximation.
-                                
-                        Completion codes specific for Cholesky algorithm:
-                        *  4   successful completion
-                        
-                        Completion codes specific for BLEIC/QuickQP algorithms:
-                        *  1   relative function improvement is no more than EpsF.
-                        *  2   scaled step is no more than EpsX.
-                        *  4   scaled gradient norm is no more than EpsG.
-                        *  5   MaxIts steps was taken
+            Rep     -   optimization report, contains:
+                        * completion code in Rep.TerminationType (positive  values
+                          denote some kind of success, negative - failures)
+                        * Lagrange multipliers - for QP solvers which support then
+                        * other statistics
+                        See comments on minqpreport structure for more information
 
           -- ALGLIB --
              Copyright 11.01.2011 by Bochkanov Sergey
@@ -32815,15 +42135,22 @@ public partial class alglib
             minqpreport rep,
             alglib.xparams _params)
         {
-            int i_ = 0;
+            int i = 0;
 
-            if( alglib.ap.len(x)<state.n )
+            alglib.ap.assert(alglib.ap.len(state.xs)>=state.n, "MinQPResultsBuf: integrity check failed");
+            alglib.ap.assert(alglib.ap.len(state.replagbc)>=state.n, "MinQPResultsBuf: integrity check failed");
+            alglib.ap.assert(alglib.ap.len(state.replaglc)>=state.mdense+state.msparse, "MinQPResultsBuf: integrity check failed");
+            apserv.rvectorsetlengthatleast(ref x, state.n, _params);
+            apserv.rvectorsetlengthatleast(ref rep.lagbc, state.n, _params);
+            apserv.rvectorsetlengthatleast(ref rep.laglc, state.mdense+state.msparse, _params);
+            for(i=0; i<=state.n-1; i++)
             {
-                x = new double[state.n];
+                x[i] = state.xs[i];
+                rep.lagbc[i] = state.replagbc[i];
             }
-            for(i_=0; i_<=state.n-1;i_++)
+            for(i=0; i<=state.mdense+state.msparse-1; i++)
             {
-                x[i_] = state.xs[i_];
+                rep.laglc[i] = state.replaglc[i];
             }
             rep.inneriterationscount = state.repinneriterationscount;
             rep.outeriterationscount = state.repouteriterationscount;
@@ -35184,6 +44511,7 @@ public partial class alglib
         * Q - index of entering variable.
         * R - index of leaving variable in AlphaQ
         * Delta    - delta from pricing step
+        * AlphaPiv - pivot element (in absence of numerical rounding it is AlphaR[Q]=AlphaQ[R])
         * ThetaP   - primal step length
         * ThetaD   - dual step length
         * AlphaQ   - pivot column
@@ -35210,6 +44538,7 @@ public partial class alglib
             int q,
             int r,
             double delta,
+            double alphapiv,
             double thetap,
             double thetad,
             double[] alphaq,
@@ -35249,7 +44578,7 @@ public partial class alglib
             alglib.ap.assert(s.state==ssvalid, "UpdateStep: invalid X");
             alglib.ap.assert(p>=0 && q>=0, "UpdateStep: invalid P/Q");
             alglib.ap.assert((double)(delta)!=(double)(0), "UpdateStep: Delta=0");
-            alglib.ap.assert((double)(alphaq[r])!=(double)(0), "UpdateStep: AlphaQ[R]=0");
+            alglib.ap.assert((double)(alphapiv)!=(double)(0), "UpdateStep: AlphaPiv=0");
             
             //
             // Prepare
@@ -35314,7 +44643,7 @@ public partial class alglib
             //
             if( actualflipscnt>0 )
             {
-                thetap = delta/state.alphaq[r];
+                thetap = delta/alphapiv;
                 k0 = state.at.ridx[q];
                 k1 = state.at.ridx[q+1]-1;
                 for(k=k0; k<=k1; k++)
@@ -35470,6 +44799,7 @@ public partial class alglib
             int p = 0;
             int r = 0;
             int q = 0;
+            double alphapiv = 0;
             double thetad = 0;
             double thetap = 0;
             double delta = 0;
@@ -35560,6 +44890,7 @@ public partial class alglib
                     info = -3;
                     return;
                 }
+                alphapiv = state.alphar[q];
                 
                 //
                 // FTran
@@ -35603,8 +44934,8 @@ public partial class alglib
                 //
                 // Basis change and update
                 //
-                thetap = delta/state.alphaq[r];
-                updatestep(state, s, p, q, r, delta, thetap, thetad, state.alphaq, state.alphaqim, state.alphar, state.tau, state.possibleflips, state.possibleflipscnt, settings, _params);
+                thetap = delta/alphapiv;
+                updatestep(state, s, p, q, r, delta, alphapiv, thetap, thetad, state.alphaq, state.alphaqim, state.alphar, state.tau, state.possibleflips, state.possibleflipscnt, settings, _params);
                 apserv.inc(ref state.repiterationscount, _params);
                 if( isphase1 )
                 {
@@ -38437,8 +47768,8 @@ public partial class alglib
             int n = 0;
 
             n = state.n;
-            alglib.ap.assert(math.isfinite(bndl) || Double.IsNegativeInfinity(bndl), "MinLPSetBC: BndL is NAN or +INF");
-            alglib.ap.assert(math.isfinite(bndu) || Double.IsPositiveInfinity(bndu), "MinLPSetBC: BndU is NAN or -INF");
+            alglib.ap.assert(math.isfinite(bndl) || Double.IsNegativeInfinity(bndl), "MinLPSetBCAll: BndL is NAN or +INF");
+            alglib.ap.assert(math.isfinite(bndu) || Double.IsPositiveInfinity(bndu), "MinLPSetBCAll: BndU is NAN or -INF");
             for(i=0; i<=n-1; i++)
             {
                 state.bndl[i] = bndl;
@@ -39280,6 +48611,186 @@ public partial class alglib
 
 
         /*************************************************************************
+        This object stores temporaries for LagrangianFG() function
+        *************************************************************************/
+        public class minslptmplagrangian : apobject
+        {
+            public double[] sclagtmp0;
+            public double[] sclagtmp1;
+            public minslptmplagrangian()
+            {
+                init();
+            }
+            public override void init()
+            {
+                sclagtmp0 = new double[0];
+                sclagtmp1 = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minslptmplagrangian _result = new minslptmplagrangian();
+                _result.sclagtmp0 = (double[])sclagtmp0.Clone();
+                _result.sclagtmp1 = (double[])sclagtmp1.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries for LagrangianFG() function
+        *************************************************************************/
+        public class minslptmpmerit : apobject
+        {
+            public double[] mftmp0;
+            public minslptmpmerit()
+            {
+                init();
+            }
+            public override void init()
+            {
+                mftmp0 = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minslptmpmerit _result = new minslptmpmerit();
+                _result.mftmp0 = (double[])mftmp0.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries of Phase13 SLP subsolver.
+        *************************************************************************/
+        public class minslpphase13state : apobject
+        {
+            public bool usecorrection;
+            public double[] d;
+            public double[] dx;
+            public double[] stepkxc;
+            public double[] stepkxn;
+            public double[] stepkfic;
+            public double[] stepkfin;
+            public double[,] stepkjc;
+            public double[,] stepkjn;
+            public double[] dummylagmult;
+            public minslptmpmerit tmpmerit;
+            public rcommstate rphase13state;
+            public minslpphase13state()
+            {
+                init();
+            }
+            public override void init()
+            {
+                d = new double[0];
+                dx = new double[0];
+                stepkxc = new double[0];
+                stepkxn = new double[0];
+                stepkfic = new double[0];
+                stepkfin = new double[0];
+                stepkjc = new double[0,0];
+                stepkjn = new double[0,0];
+                dummylagmult = new double[0];
+                tmpmerit = new minslptmpmerit();
+                rphase13state = new rcommstate();
+            }
+            public override alglib.apobject make_copy()
+            {
+                minslpphase13state _result = new minslpphase13state();
+                _result.usecorrection = usecorrection;
+                _result.d = (double[])d.Clone();
+                _result.dx = (double[])dx.Clone();
+                _result.stepkxc = (double[])stepkxc.Clone();
+                _result.stepkxn = (double[])stepkxn.Clone();
+                _result.stepkfic = (double[])stepkfic.Clone();
+                _result.stepkfin = (double[])stepkfin.Clone();
+                _result.stepkjc = (double[,])stepkjc.Clone();
+                _result.stepkjn = (double[,])stepkjn.Clone();
+                _result.dummylagmult = (double[])dummylagmult.Clone();
+                _result.tmpmerit = (minslptmpmerit)tmpmerit.make_copy();
+                _result.rphase13state = (rcommstate)rphase13state.make_copy();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries of Phase13 SLP subsolver.
+        *************************************************************************/
+        public class minslpphase2state : apobject
+        {
+            public double[] stepkxn;
+            public double[] stepkxc;
+            public double[] stepkfin;
+            public double[] stepkfic;
+            public double[,] stepkjn;
+            public double[,] stepkjc;
+            public double[] stepklaggrad;
+            public double[] stepknlaggrad;
+            public double[] stepknlagmult;
+            public double[] meritlagmult;
+            public minslptmplagrangian tmplagrangianfg;
+            public double lastlcerr;
+            public int lastlcidx;
+            public double lastnlcerr;
+            public int lastnlcidx;
+            public double[] tmp0;
+            public double[] d;
+            public linmin.linminstate mcstate;
+            public minslptmpmerit tmpmerit;
+            public rcommstate rphase2state;
+            public minslpphase2state()
+            {
+                init();
+            }
+            public override void init()
+            {
+                stepkxn = new double[0];
+                stepkxc = new double[0];
+                stepkfin = new double[0];
+                stepkfic = new double[0];
+                stepkjn = new double[0,0];
+                stepkjc = new double[0,0];
+                stepklaggrad = new double[0];
+                stepknlaggrad = new double[0];
+                stepknlagmult = new double[0];
+                meritlagmult = new double[0];
+                tmplagrangianfg = new minslptmplagrangian();
+                tmp0 = new double[0];
+                d = new double[0];
+                mcstate = new linmin.linminstate();
+                tmpmerit = new minslptmpmerit();
+                rphase2state = new rcommstate();
+            }
+            public override alglib.apobject make_copy()
+            {
+                minslpphase2state _result = new minslpphase2state();
+                _result.stepkxn = (double[])stepkxn.Clone();
+                _result.stepkxc = (double[])stepkxc.Clone();
+                _result.stepkfin = (double[])stepkfin.Clone();
+                _result.stepkfic = (double[])stepkfic.Clone();
+                _result.stepkjn = (double[,])stepkjn.Clone();
+                _result.stepkjc = (double[,])stepkjc.Clone();
+                _result.stepklaggrad = (double[])stepklaggrad.Clone();
+                _result.stepknlaggrad = (double[])stepknlaggrad.Clone();
+                _result.stepknlagmult = (double[])stepknlagmult.Clone();
+                _result.meritlagmult = (double[])meritlagmult.Clone();
+                _result.tmplagrangianfg = (minslptmplagrangian)tmplagrangianfg.make_copy();
+                _result.lastlcerr = lastlcerr;
+                _result.lastlcidx = lastlcidx;
+                _result.lastnlcerr = lastnlcerr;
+                _result.lastnlcidx = lastnlcidx;
+                _result.tmp0 = (double[])tmp0.Clone();
+                _result.d = (double[])d.Clone();
+                _result.mcstate = (linmin.linminstate)mcstate.make_copy();
+                _result.tmpmerit = (minslptmpmerit)tmpmerit.make_copy();
+                _result.rphase2state = (rcommstate)rphase2state.make_copy();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
         This object stores temporaries of SLP solver.
         *************************************************************************/
         public class minslpstate : apobject
@@ -39289,6 +48800,7 @@ public partial class alglib
             public int nic;
             public int nlec;
             public int nlic;
+            public double[] s;
             public double[,] scaledcleic;
             public int[] lcsrcidx;
             public bool[] hasbndl;
@@ -39304,44 +48816,27 @@ public partial class alglib
             public double f;
             public bool needfij;
             public bool xupdated;
+            public minslpphase13state state13;
+            public minslpphase2state state2;
             public double trustrad;
-            public double deltamax;
-            public minslpsubsolver subsolver;
-            public double[] d;
-            public double[] d0;
-            public double[] d1;
-            public linmin.linminstate mcstate;
-            public int xstagnationcnt;
+            public int lpfailurecnt;
             public int fstagnationcnt;
-            public double[] prevx;
             public double[] step0x;
             public double[] stepkx;
-            public double[] stepkxc;
-            public double[] stepkxn;
+            public double[] backupx;
             public double[] step0fi;
             public double[] stepkfi;
-            public double[] stepkfic;
-            public double[] stepkfin;
+            public double[] backupfi;
             public double[,] step0j;
             public double[,] stepkj;
-            public double[,] stepkjc;
-            public double[,] stepkjn;
-            public double stepklagval;
-            public double stepkclagval;
-            public double stepknlagval;
-            public double[] stepklaggrad;
-            public double[] stepknlaggrad;
-            public double[] stepklagmult;
-            public double[] stepknlagmult;
-            public double[] rho;
-            public double[] tmp0;
-            public double[] sclagtmp0;
-            public double[] sclagtmp1;
-            public double lastlcerr;
-            public int lastlcidx;
-            public double lastnlcerr;
-            public int lastnlcidx;
-            public double[] mftmp0;
+            public double[,] backupj;
+            public double[] meritlagmult;
+            public double[] dummylagmult;
+            public double[] fscales;
+            public double[] meritfunctionhistory;
+            public int historylen;
+            public minslpsubsolver subsolver;
+            public minslptmpmerit tmpmerit;
             public int repsimplexiterations;
             public int repsimplexiterations1;
             public int repsimplexiterations2;
@@ -39356,14 +48851,13 @@ public partial class alglib
             public double repnlcerr;
             public int repnlcidx;
             public rcommstate rstate;
-            public rcommstate rphase13state;
-            public rcommstate rphase2state;
             public minslpstate()
             {
                 init();
             }
             public override void init()
             {
+                s = new double[0];
                 scaledcleic = new double[0,0];
                 lcsrcidx = new int[0];
                 hasbndl = new bool[0];
@@ -39373,36 +48867,24 @@ public partial class alglib
                 x = new double[0];
                 fi = new double[0];
                 j = new double[0,0];
-                subsolver = new minslpsubsolver();
-                d = new double[0];
-                d0 = new double[0];
-                d1 = new double[0];
-                mcstate = new linmin.linminstate();
-                prevx = new double[0];
+                state13 = new minslpphase13state();
+                state2 = new minslpphase2state();
                 step0x = new double[0];
                 stepkx = new double[0];
-                stepkxc = new double[0];
-                stepkxn = new double[0];
+                backupx = new double[0];
                 step0fi = new double[0];
                 stepkfi = new double[0];
-                stepkfic = new double[0];
-                stepkfin = new double[0];
+                backupfi = new double[0];
                 step0j = new double[0,0];
                 stepkj = new double[0,0];
-                stepkjc = new double[0,0];
-                stepkjn = new double[0,0];
-                stepklaggrad = new double[0];
-                stepknlaggrad = new double[0];
-                stepklagmult = new double[0];
-                stepknlagmult = new double[0];
-                rho = new double[0];
-                tmp0 = new double[0];
-                sclagtmp0 = new double[0];
-                sclagtmp1 = new double[0];
-                mftmp0 = new double[0];
+                backupj = new double[0,0];
+                meritlagmult = new double[0];
+                dummylagmult = new double[0];
+                fscales = new double[0];
+                meritfunctionhistory = new double[0];
+                subsolver = new minslpsubsolver();
+                tmpmerit = new minslptmpmerit();
                 rstate = new rcommstate();
-                rphase13state = new rcommstate();
-                rphase2state = new rcommstate();
             }
             public override alglib.apobject make_copy()
             {
@@ -39412,6 +48894,7 @@ public partial class alglib
                 _result.nic = nic;
                 _result.nlec = nlec;
                 _result.nlic = nlic;
+                _result.s = (double[])s.Clone();
                 _result.scaledcleic = (double[,])scaledcleic.Clone();
                 _result.lcsrcidx = (int[])lcsrcidx.Clone();
                 _result.hasbndl = (bool[])hasbndl.Clone();
@@ -39427,44 +48910,27 @@ public partial class alglib
                 _result.f = f;
                 _result.needfij = needfij;
                 _result.xupdated = xupdated;
+                _result.state13 = (minslpphase13state)state13.make_copy();
+                _result.state2 = (minslpphase2state)state2.make_copy();
                 _result.trustrad = trustrad;
-                _result.deltamax = deltamax;
-                _result.subsolver = (minslpsubsolver)subsolver.make_copy();
-                _result.d = (double[])d.Clone();
-                _result.d0 = (double[])d0.Clone();
-                _result.d1 = (double[])d1.Clone();
-                _result.mcstate = (linmin.linminstate)mcstate.make_copy();
-                _result.xstagnationcnt = xstagnationcnt;
+                _result.lpfailurecnt = lpfailurecnt;
                 _result.fstagnationcnt = fstagnationcnt;
-                _result.prevx = (double[])prevx.Clone();
                 _result.step0x = (double[])step0x.Clone();
                 _result.stepkx = (double[])stepkx.Clone();
-                _result.stepkxc = (double[])stepkxc.Clone();
-                _result.stepkxn = (double[])stepkxn.Clone();
+                _result.backupx = (double[])backupx.Clone();
                 _result.step0fi = (double[])step0fi.Clone();
                 _result.stepkfi = (double[])stepkfi.Clone();
-                _result.stepkfic = (double[])stepkfic.Clone();
-                _result.stepkfin = (double[])stepkfin.Clone();
+                _result.backupfi = (double[])backupfi.Clone();
                 _result.step0j = (double[,])step0j.Clone();
                 _result.stepkj = (double[,])stepkj.Clone();
-                _result.stepkjc = (double[,])stepkjc.Clone();
-                _result.stepkjn = (double[,])stepkjn.Clone();
-                _result.stepklagval = stepklagval;
-                _result.stepkclagval = stepkclagval;
-                _result.stepknlagval = stepknlagval;
-                _result.stepklaggrad = (double[])stepklaggrad.Clone();
-                _result.stepknlaggrad = (double[])stepknlaggrad.Clone();
-                _result.stepklagmult = (double[])stepklagmult.Clone();
-                _result.stepknlagmult = (double[])stepknlagmult.Clone();
-                _result.rho = (double[])rho.Clone();
-                _result.tmp0 = (double[])tmp0.Clone();
-                _result.sclagtmp0 = (double[])sclagtmp0.Clone();
-                _result.sclagtmp1 = (double[])sclagtmp1.Clone();
-                _result.lastlcerr = lastlcerr;
-                _result.lastlcidx = lastlcidx;
-                _result.lastnlcerr = lastnlcerr;
-                _result.lastnlcidx = lastnlcidx;
-                _result.mftmp0 = (double[])mftmp0.Clone();
+                _result.backupj = (double[,])backupj.Clone();
+                _result.meritlagmult = (double[])meritlagmult.Clone();
+                _result.dummylagmult = (double[])dummylagmult.Clone();
+                _result.fscales = (double[])fscales.Clone();
+                _result.meritfunctionhistory = (double[])meritfunctionhistory.Clone();
+                _result.historylen = historylen;
+                _result.subsolver = (minslpsubsolver)subsolver.make_copy();
+                _result.tmpmerit = (minslptmpmerit)tmpmerit.make_copy();
                 _result.repsimplexiterations = repsimplexiterations;
                 _result.repsimplexiterations1 = repsimplexiterations1;
                 _result.repsimplexiterations2 = repsimplexiterations2;
@@ -39479,8 +48945,6 @@ public partial class alglib
                 _result.repnlcerr = repnlcerr;
                 _result.repnlcidx = repnlcidx;
                 _result.rstate = (rcommstate)rstate.make_copy();
-                _result.rphase13state = (rcommstate)rphase13state.make_copy();
-                _result.rphase2state = (rcommstate)rphase2state.make_copy();
                 return _result;
             }
         };
@@ -39492,18 +48956,23 @@ public partial class alglib
         public const double slpdeltadecrease = 0.20;
         public const double slpdeltaincrease = 0.80;
         public const double slpstpclosetoone = 0.95;
+        public const double maxtrustraddecay = 0.1;
+        public const double maxtrustradgrowth = 1.333;
         public const double slpgtol = 0.4;
         public const double bigc = 500.0;
         public const double bfgstol = 1.0E-5;
+        public const double meritfunctionbase = 0.0;
         public const double meritfunctiongain = 2.0;
         public const double inequalitydampingfactor = 10.0;
         public const double augmentationfactor = 10.0;
         public const double inittrustrad = 0.1;
         public const double stagnationepsf = 1.0E-12;
-        public const double stagnationepsx = 1.0E-12;
-        public const int xstagnationlimit = 3;
-        public const int fstagnationlimit = 5;
-        public const int nondescentlimit = 5;
+        public const int lpfailureslimit = 20;
+        public const int fstagnationlimit = 20;
+        public const int nondescentlimit = 99999;
+        public const int nonmonotonicphase2limit = 5;
+        public const double slpbigscale = 5.0;
+        public const double slpsmallscale = 0.2;
 
 
         public static void minslpinitbuf(double[] bndl,
@@ -39544,8 +49013,8 @@ public partial class alglib
             // Prepare RCOMM state
             //
             state.rstate.ia = new int[9+1];
-            state.rstate.ba = new bool[0+1];
-            state.rstate.ra = new double[7+1];
+            state.rstate.ba = new bool[2+1];
+            state.rstate.ra = new double[10+1];
             state.rstate.stage = -1;
             state.needfij = false;
             state.xupdated = false;
@@ -39556,34 +49025,26 @@ public partial class alglib
             //
             // Allocate memory.
             //
-            apserv.rvectorsetlengthatleast(ref state.prevx, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.s, n, _params);
             apserv.rvectorsetlengthatleast(ref state.step0x, n, _params);
             apserv.rvectorsetlengthatleast(ref state.stepkx, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepkxc, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepkxn, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.backupx, n, _params);
             apserv.rvectorsetlengthatleast(ref state.step0fi, 1+nlec+nlic, _params);
             apserv.rvectorsetlengthatleast(ref state.stepkfi, 1+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepkfic, 1+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepkfin, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.backupfi, 1+nlec+nlic, _params);
             apserv.rmatrixsetlengthatleast(ref state.step0j, 1+nlec+nlic, n, _params);
             apserv.rmatrixsetlengthatleast(ref state.stepkj, 1+nlec+nlic, n, _params);
-            apserv.rmatrixsetlengthatleast(ref state.stepkjc, 1+nlec+nlic, n, _params);
-            apserv.rmatrixsetlengthatleast(ref state.stepkjn, 1+nlec+nlic, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepklaggrad, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepknlaggrad, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rho, nec+nic+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepklagmult, nec+nic+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepknlagmult, nec+nic+nlec+nlic, _params);
+            apserv.rmatrixsetlengthatleast(ref state.backupj, 1+nlec+nlic, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.fscales, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.meritlagmult, nec+nic+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.dummylagmult, nec+nic+nlec+nlic, _params);
             apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
             apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
             apserv.rvectorsetlengthatleast(ref state.scaledbndl, n, _params);
             apserv.rvectorsetlengthatleast(ref state.scaledbndu, n, _params);
             apserv.rmatrixsetlengthatleast(ref state.scaledcleic, nec+nic, n+1, _params);
-            apserv.rvectorsetlengthatleast(ref state.d, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref state.d0, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref state.d1, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref state.tmp0, nslack, _params);
             apserv.ivectorsetlengthatleast(ref state.lcsrcidx, nec+nic, _params);
+            apserv.rvectorsetlengthatleast(ref state.meritfunctionhistory, nonmonotonicphase2limit+1, _params);
             
             //
             // Prepare scaled problem
@@ -39605,6 +49066,7 @@ public partial class alglib
                     alglib.ap.assert((double)(bndl[i])<=(double)(bndu[i]), "SLP: integrity check failed, box constraints are inconsistent");
                 }
                 state.step0x[i] = x0[i]/s[i];
+                state.s[i] = s[i];
             }
             for(i=0; i<=nec+nic-1; i++)
             {
@@ -39727,12 +49189,16 @@ public partial class alglib
             double mx = 0;
             bool lpstagesuccess = new bool();
             double gammamax = 0;
-            double fscale = 0;
-            double f0 = 0;
             double f1 = 0;
+            double f2 = 0;
             int status = 0;
             double stp = 0;
-            int i_ = 0;
+            double deltamax = 0;
+            double multiplyby = 0;
+            double setscaleto = 0;
+            double prevtrustrad = 0;
+            bool dotrace = new bool();
+            bool dodetailedtrace = new bool();
 
             
             //
@@ -39758,14 +49224,19 @@ public partial class alglib
                 innerk = state.rstate.ia[8];
                 status = state.rstate.ia[9];
                 lpstagesuccess = state.rstate.ba[0];
+                dotrace = state.rstate.ba[1];
+                dodetailedtrace = state.rstate.ba[2];
                 v = state.rstate.ra[0];
                 vv = state.rstate.ra[1];
                 mx = state.rstate.ra[2];
                 gammamax = state.rstate.ra[3];
-                fscale = state.rstate.ra[4];
-                f0 = state.rstate.ra[5];
-                f1 = state.rstate.ra[6];
-                stp = state.rstate.ra[7];
+                f1 = state.rstate.ra[4];
+                f2 = state.rstate.ra[5];
+                stp = state.rstate.ra[6];
+                deltamax = state.rstate.ra[7];
+                multiplyby = state.rstate.ra[8];
+                setscaleto = state.rstate.ra[9];
+                prevtrustrad = state.rstate.ra[10];
             }
             else
             {
@@ -39780,14 +49251,19 @@ public partial class alglib
                 innerk = 809;
                 status = 205;
                 lpstagesuccess = false;
-                v = 939;
-                vv = -526;
-                mx = 763;
-                gammamax = -541;
-                fscale = -698;
-                f0 = -900;
+                dotrace = true;
+                dodetailedtrace = false;
+                v = 763;
+                vv = -541;
+                mx = -698;
+                gammamax = -900;
                 f1 = -318;
-                stp = -940;
+                f2 = -940;
+                stp = 1016;
+                deltamax = -229;
+                multiplyby = -536;
+                setscaleto = 487;
+                prevtrustrad = -115;
             }
             if( state.rstate.stage==0 )
             {
@@ -39819,6 +49295,8 @@ public partial class alglib
             nlec = state.nlec;
             nlic = state.nlic;
             nslack = n+2*(nec+nlec)+(nic+nlic);
+            dotrace = ap.istraceenabled("SLP", _params);
+            dodetailedtrace = dotrace && ap.istraceenabled("SLP.DETAILED", _params);
             
             //
             // Prepare rcomm interface
@@ -39830,18 +49308,23 @@ public partial class alglib
             // Initialize algorithm data:
             // * Lagrangian and "Big C" estimates
             // * trust region
-            // * vector of penalty coefficients Rho[], initialized by zeros
-            // * current approximation of the Hessian matrix H
+            // * initial function scales (vector of 1's)
+            // * current approximation of the Hessian matrix H (unit matrix)
             // * initial linearized constraints
             // * initial violation of linear/nonlinear constraints
             //
-            state.xstagnationcnt = 0;
+            state.lpfailurecnt = 0;
             state.fstagnationcnt = 0;
             state.trustrad = inittrustrad;
-            for(i=0; i<=nec+nic+nlec+nlic-1; i++)
+            for(i=0; i<=nlec+nlic; i++)
             {
-                state.rho[i] = 0.0;
+                state.fscales[i] = 1.0;
             }
+            for(i=0; i<=nonmonotonicphase2limit; i++)
+            {
+                state.meritfunctionhistory[i] = math.maxrealnumber;
+            }
+            state.historylen = 0;
             gammamax = 0.0;
             
             //
@@ -39876,19 +49359,28 @@ public partial class alglib
             }
             slpcopystate(state, state.step0x, state.step0fi, state.step0j, state.stepkx, state.stepkfi, state.stepkj, _params);
             slpsendx(state, state.stepkx, _params);
-            state.f = state.stepkfi[0];
+            state.f = state.stepkfi[0]*state.fscales[0];
             state.xupdated = true;
             state.rstate.stage = 1;
             goto lbl_rcomm;
         lbl_1:
             state.xupdated = false;
             optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, state.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
-            optserv.checknlcviolation(state.stepkfi, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+            optserv.unscaleandchecknlcviolation(state.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+            
+            //
+            // Trace output (if needed)
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+                alglib.ap.trace("//  SLP SOLVER STARTED                                                                            //\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            }
             
             //
             // Perform outer (NLC) iterations
             //
-            tracebeginning(_params);
             initlpsubsolver(state, state.subsolver, state.hessiantype, _params);
         lbl_5:
             if( false )
@@ -39897,46 +49389,56 @@ public partial class alglib
             }
             
             //
-            // Update vector Rho[] of quadratic penalty coefficients:
-            // * for Rho[i] corresponding to linear constraints we use gradient
-            //   norm at current point times augmentation factor (in 100-1000 range).
-            //   Everything is simple because linear constraints are normalized.
-            // * for Rho[i] corresponding to nonlinear constraints we use
-            //   gradient norm times augmentation factor divided by norm of
-            //   constraint gradient (or 1.0, if constraint gradient is less
-            //   than 1 in magnitude).
+            // Before beginning new outer iteration:
+            // * renormalize target function and/or constraints, if some of them have too large magnitudes
+            // * save initial point for the outer iteration
             //
-            // Having large enough penalty coefficient is essential for the
-            // convergence of the algorithm from the infeasible initial points:
-            // it may fail to converge for very small Rho's because of inability
-            // to perform sufficiently large steps towards feasible area and against
-            // target function growth.
-            //
-            // Rho[] may never decrease, only increase. Values set at this point
-            // will retain through the entire NLP iteration, but will be updated
-            // before next NLP iteration will start.
-            //
-            v = 0.0;
-            for(i_=0; i_<=n-1;i_++)
+            for(i=0; i<=nlec+nlic; i++)
             {
-                v += state.stepkj[0,i_]*state.stepkj[0,i_];
-            }
-            fscale = Math.Max(Math.Sqrt(v), gammamax);
-            for(i=0; i<=nec+nic-1; i++)
-            {
-                state.rho[i] = Math.Max(state.rho[i], augmentationfactor*fscale);
-            }
-            if( (double)(fscale)>(double)(0) )
-            {
-                for(i=0; i<=nlec+nlic-1; i++)
+                
+                //
+                // Determine (a) multiplicative coefficient applied to function value
+                // and Jacobian row, and (b) new value of the function scale.
+                //
+                mx = 0;
+                for(j=0; j<=n-1; j++)
                 {
-                    vv = 0.0;
-                    for(i_=0; i_<=n-1;i_++)
+                    mx = Math.Max(mx, Math.Abs(state.stepkj[i,j]));
+                }
+                multiplyby = 1.0;
+                setscaleto = state.fscales[i];
+                if( (double)(mx)>=(double)(slpbigscale) )
+                {
+                    multiplyby = 1/mx;
+                    setscaleto = state.fscales[i]*mx;
+                }
+                if( (double)(mx)<=(double)(slpsmallscale) && (double)(state.fscales[i])>(double)(1.0) )
+                {
+                    if( (double)(state.fscales[i]*mx)>(double)(1) )
                     {
-                        vv += state.stepkj[1+i,i_]*state.stepkj[1+i,i_];
+                        multiplyby = 1/mx;
+                        setscaleto = state.fscales[i]*mx;
                     }
-                    vv = Math.Max(Math.Sqrt(vv), fscale);
-                    state.rho[nec+nic+i] = Math.Max(state.rho[nec+nic+i], augmentationfactor*(fscale/vv));
+                    else
+                    {
+                        multiplyby = state.fscales[i];
+                        setscaleto = 1.0;
+                    }
+                }
+                if( (double)(multiplyby)!=(double)(1.0) )
+                {
+                    
+                    //
+                    // Function #I needs renormalization:
+                    // * update function vector element and Jacobian matrix row
+                    // * update FScales[] array
+                    //
+                    state.stepkfi[i] = state.stepkfi[i]*multiplyby;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        state.stepkj[i,j] = state.stepkj[i,j]*multiplyby;
+                    }
+                    state.fscales[i] = setscaleto;
                 }
             }
             
@@ -39946,21 +49448,64 @@ public partial class alglib
             slpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.step0x, state.step0fi, state.step0j, _params);
             
             //
-            // Try to perform step using linear model with second order correction
+            // Trace output (if needed)
             //
-            // A second order correction helps to overcome Maratos effect - a tendency
-            // of L1 penalized merit function to reject nonzero steps along steepest
-            // descent direction.
+            if( dotrace )
+            {
+                alglib.ap.trace(System.String.Format("\n=== OUTER ITERATION {0,5:d} STARTED ==================================================================\n", state.repouteriterationscount));
+                if( dodetailedtrace )
+                {
+                    alglib.ap.trace("> printing raw data (prior to applying variable and function scales)\n");
+                    alglib.ap.trace("X (raw)       = ");
+                    apserv.tracevectorunscaledunshiftedautoprec(state.step0x, n, state.s, true, state.s, false, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("> printing scaled data (after applying variable and function scales)\n");
+                    alglib.ap.trace("X (scaled)    = ");
+                    apserv.tracevectorautoprec(state.step0x, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("FScales       = ");
+                    apserv.tracevectorautoprec(state.fscales, 0, 1+nlec+nlic, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("Fi (scaled)   = ");
+                    apserv.tracevectorautoprec(state.stepkfi, 0, 1+nlec+nlic, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("|Ji| (scaled) = ");
+                    apserv.tracerownrm1autoprec(state.stepkj, 0, 1+nlec+nlic, 0, n, _params);
+                    alglib.ap.trace("\n");
+                }
+                mx = 0;
+                for(i=1; i<=nlec; i++)
+                {
+                    mx = Math.Max(mx, Math.Abs(state.stepkfi[i]));
+                }
+                for(i=nlec+1; i<=nlec+nlic; i++)
+                {
+                    mx = Math.Max(mx, state.stepkfi[i]);
+                }
+                alglib.ap.trace(System.String.Format("trustRad      = {0,0:E3}\n", state.trustrad));
+                alglib.ap.trace(System.String.Format("lin.violation = {0,0:E3}    (scaled violation of linear constraints)\n", state.replcerr));
+                alglib.ap.trace(System.String.Format("nlc.violation = {0,0:E3}    (scaled violation of nonlinear constraints)\n", mx));
+                alglib.ap.trace(System.String.Format("gammaMax      = {0,0:E3}\n", gammamax));
+            }
+            
             //
-            // The idea (explained in more details in the Phase13Iteration() body)
-            // is to perform one look-ahead step and use updated constraint values
-            // back at the initial point.
+            // PHASE 1:
             //
-            state.rphase13state.ia = new int[8+1];
-            state.rphase13state.ra = new double[4+1];
-            state.rphase13state.stage = -1;
+            // * perform step using linear model with second order correction
+            // * compute "reference" Lagrange multipliers
+            // * compute merit function at the end of the phase 1 and push it to the history queue
+            //
+            // NOTE: a second order correction helps to overcome Maratos effect - a tendency
+            //       of L1 penalized merit function to reject nonzero steps along steepest
+            //       descent direction.
+            //
+            //       The idea (explained in more details in the Phase13Iteration() body)
+            //       is to perform one look-ahead step and use updated constraint values
+            //       back at the initial point.
+            //
+            phase13init(state.state13, n, nec, nic, nlec, nlic, false, _params);
         lbl_7:
-            if( !phase13iteration(state, smonitor, true, userterminationneeded, ref status, ref stp, _params) )
+            if( !phase13iteration(state, state.state13, smonitor, userterminationneeded, state.stepkx, state.stepkfi, state.stepkj, state.meritlagmult, ref status, ref stp, _params) )
             {
                 goto lbl_8;
             }
@@ -39977,26 +49522,37 @@ public partial class alglib
             {
                 goto lbl_6;
             }
+            for(i=state.historylen; i>=1; i--)
+            {
+                state.meritfunctionhistory[i] = state.meritfunctionhistory[i-1];
+            }
+            state.meritfunctionhistory[0] = meritfunction(state, state.stepkx, state.stepkfi, state.meritlagmult, state.tmpmerit, _params);
+            state.historylen = Math.Min(state.historylen+1, nonmonotonicphase2limit);
             
+            //
+            // PHASE 2: conjugate subiterations
             //
             // If step with second order correction is shorter than 1.0, it means
             // that target is sufficiently nonlinear to use advanced iterations.
             // * perform inner LP subiterations with additional conjugacy constraints
-            // * perform polishing step
+            // * check changes in merit function, discard iteration results if merit function increased
             //
             if( (double)(stp)>=(double)(slpstpclosetoone) )
             {
                 goto lbl_9;
             }
+            if( dotrace )
+            {
+                alglib.ap.trace("> linear model produced short step, starting conjugate-gradient-like phase\n");
+            }
+            slpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.backupx, state.backupfi, state.backupj, _params);
             
             //
             // LP subiterations
             //
-            state.rphase2state.ia = new int[11+1];
-            state.rphase2state.ra = new double[3+1];
-            state.rphase2state.stage = -1;
+            phase2init(state.state2, n, nec, nic, nlec, nlic, state.meritlagmult, _params);
         lbl_11:
-            if( !phase2iteration(state, smonitor, userterminationneeded, ref gammamax, ref status, _params) )
+            if( !phase2iteration(state, state.state2, smonitor, userterminationneeded, state.stepkx, state.stepkfi, state.stepkj, state.dummylagmult, ref gammamax, ref status, _params) )
             {
                 goto lbl_12;
             }
@@ -40005,106 +49561,139 @@ public partial class alglib
         lbl_3:
             goto lbl_11;
         lbl_12:
-            if( status<0 )
-            {
-                goto lbl_5;
-            }
             if( status==0 )
             {
+                
+                //
+                // Save progress so far and stop
+                //
                 goto lbl_6;
             }
             
             //
-            // Polishing step
+            // Evaluating step
             //
-            // This step is essential because previous step (which minimizes
-            // Lagrangian) may fail to produce descent direction for L1-penalized merit function.
+            // This step is essential because previous step (which minimizes Lagrangian) may fail
+            // to produce descent direction for L1-penalized merit function and will increase it
+            // instead of decreasing.
             //
-            f0 = meritfunction(state, state.step0x, state.trustrad, state.step0fi, state.step0j, state.stepklagmult, _params);
-            f1 = meritfunction(state, state.stepkx, state.trustrad, state.stepkfi, state.stepkj, state.stepklagmult, _params);
-            if( (double)(f1)<(double)(f0) )
+            // During evaluation we compare merit function at new location with maximum computed
+            // over last NonmonotonicPhase2Limit+1 previous ones (as suggested in 'A Sequential
+            // Quadratic Programming Algorithm with Non-Monotone Line Search' by Yu-Hong Dai).
+            //
+            // Settings NonmonotonicPhase2Limit to 0 will result in strictly monotonic line search,
+            // whilst having nonzero limits means that we perform more robust nonmonotonic search.
+            //
+            f1 = state.meritfunctionhistory[0];
+            for(i=1; i<=state.historylen; i++)
+            {
+                f1 = Math.Max(f1, state.meritfunctionhistory[i]);
+            }
+            f2 = meritfunction(state, state.stepkx, state.stepkfi, state.meritlagmult, state.tmpmerit, _params);
+            if( dotrace )
+            {
+                alglib.ap.trace(System.String.Format("> evaluating changes in merit function (max over last {0,0:d} values is used for reference):\n", nonmonotonicphase2limit+1));
+                alglib.ap.trace(System.String.Format("meritF: {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", f1, f2, f2-f1));
+            }
+            if( (double)(f2)<(double)(f1) )
             {
                 goto lbl_13;
             }
             
             //
-            // Merit function does not decrease, perform "polishing" of results with
-            // merit function minimization
+            // Merit function does not decrease, discard phase results and report is as one
+            // more "fake" inner iteration.
             //
-            // We use same Phase13Iteration() function as in the beginning of the outer
-            // iteration, but this time without second order correction. Having
-            // two slightly different approaches helps us to perform good step
-            // due to diversity of the methods being utilized.
+            // NOTE: it is important that F2=F1 is considered as "does not decrease"
             //
-            state.rphase13state.ia = new int[8+1];
-            state.rphase13state.ra = new double[4+1];
-            state.rphase13state.stage = -1;
-        lbl_15:
-            if( !phase13iteration(state, smonitor, false, userterminationneeded, ref status, ref stp, _params) )
+            if( dotrace )
             {
-                goto lbl_16;
+                alglib.ap.trace("> CG-like phase increased merit function, completely discarding phase (happens sometimes, but not too often)\n");
             }
+            slpcopystate(state, state.backupx, state.backupfi, state.backupj, state.stepkx, state.stepkfi, state.stepkj, _params);
+            apserv.inc(ref state.repinneriterationscount, _params);
+            slpsendx(state, state.stepkx, _params);
+            state.f = state.stepkfi[0]*state.fscales[0];
+            state.xupdated = true;
             state.rstate.stage = 4;
             goto lbl_rcomm;
         lbl_4:
-            goto lbl_15;
-        lbl_16:
-            if( status<0 )
-            {
-                goto lbl_5;
-            }
-            if( status==0 )
-            {
-                goto lbl_6;
-            }
+            state.xupdated = false;
+            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, state.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
+            optserv.unscaleandchecknlcviolation(state.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+            goto lbl_14;
         lbl_13:
+            
+            //
+            // Merit function decreased, accept phase
+            //
+            state.meritfunctionhistory[0] = f2;
+            if( dotrace )
+            {
+                alglib.ap.trace("> CG-like phase decreased merit function, CG-like step accepted\n");
+            }
+        lbl_14:
+            goto lbl_10;
         lbl_9:
             
             //
-            // Multistep is done
+            // No phase #2
             //
-            tracemultistep(state, _params);
+            if( dotrace )
+            {
+                if( (double)(stp)>(double)(0) )
+                {
+                    alglib.ap.trace("> linear model produced long step, no need to start CG-like iterations\n");
+                }
+                else
+                {
+                    alglib.ap.trace("> linear model produced zero step, maybe trust radius is too large\n");
+                }
+            }
+        lbl_10:
             
             //
             // Update trust region
             //
-            state.deltamax = 0;
+            prevtrustrad = state.trustrad;
+            deltamax = 0;
             for(i=0; i<=n-1; i++)
             {
-                state.deltamax = Math.Max(state.deltamax, Math.Abs(state.step0x[i]-state.stepkx[i])/state.trustrad);
+                deltamax = Math.Max(deltamax, Math.Abs(state.step0x[i]-state.stepkx[i])/state.trustrad);
             }
-            if( (double)(state.deltamax)<=(double)(slpdeltadecrease) )
+            if( (double)(deltamax)<=(double)(slpdeltadecrease) )
             {
-                state.trustrad = state.trustrad*Math.Max(state.deltamax/slpdeltadecrease, 0.1);
+                state.trustrad = state.trustrad*Math.Max(deltamax/slpdeltadecrease, maxtrustraddecay);
             }
-            if( (double)(state.deltamax)>=(double)(slpdeltaincrease) )
+            if( (double)(deltamax)>=(double)(slpdeltaincrease) )
             {
-                state.trustrad = state.trustrad*2.0;
+                state.trustrad = state.trustrad*Math.Min(deltamax/slpdeltaincrease, maxtrustradgrowth);
+            }
+            
+            //
+            // Trace
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n--- outer iteration ends ---------------------------------------------------------------------------\n");
+                alglib.ap.trace(System.String.Format("deltaMax    = {0,0:F3} (ratio of step length to trust radius)\n", deltamax));
+                alglib.ap.trace(System.String.Format("newTrustRad = {0,0:E3}", state.trustrad));
+                if( (double)(state.trustrad)>(double)(prevtrustrad) )
+                {
+                    alglib.ap.trace(", trust radius increased");
+                }
+                if( (double)(state.trustrad)<(double)(prevtrustrad) )
+                {
+                    alglib.ap.trace(", trust radius decreased");
+                }
+                alglib.ap.trace("\n");
             }
             
             //
             // Advance outer iteration counter, test stopping criteria
             //
             apserv.inc(ref state.repouteriterationscount, _params);
-            v = 0;
-            vv = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                state.prevx[i] = state.step0x[i];
-                v = v+math.sqr(state.step0x[i]-state.stepkx[i]);
-                vv = vv+math.sqr(state.stepkx[i]);
-            }
-            v = Math.Sqrt(v);
-            vv = Math.Sqrt(vv);
-            if( (double)(v)<=(double)(state.epsx) || (double)(v)<=(double)(stagnationepsx*vv) )
-            {
-                apserv.inc(ref state.xstagnationcnt, _params);
-            }
-            else
-            {
-                state.xstagnationcnt = 0;
-            }
-            if( (double)(Math.Abs(state.stepkfi[0]-state.step0fi[0]))<=(double)(stagnationepsf*Math.Max(Math.Abs(state.step0fi[0]), 1)) )
+            if( (double)(Math.Abs(state.stepkfi[0]-state.step0fi[0]))<=(double)(stagnationepsf*Math.Abs(state.step0fi[0])) )
             {
                 apserv.inc(ref state.fstagnationcnt, _params);
             }
@@ -40112,25 +49701,36 @@ public partial class alglib
             {
                 state.fstagnationcnt = 0;
             }
-            tracenlpstep(state, _params);
-            if( state.xstagnationcnt>=xstagnationlimit )
+            if( (double)(state.trustrad)<=(double)(state.epsx) )
             {
                 state.repterminationtype = 2;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping condition met: trust radius is smaller than {0,0:E3}\n", state.epsx));
+                }
                 goto lbl_6;
             }
             if( state.maxits>0 && state.repinneriterationscount>=state.maxits )
             {
                 state.repterminationtype = 5;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping condition met: {0,0:d} iterations performed\n", state.repinneriterationscount));
+                }
                 goto lbl_6;
             }
             if( state.fstagnationcnt>=fstagnationlimit )
             {
                 state.repterminationtype = 7;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping criteria are too stringent: F stagnated for {0,0:d} its, stopping\n", state.fstagnationcnt));
+                }
                 goto lbl_6;
             }
             goto lbl_5;
         lbl_6:
-            tracefinalpoint(state, _params);
+            optserv.smoothnessmonitortracestatus(smonitor, dotrace, _params);
             result = false;
             return result;
             
@@ -40150,14 +49750,19 @@ public partial class alglib
             state.rstate.ia[8] = innerk;
             state.rstate.ia[9] = status;
             state.rstate.ba[0] = lpstagesuccess;
+            state.rstate.ba[1] = dotrace;
+            state.rstate.ba[2] = dodetailedtrace;
             state.rstate.ra[0] = v;
             state.rstate.ra[1] = vv;
             state.rstate.ra[2] = mx;
             state.rstate.ra[3] = gammamax;
-            state.rstate.ra[4] = fscale;
-            state.rstate.ra[5] = f0;
-            state.rstate.ra[6] = f1;
-            state.rstate.ra[7] = stp;
+            state.rstate.ra[4] = f1;
+            state.rstate.ra[5] = f2;
+            state.rstate.ra[6] = stp;
+            state.rstate.ra[7] = deltamax;
+            state.rstate.ra[8] = multiplyby;
+            state.rstate.ra[9] = setscaleto;
+            state.rstate.ra[10] = prevtrustrad;
             return result;
         }
 
@@ -40396,6 +50001,9 @@ public partial class alglib
         /*************************************************************************
         This function solves LP subproblem given by initial point X, function vector Fi
         and Jacobian Jac, and returns estimates of Lagrangian multipliers and search direction D[].
+
+        This function does NOT append search direction D to conjugacy constraints,
+        you have to use LPSubproblemAppendConjugacyConstraint().
 
           -- ALGLIB --
              Copyright 05.03.2018 by Bochkanov Sergey
@@ -40854,6 +50462,27 @@ public partial class alglib
             {
                 lagmult[i] = -subsolver.dss.repdx[i];
             }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function appends last search direction D to conjugacy constraints  of
+        the LP subproblem.
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void lpsubproblemappendconjugacyconstraint(minslpstate state,
+            minslpsubsolver subsolver,
+            double[] d,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int i = 0;
+            int j = 0;
+
+            n = state.n;
             
             //
             // Update matrix of products H*Dprev
@@ -40890,7 +50519,53 @@ public partial class alglib
                     subsolver.curhd[subsolver.curdcnt-1,j] = subsolver.tmp0[j];
                 }
             }
-            return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes Phase13  temporaries. It should be called before
+        beginning of each new iteration. You may call it multiple  times  for  the
+        same instance of Phase13 temporaries.
+
+        INPUT PARAMETERS:
+            State13             -   instance to be initialized.
+            N                   -   problem dimensionality
+            NEC, NIC            -   linear equality/inequality constraint count
+            NLEC, NLIC          -   nonlinear equality/inequality constraint count
+            UseCorrection       -   True if we want to perform second order correction
+
+        OUTPUT PARAMETERS:
+            State13     -   instance being initialized
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void phase13init(minslpphase13state state13,
+            int n,
+            int nec,
+            int nic,
+            int nlec,
+            int nlic,
+            bool usecorrection,
+            alglib.xparams _params)
+        {
+            int nslack = 0;
+
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            state13.usecorrection = usecorrection;
+            apserv.rvectorsetlengthatleast(ref state13.d, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref state13.dx, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref state13.stepkxc, n, _params);
+            apserv.rvectorsetlengthatleast(ref state13.stepkxn, n, _params);
+            apserv.rvectorsetlengthatleast(ref state13.stepkfic, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state13.stepkfin, 1+nlec+nlic, _params);
+            apserv.rmatrixsetlengthatleast(ref state13.stepkjc, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref state13.stepkjn, 1+nlec+nlic, n, _params);
+            apserv.rvectorsetlengthatleast(ref state13.dummylagmult, nec+nic+nlec+nlic, _params);
+            state13.rphase13state.ia = new int[8+1];
+            state13.rphase13state.ba = new bool[2+1];
+            state13.rphase13state.ra = new double[5+1];
+            state13.rphase13state.stage = -1;
         }
 
 
@@ -40905,16 +50580,20 @@ public partial class alglib
         Latter is a step using linear model with no second order correction.
 
         INPUT PARAMETERS:
-            State       -   SLP solver state, StepKX/Fi/J is used as current point,
-                            StepK...N/C fields are modified.
+            State       -   SLP solver state
             SMonitor    -   smoothness monitor
-            UseCorrection-  True if we perform second order correction
             UserTerminationNeeded-True if user requested termination
+            CurX        -   current point, array[N]
+            CurFi       -   function vector at CurX, array[1+NLEC+NLIC]
+            CurJ        -   Jacobian at CurX, array[1+NLEC+NLIC,N]
+            LagMult     -   array[NEC+NIC+NLEC+NLIC], contents ignored on input.
 
         OUTPUT PARAMETERS:
-            State       -   StepKX/Fi/J advanced to new point, StepKLagMult contain
-                            current Lagrange multipliers, RepTerminationType is
-                            set to current termination code (if Status=0).
+            State       -   RepTerminationType is set to current termination code (if Status=0).
+            CurX        -   advanced to new point
+            CurFi       -   updated with function vector at CurX[]
+            CurJ        -   updated with Jacobian at CurX[]
+            LagMult     -   filled with current Lagrange multipliers
             Status      -   when reverse communication is done, Status is set to:
                             * negative value,  if   we  have   to  restart   outer
                               iteration
@@ -40928,9 +50607,13 @@ public partial class alglib
              Copyright 05.02.2019 by Bochkanov Sergey
         *************************************************************************/
         private static bool phase13iteration(minslpstate state,
+            minslpphase13state state13,
             optserv.smoothnessmonitor smonitor,
-            bool usecorrection,
             bool userterminationneeded,
+            double[] curx,
+            double[] curfi,
+            double[,] curj,
+            double[] lagmult,
             ref int status,
             ref double stp,
             alglib.xparams _params)
@@ -40946,10 +50629,14 @@ public partial class alglib
             int i = 0;
             int j = 0;
             double v = 0;
+            double mx = 0;
             double f0 = 0;
             double f1 = 0;
             double nu = 0;
             double localstp = 0;
+            bool dotrace = new bool();
+            bool doprobing = new bool();
+            bool dotracexd = new bool();
 
             
             //
@@ -40962,51 +50649,63 @@ public partial class alglib
             //   generation - on first subroutine call
             // * values from previous call - on subsequent calls
             //
-            if( state.rphase13state.stage>=0 )
+            if( state13.rphase13state.stage>=0 )
             {
-                n = state.rphase13state.ia[0];
-                nslack = state.rphase13state.ia[1];
-                nec = state.rphase13state.ia[2];
-                nic = state.rphase13state.ia[3];
-                nlec = state.rphase13state.ia[4];
-                nlic = state.rphase13state.ia[5];
-                innerk = state.rphase13state.ia[6];
-                i = state.rphase13state.ia[7];
-                j = state.rphase13state.ia[8];
-                v = state.rphase13state.ra[0];
-                f0 = state.rphase13state.ra[1];
-                f1 = state.rphase13state.ra[2];
-                nu = state.rphase13state.ra[3];
-                localstp = state.rphase13state.ra[4];
+                n = state13.rphase13state.ia[0];
+                nslack = state13.rphase13state.ia[1];
+                nec = state13.rphase13state.ia[2];
+                nic = state13.rphase13state.ia[3];
+                nlec = state13.rphase13state.ia[4];
+                nlic = state13.rphase13state.ia[5];
+                innerk = state13.rphase13state.ia[6];
+                i = state13.rphase13state.ia[7];
+                j = state13.rphase13state.ia[8];
+                dotrace = state13.rphase13state.ba[0];
+                doprobing = state13.rphase13state.ba[1];
+                dotracexd = state13.rphase13state.ba[2];
+                v = state13.rphase13state.ra[0];
+                mx = state13.rphase13state.ra[1];
+                f0 = state13.rphase13state.ra[2];
+                f1 = state13.rphase13state.ra[3];
+                nu = state13.rphase13state.ra[4];
+                localstp = state13.rphase13state.ra[5];
             }
             else
             {
-                n = 1016;
-                nslack = -229;
-                nec = -536;
-                nic = 487;
-                nlec = -115;
-                nlic = 886;
-                innerk = 346;
-                i = -722;
-                j = -413;
-                v = -461;
-                f0 = 927;
-                f1 = 201;
-                nu = 922;
-                localstp = -154;
+                n = 886;
+                nslack = 346;
+                nec = -722;
+                nic = -413;
+                nlec = -461;
+                nlic = 927;
+                innerk = 201;
+                i = 922;
+                j = -154;
+                dotrace = false;
+                doprobing = true;
+                dotracexd = true;
+                v = -463;
+                mx = 88;
+                f0 = -861;
+                f1 = -678;
+                nu = -731;
+                localstp = -675;
             }
-            if( state.rphase13state.stage==0 )
+            if( state13.rphase13state.stage==0 )
             {
                 goto lbl_0;
             }
-            if( state.rphase13state.stage==1 )
+            if( state13.rphase13state.stage==1 )
             {
                 goto lbl_1;
             }
-            if( state.rphase13state.stage==2 )
+            if( state13.rphase13state.stage==2 )
             {
                 goto lbl_2;
+            }
+            if( state13.rphase13state.stage==3 )
+            {
+                goto lbl_3;
             }
             
             //
@@ -41019,6 +50718,25 @@ public partial class alglib
             nlic = state.nlic;
             nslack = n+2*(nec+nlec)+(nic+nlic);
             innerk = 1;
+            dotrace = ap.istraceenabled("SLP", _params);
+            dotracexd = dotrace && ap.istraceenabled("SLP.DETAILED", _params);
+            doprobing = ap.istraceenabled("SLP.PROBING", _params);
+            alglib.ap.assert(alglib.ap.len(lagmult)>=nec+nic+nlec+nlic, "Phase13Iteration: integrity check failed");
+            
+            //
+            // Report iteration beginning
+            //
+            if( dotrace )
+            {
+                if( state13.usecorrection )
+                {
+                    alglib.ap.trace("\n--- linear step with second-order correction -------------------------------------------------------\n");
+                }
+                else
+                {
+                    alglib.ap.trace("\n--- linear step without second-order correction ----------------------------------------------------\n");
+                }
+            }
             
             //
             // Default decision is to continue algorithm
@@ -41030,17 +50748,46 @@ public partial class alglib
             // Determine step direction using linearized model with no conjugacy terms
             //
             lpsubproblemrestart(state, state.subsolver, _params);
-            if( !lpsubproblemsolve(state, state.subsolver, state.stepkx, state.stepkfi, state.stepkj, innerk, state.d0, state.stepklagmult, _params) )
+            if( !lpsubproblemsolve(state, state.subsolver, curx, curfi, curj, innerk, state13.d, lagmult, _params) )
             {
+                if( dotrace )
+                {
+                    alglib.ap.trace("> [WARNING] initial phase #1 LP subproblem failed\n");
+                }
                 
                 //
-                // Can not find descent direction for Lagrangian
+                // Increase failures counter.
+                // Stop after too many subsequent failures
+                //
+                apserv.inc(ref state.lpfailurecnt, _params);
+                if( state.lpfailurecnt>=lpfailureslimit )
+                {
+                    state.repterminationtype = 7;
+                    status = 0;
+                    if( dotrace )
+                    {
+                        alglib.ap.trace("> stopping condition met: too many phase #1 LP failures\n");
+                    }
+                    result = false;
+                    return result;
+                }
+                
+                //
+                // Can not solve LP subproblem, decrease trust radius
                 //
                 state.trustrad = 0.5*state.trustrad;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> trust radius was decreased to {0,0:E4}\n", state.trustrad));
+                }
                 if( (double)(state.trustrad)<(double)(state.epsx) )
                 {
                     state.repterminationtype = 2;
                     status = 0;
+                    if( dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("> stopping condition met: trust radius is smaller than {0,0:E3}\n", state.epsx));
+                    }
                 }
                 else
                 {
@@ -41049,6 +50796,7 @@ public partial class alglib
                 result = false;
                 return result;
             }
+            lpsubproblemappendconjugacyconstraint(state, state.subsolver, state13.d, _params);
             
             //
             // Compute second order correction if required. The issue we address here
@@ -41059,30 +50807,25 @@ public partial class alglib
             // compute constraint vector at the new trial point - and use these updated
             // constraint linearizations back at the initial point.
             //
-            // As result, we have:
-            // * D0 - "simple" step without correction
-            // * D1 - a correction to D0, such that D0+D1 points exactly to the solution
-            //   of the "corrected" linear model.
-            //
-            if( !usecorrection )
+            if( !state13.usecorrection )
             {
-                goto lbl_3;
+                goto lbl_4;
             }
             
             //
-            // Perform trial step using vector D0 to StepKXC
+            // Perform trial step using vector D to StepKXC
             //
             for(i=0; i<=n-1; i++)
             {
-                state.stepkxc[i] = state.stepkx[i]+state.d0[i];
+                state13.stepkxc[i] = curx[i]+state13.d[i];
             }
-            slpsendx(state, state.stepkxc, _params);
+            slpsendx(state, state13.stepkxc, _params);
             state.needfij = true;
-            state.rphase13state.stage = 0;
+            state13.rphase13state.stage = 0;
             goto lbl_rcomm;
         lbl_0:
             state.needfij = false;
-            if( !slpretrievefij(state, state.stepkfic, state.stepkjc, _params) )
+            if( !slpretrievefij(state, state13.stepkfic, state13.stepkjc, _params) )
             {
                 
                 //
@@ -41090,18 +50833,22 @@ public partial class alglib
                 //
                 state.repterminationtype = -8;
                 status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
+                }
                 result = false;
                 return result;
             }
             
             //
-            // Move back to point StepKX, restore original linearization of the target
+            // Move back to point CurX[], restore original linearization of the target
             //
-            state.stepkfic[0] = state.stepkfi[0];
+            state13.stepkfic[0] = curfi[0];
             for(j=0; j<=n-1; j++)
             {
-                state.stepkxc[j] = state.stepkx[j];
-                state.stepkjc[0,j] = state.stepkj[0,j];
+                state13.stepkxc[j] = curx[j];
+                state13.stepkjc[0,j] = curj[0,j];
             }
             
             //
@@ -41112,79 +50859,78 @@ public partial class alglib
                 v = 0;
                 for(j=0; j<=n-1; j++)
                 {
-                    v = v+state.d0[j]*state.stepkjc[i,j];
+                    v = v+state13.d[j]*state13.stepkjc[i,j];
                 }
-                state.stepkfic[i] = state.stepkfic[i]-v;
+                state13.stepkfic[i] = state13.stepkfic[i]-v;
             }
             
             //
             // Solve linearized problem one more time, now with new linearization of constraints
-            // (but still old linearization of the target), obtain D1
+            // (but still old linearization of the target), obtain DX
+            //
+            // NOTE: because lpsubproblemrestart() call resets set of conjugate constraints, we
+            //       have to re-add it after solve.
             //
             lpsubproblemrestart(state, state.subsolver, _params);
-            if( !lpsubproblemsolve(state, state.subsolver, state.stepkxc, state.stepkfic, state.stepkjc, innerk, state.d1, state.stepknlagmult, _params) )
+            if( !lpsubproblemsolve(state, state.subsolver, state13.stepkxc, state13.stepkfic, state13.stepkjc, innerk, state13.dx, state13.dummylagmult, _params) )
             {
                 
                 //
-                // Can not find descent direction for Lagrangian
+                // Second LP subproblem failed.
+                // Noncritical failure, can be ignored,
                 //
-                state.trustrad = 0.5*state.trustrad;
-                if( (double)(state.trustrad)<(double)(state.epsx) )
+                if( dotrace )
                 {
-                    state.repterminationtype = 2;
-                    status = 0;
+                    alglib.ap.trace("> [WARNING] second phase #1 LP subproblem failed\n");
                 }
-                else
+                if( dotrace )
                 {
-                    status = -1;
+                    alglib.ap.trace("> using step without second order correction\n");
                 }
-                result = false;
-                return result;
             }
-            for(i=0; i<=n-1; i++)
+            else
             {
-                state.d1[i] = state.d1[i]-state.d0[i];
+                
+                //
+                // Set D to new direction
+                //
+                for(i=0; i<=n-1; i++)
+                {
+                    state13.d[i] = state13.dx[i];
+                }
             }
-            goto lbl_4;
-        lbl_3:
-            
-            //
-            // No second order correction, D1=0
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                state.d1[i] = 0;
-            }
+            lpsubproblemappendconjugacyconstraint(state, state.subsolver, state13.d, _params);
         lbl_4:
             
             //
             // Perform merit function backtracking line search, with trial point being
-            // computed as XN = XK + Stp*D0 + Stp^2*D1, with Stp in [0,1]
+            // computed as XN = XK + Stp*D, with Stp in [0,1]
             //
-            // NOTE: we use StepKLagMult - Lagrange multipliers computed for initial,
+            // NOTE: we use MeritLagMult - Lagrange multipliers computed for initial,
             //       uncorrected task - for the merit function model.
-            //       Using StepKNLagMult can destabilize algorithm.
+            //       Using DummyLagMult can destabilize algorithm.
             //
             localstp = 1.0;
             nu = 0.5;
-            f0 = meritfunction(state, state.stepkx, state.trustrad, state.stepkfi, state.stepkj, state.stepklagmult, _params);
-            optserv.smoothnessmonitorstartlinesearch(smonitor, state.stepkx, state.stepkfi, state.stepkj, _params);
-        lbl_5:
+            f0 = meritfunction(state, curx, curfi, lagmult, state13.tmpmerit, _params);
+            f1 = f0;
+            optserv.smoothnessmonitorstartlinesearch(smonitor, curx, curfi, curj, _params);
+        lbl_6:
             if( false )
             {
-                goto lbl_6;
+                goto lbl_7;
             }
             for(i=0; i<=n-1; i++)
             {
-                state.stepkxn[i] = state.stepkx[i]+localstp*state.d0[i]+localstp*localstp*state.d1[i];
+                state13.stepkxn[i] = curx[i]+localstp*state13.d[i];
             }
-            slpsendx(state, state.stepkxn, _params);
+            slpsendx(state, state13.stepkxn, _params);
             state.needfij = true;
-            state.rphase13state.stage = 1;
+            state13.rphase13state.stage = 1;
             goto lbl_rcomm;
         lbl_1:
             state.needfij = false;
-            if( !slpretrievefij(state, state.stepkfin, state.stepkjn, _params) )
+            if( !slpretrievefij(state, state13.stepkfin, state13.stepkjn, _params) )
             {
                 
                 //
@@ -41192,18 +50938,22 @@ public partial class alglib
                 //
                 state.repterminationtype = -8;
                 status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
+                }
                 result = false;
                 return result;
             }
-            optserv.smoothnessmonitorenqueuepoint(smonitor, state.d0, localstp, state.stepkxn, state.stepkfin, state.stepkjn, _params);
-            f1 = meritfunction(state, state.stepkxn, state.trustrad, state.stepkfin, state.stepkjn, state.stepklagmult, _params);
+            optserv.smoothnessmonitorenqueuepoint(smonitor, state13.d, localstp, state13.stepkxn, state13.stepkfin, state13.stepkjn, _params);
+            f1 = meritfunction(state, state13.stepkxn, state13.stepkfin, lagmult, state13.tmpmerit, _params);
             if( (double)(f1)<(double)(f0) )
             {
                 
                 //
                 // Step is found!
                 //
-                goto lbl_6;
+                goto lbl_7;
             }
             if( (double)(localstp)<(double)(0.001) )
             {
@@ -41213,23 +50963,23 @@ public partial class alglib
                 // it means that no good step can be found.
                 //
                 localstp = 0;
-                slpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.stepkxn, state.stepkfin, state.stepkjn, _params);
-                goto lbl_6;
+                slpcopystate(state, curx, curfi, curj, state13.stepkxn, state13.stepkfin, state13.stepkjn, _params);
+                goto lbl_7;
             }
             localstp = nu*localstp;
             nu = Math.Max(0.1, 0.5*nu);
-            goto lbl_5;
-        lbl_6:
+            goto lbl_6;
+        lbl_7:
             optserv.smoothnessmonitorfinalizelinesearch(smonitor, _params);
             for(i=0; i<=n-1; i++)
             {
                 if( state.hasbndl[i] )
                 {
-                    state.stepkxn[i] = Math.Max(state.stepkxn[i], state.scaledbndl[i]);
+                    state13.stepkxn[i] = Math.Max(state13.stepkxn[i], state.scaledbndl[i]);
                 }
                 if( state.hasbndu[i] )
                 {
-                    state.stepkxn[i] = Math.Min(state.stepkxn[i], state.scaledbndu[i]);
+                    state13.stepkxn[i] = Math.Min(state13.stepkxn[i], state.scaledbndu[i]);
                 }
             }
             if( userterminationneeded )
@@ -41240,39 +50990,124 @@ public partial class alglib
                 //
                 state.repterminationtype = 8;
                 status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("> user requested termination\n");
+                }
                 result = false;
                 return result;
             }
             
             //
+            // Trace
+            //
+            if( !dotrace )
+            {
+                goto lbl_8;
+            }
+            if( !doprobing )
+            {
+                goto lbl_10;
+            }
+            optserv.smoothnessmonitorstartprobing(smonitor, 1.0, 2, state.trustrad, _params);
+        lbl_12:
+            if( !optserv.smoothnessmonitorprobe(smonitor, _params) )
+            {
+                goto lbl_13;
+            }
+            for(j=0; j<=n-1; j++)
+            {
+                state13.stepkxc[j] = curx[j]+smonitor.probingstp*state13.d[j];
+                if( state.hasbndl[j] )
+                {
+                    state13.stepkxc[j] = Math.Max(state13.stepkxc[j], state.scaledbndl[j]);
+                }
+                if( state.hasbndu[j] )
+                {
+                    state13.stepkxc[j] = Math.Min(state13.stepkxc[j], state.scaledbndu[j]);
+                }
+            }
+            slpsendx(state, state13.stepkxc, _params);
+            state.needfij = true;
+            state13.rphase13state.stage = 2;
+            goto lbl_rcomm;
+        lbl_2:
+            state.needfij = false;
+            if( !slpretrievefij(state, state13.stepkfic, state13.stepkjc, _params) )
+            {
+                goto lbl_13;
+            }
+            smonitor.probingf[0] = rawlagrangian(state, state13.stepkxc, state13.stepkfic, lagmult, state13.tmpmerit, _params);
+            smonitor.probingf[1] = state13.stepkfic[0];
+            goto lbl_12;
+        lbl_13:
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |   probing search direction suggested by LP subproblem    |\n");
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |  Step  | Lagrangian (unaugmentd)|    Target  function    |\n");
+            alglib.ap.trace("*** |along  D|     must be smooth     |     must be smooth     |\n");
+            alglib.ap.trace("*** |        | function   |    slope  | function   |    slope  |\n");
+            optserv.smoothnessmonitortraceprobingresults(smonitor, _params);
+        lbl_10:
+            mx = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                mx = Math.Max(mx, Math.Abs(state13.d[i])/state.trustrad);
+            }
+            if( (double)(localstp)>(double)(0) )
+            {
+                alglib.ap.trace("> nonzero linear step was performed\n");
+            }
+            else
+            {
+                alglib.ap.trace("> zero linear step was performed\n");
+            }
+            alglib.ap.trace(System.String.Format("max(|Di|)/TrustRad = {0,0:F6}\n", mx));
+            alglib.ap.trace(System.String.Format("stp = {0,0:F6}\n", localstp));
+            if( dotracexd )
+            {
+                alglib.ap.trace("X0 (scaled) = ");
+                apserv.tracevectorautoprec(curx, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("D  (scaled) = ");
+                apserv.tracevectorautoprec(state13.d, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("X1 (scaled) = ");
+                apserv.tracevectorautoprec(state13.stepkxn, 0, n, _params);
+                alglib.ap.trace("\n");
+            }
+            alglib.ap.trace(System.String.Format("meritF:         {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", f0, f1, f1-f0));
+            alglib.ap.trace(System.String.Format("scaled-targetF: {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", curfi[0], state13.stepkfin[0], state13.stepkfin[0]-curfi[0]));
+        lbl_8:
+            
+            //
             // Move to new point
             //
             stp = localstp;
-            slpcopystate(state, state.stepkxn, state.stepkfin, state.stepkjn, state.stepkx, state.stepkfi, state.stepkj, _params);
+            slpcopystate(state, state13.stepkxn, state13.stepkfin, state13.stepkjn, curx, curfi, curj, _params);
             if( (double)(localstp)<=(double)(0) )
             {
-                goto lbl_7;
+                goto lbl_14;
             }
             
             //
             // Report one more inner iteration
             //
             apserv.inc(ref state.repinneriterationscount, _params);
-            slpsendx(state, state.stepkx, _params);
-            state.f = state.stepkfi[0];
+            slpsendx(state, curx, _params);
+            state.f = curfi[0]*state.fscales[0];
             state.xupdated = true;
-            state.rphase13state.stage = 2;
+            state13.rphase13state.stage = 3;
             goto lbl_rcomm;
-        lbl_2:
+        lbl_3:
             state.xupdated = false;
             
             //
             // Update constraint violations
             //
-            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, state.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
-            optserv.checknlcviolation(state.stepkfi, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
-        lbl_7:
-            tracemeritsearch(state, _params);
+            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, curx, n, ref state.replcerr, ref state.replcidx, _params);
+            optserv.unscaleandchecknlcviolation(curfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+        lbl_14:
             result = false;
             return result;
             
@@ -41281,21 +51116,83 @@ public partial class alglib
             //
         lbl_rcomm:
             result = true;
-            state.rphase13state.ia[0] = n;
-            state.rphase13state.ia[1] = nslack;
-            state.rphase13state.ia[2] = nec;
-            state.rphase13state.ia[3] = nic;
-            state.rphase13state.ia[4] = nlec;
-            state.rphase13state.ia[5] = nlic;
-            state.rphase13state.ia[6] = innerk;
-            state.rphase13state.ia[7] = i;
-            state.rphase13state.ia[8] = j;
-            state.rphase13state.ra[0] = v;
-            state.rphase13state.ra[1] = f0;
-            state.rphase13state.ra[2] = f1;
-            state.rphase13state.ra[3] = nu;
-            state.rphase13state.ra[4] = localstp;
+            state13.rphase13state.ia[0] = n;
+            state13.rphase13state.ia[1] = nslack;
+            state13.rphase13state.ia[2] = nec;
+            state13.rphase13state.ia[3] = nic;
+            state13.rphase13state.ia[4] = nlec;
+            state13.rphase13state.ia[5] = nlic;
+            state13.rphase13state.ia[6] = innerk;
+            state13.rphase13state.ia[7] = i;
+            state13.rphase13state.ia[8] = j;
+            state13.rphase13state.ba[0] = dotrace;
+            state13.rphase13state.ba[1] = doprobing;
+            state13.rphase13state.ba[2] = dotracexd;
+            state13.rphase13state.ra[0] = v;
+            state13.rphase13state.ra[1] = mx;
+            state13.rphase13state.ra[2] = f0;
+            state13.rphase13state.ra[3] = f1;
+            state13.rphase13state.ra[4] = nu;
+            state13.rphase13state.ra[5] = localstp;
             return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes Phase2   temporaries. It should be called before
+        beginning of each new iteration. You may call it multiple  times  for  the
+        same instance of Phase2 temporaries.
+
+        INPUT PARAMETERS:
+            State2              -   instance to be initialized.
+            N                   -   problem dimensionality
+            NEC, NIC            -   linear equality/inequality constraint count
+            NLEC, NLIC          -   nonlinear equality/inequality constraint count
+            MeritLagMult        -   Lagrange multiplier estimates used by merit function
+                                    (we could use ones computed during phase #2,
+                                    but these may differ from ones computed
+                                    initially at the beginning of the outer
+                                    iteration, so it may confuse algorithm)
+
+        OUTPUT PARAMETERS:
+            State2              -   instance being initialized
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void phase2init(minslpphase2state state2,
+            int n,
+            int nec,
+            int nic,
+            int nlec,
+            int nlic,
+            double[] meritlagmult,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int nslack = 0;
+
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            apserv.rvectorsetlengthatleast(ref state2.d, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref state2.tmp0, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref state2.stepkxn, n, _params);
+            apserv.rvectorsetlengthatleast(ref state2.stepkxc, n, _params);
+            apserv.rvectorsetlengthatleast(ref state2.stepkfin, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state2.stepkfic, 1+nlec+nlic, _params);
+            apserv.rmatrixsetlengthatleast(ref state2.stepkjn, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref state2.stepkjc, 1+nlec+nlic, n, _params);
+            apserv.rvectorsetlengthatleast(ref state2.stepklaggrad, n, _params);
+            apserv.rvectorsetlengthatleast(ref state2.stepknlaggrad, n, _params);
+            apserv.rvectorsetlengthatleast(ref state2.stepknlagmult, nec+nic+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state2.meritlagmult, nec+nic+nlec+nlic, _params);
+            for(i=0; i<=nec+nic+nlec+nlic-1; i++)
+            {
+                state2.meritlagmult[i] = meritlagmult[i];
+            }
+            state2.rphase2state.ia = new int[12+1];
+            state2.rphase2state.ba = new bool[2+1];
+            state2.rphase2state.ra = new double[8+1];
+            state2.rphase2state.stage = -1;
         }
 
 
@@ -41307,16 +51204,21 @@ public partial class alglib
         constraints (which make algorithm behavior similar to that of CG).
 
         INPUT PARAMETERS:
-            State       -   SLP solver state, StepKX/Fi/J is used as current point,
-                            StepK...N/C fields are modified.
+            State       -   SLP solver state
             SMonitor    -   smoothness monitor
             UserTerminationNeeded-True if user requested termination
+            CurX        -   current point, array[N]
+            CurFi       -   function vector at CurX, array[1+NLEC+NLIC]
+            CurJ        -   Jacobian at CurX, array[1+NLEC+NLIC,N]
+            LagMult     -   array[NEC+NIC+NLEC+NLIC], contents ignored on input.
             GammaMax    -   current estimate of the Hessian norm
 
         OUTPUT PARAMETERS:
-            State       -   StepKX/Fi/J advanced to new point, StepKLagMult contain
-                            current Lagrange multipliers, RepTerminationType is
-                            set to current termination code (if Status=0).
+            State       -   RepTerminationType is set to current termination code (if Status=0).
+            CurX        -   advanced to new point
+            CurFi       -   updated with function vector at CurX[]
+            CurJ        -   updated with Jacobian at CurX[]
+            LagMult     -   filled with current Lagrange multipliers
             GammaMax    -   updated estimate of the Hessian norm    
             Status      -   when reverse communication is done, Status is set to:
                             * negative value,  if   we  have   to  restart   outer
@@ -41330,8 +51232,13 @@ public partial class alglib
              Copyright 05.02.2019 by Bochkanov Sergey
         *************************************************************************/
         private static bool phase2iteration(minslpstate state,
+            minslpphase2state state2,
             optserv.smoothnessmonitor smonitor,
             bool userterminationneeded,
+            double[] curx,
+            double[] curfi,
+            double[,] curj,
+            double[] lagmult,
             ref double gammamax,
             ref int status,
             alglib.xparams _params)
@@ -41348,11 +51255,20 @@ public partial class alglib
             int mcnfev = 0;
             int mcstage = 0;
             int i = 0;
+            int j = 0;
             int innerk = 0;
             double v = 0;
             double vv = 0;
             double mx = 0;
             int nondescentcnt = 0;
+            double stepklagval = 0;
+            double stepknlagval = 0;
+            double gammaprev = 0;
+            double f0 = 0;
+            double f1 = 0;
+            bool dotrace = new bool();
+            bool doprobing = new bool();
+            bool dotracexd = new bool();
 
             
             //
@@ -41365,51 +51281,73 @@ public partial class alglib
             //   generation - on first subroutine call
             // * values from previous call - on subsequent calls
             //
-            if( state.rphase2state.stage>=0 )
+            if( state2.rphase2state.stage>=0 )
             {
-                n = state.rphase2state.ia[0];
-                nslack = state.rphase2state.ia[1];
-                nec = state.rphase2state.ia[2];
-                nic = state.rphase2state.ia[3];
-                nlec = state.rphase2state.ia[4];
-                nlic = state.rphase2state.ia[5];
-                mcinfo = state.rphase2state.ia[6];
-                mcnfev = state.rphase2state.ia[7];
-                mcstage = state.rphase2state.ia[8];
-                i = state.rphase2state.ia[9];
-                innerk = state.rphase2state.ia[10];
-                nondescentcnt = state.rphase2state.ia[11];
-                stp = state.rphase2state.ra[0];
-                v = state.rphase2state.ra[1];
-                vv = state.rphase2state.ra[2];
-                mx = state.rphase2state.ra[3];
+                n = state2.rphase2state.ia[0];
+                nslack = state2.rphase2state.ia[1];
+                nec = state2.rphase2state.ia[2];
+                nic = state2.rphase2state.ia[3];
+                nlec = state2.rphase2state.ia[4];
+                nlic = state2.rphase2state.ia[5];
+                mcinfo = state2.rphase2state.ia[6];
+                mcnfev = state2.rphase2state.ia[7];
+                mcstage = state2.rphase2state.ia[8];
+                i = state2.rphase2state.ia[9];
+                j = state2.rphase2state.ia[10];
+                innerk = state2.rphase2state.ia[11];
+                nondescentcnt = state2.rphase2state.ia[12];
+                dotrace = state2.rphase2state.ba[0];
+                doprobing = state2.rphase2state.ba[1];
+                dotracexd = state2.rphase2state.ba[2];
+                stp = state2.rphase2state.ra[0];
+                v = state2.rphase2state.ra[1];
+                vv = state2.rphase2state.ra[2];
+                mx = state2.rphase2state.ra[3];
+                stepklagval = state2.rphase2state.ra[4];
+                stepknlagval = state2.rphase2state.ra[5];
+                gammaprev = state2.rphase2state.ra[6];
+                f0 = state2.rphase2state.ra[7];
+                f1 = state2.rphase2state.ra[8];
             }
             else
             {
-                n = 306;
-                nslack = -1011;
-                nec = 951;
-                nic = -463;
-                nlec = 88;
-                nlic = -861;
-                mcinfo = -678;
-                mcnfev = -731;
-                mcstage = -675;
-                i = -763;
-                innerk = -233;
-                nondescentcnt = -936;
-                stp = -279;
-                v = 94;
-                vv = -812;
-                mx = 427;
+                n = -763;
+                nslack = -233;
+                nec = -936;
+                nic = -279;
+                nlec = 94;
+                nlic = -812;
+                mcinfo = 427;
+                mcnfev = 178;
+                mcstage = -819;
+                i = -826;
+                j = 667;
+                innerk = 692;
+                nondescentcnt = 84;
+                dotrace = true;
+                doprobing = false;
+                dotracexd = false;
+                stp = -908;
+                v = 577;
+                vv = 289;
+                mx = 317;
+                stepklagval = 476;
+                stepknlagval = -889;
+                gammaprev = -400;
+                f0 = 489;
+                f1 = -962;
             }
-            if( state.rphase2state.stage==0 )
+            if( state2.rphase2state.stage==0 )
             {
                 goto lbl_0;
             }
-            if( state.rphase2state.stage==1 )
+            if( state2.rphase2state.stage==1 )
             {
                 goto lbl_1;
+            }
+            if( state2.rphase2state.stage==2 )
+            {
+                goto lbl_2;
             }
             
             //
@@ -41421,6 +51359,18 @@ public partial class alglib
             nlec = state.nlec;
             nlic = state.nlic;
             nslack = n+2*(nec+nlec)+(nic+nlic);
+            dotrace = ap.istraceenabled("SLP", _params);
+            dotracexd = dotrace && ap.istraceenabled("SLP.DETAILED", _params);
+            doprobing = ap.istraceenabled("SLP.PROBING", _params);
+            alglib.ap.assert(alglib.ap.len(lagmult)>=nec+nic+nlec+nlic, "Phase13Iteration: integrity check failed");
+            
+            //
+            // Report iteration beginning
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n--- linear step with conjugate constraints (CG-like convergence) -----------------------------------\n");
+            }
             
             //
             // The default decision is to continue iterations
@@ -41443,59 +51393,76 @@ public partial class alglib
             nondescentcnt = 0;
             lpsubproblemrestart(state, state.subsolver, _params);
             innerk = 1;
-        lbl_2:
+        lbl_3:
             if( innerk>n )
             {
-                goto lbl_4;
+                goto lbl_5;
             }
             
             //
             // Formulate LP subproblem and solve it
             //
-            tracelpstart(_params);
-            if( !lpsubproblemsolve(state, state.subsolver, state.stepkx, state.stepkfi, state.stepkj, innerk, state.d, state.stepklagmult, _params) )
+            if( !lpsubproblemsolve(state, state.subsolver, curx, curfi, curj, innerk, state2.d, lagmult, _params) )
             {
                 
                 //
                 // LP solver failed due to numerical errors; exit.
                 // It may happen when we solve problem with LOTS of conjugacy constraints.
                 //
-                tracelpfailure(_params);
-                status = -1;
                 if( innerk==1 )
                 {
                     
                     //
                     // The very first iteration failed, really strange.
-                    // Let's decrease trust radius and try one more time.
                     //
-                    state.trustrad = 0.5*state.trustrad;
-                    if( (double)(state.trustrad)<(double)(state.epsx) )
+                    if( dotrace )
                     {
-                        state.repterminationtype = 2;
-                        status = 0;
+                        alglib.ap.trace("[WARNING] the very first LP subproblem failed to produce descent direction\n");
+                    }
+                }
+                else
+                {
+                    
+                    //
+                    // Quite a normal, the problem is overconstrained by conjugacy constraints now
+                    //
+                    if( dotrace )
+                    {
+                        alglib.ap.trace("> LP subproblem is overconstrained (happens after too many iterations), time to stop\n");
                     }
                 }
                 result = false;
                 return result;
             }
-            v = 0;
+            mx = 0;
             for(i=0; i<=n-1; i++)
             {
-                v = v+math.sqr(state.d[i]);
+                mx = Math.Max(mx, Math.Abs(state2.d[i])/state.trustrad);
             }
-            if( (double)(v)==(double)(0) )
+            if( (double)(mx)==(double)(0) )
             {
                 
                 //
-                // Zero step is suggested (maybe we arrived exactly to the solution), stop iterations
+                // Nearly-zero direction is suggested (maybe we arrived exactly to the solution), stop iterations
                 //
                 status = 1;
-                slpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.stepkxn, state.stepkfin, state.stepkjn, _params);
-                tracelpstep(state, 0, 0, 0, _params);
+                slpcopystate(state, curx, curfi, curj, state2.stepkxn, state2.stepkfin, state2.stepkjn, _params);
+                if( dotrace )
+                {
+                    alglib.ap.trace("> LP subproblem suggested nearly zero step\n");
+                }
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("max(|Di|)/TrustRad = {0,0:F6}\n", mx));
+                }
+                if( dotrace )
+                {
+                    alglib.ap.trace("> stopping CG-like iterations\n");
+                }
                 result = false;
                 return result;
             }
+            lpsubproblemappendconjugacyconstraint(state, state.subsolver, state2.d, _params);
             
             //
             // Perform line search to minimize Lagrangian along D.
@@ -41508,18 +51475,18 @@ public partial class alglib
             //
             // NOTE: constraint violation reports are updated during Lagrangian computation
             //
-            state.lastlcerr = 0;
-            state.lastlcidx = -1;
-            state.lastnlcerr = 0;
-            state.lastnlcidx = -1;
-            apserv.rvectorsetlengthatleast(ref state.tmp0, n, _params);
-            lagrangianfg(state, state.stepkx, state.trustrad, state.stepkfi, state.stepkj, state.stepklagmult, ref state.stepklagval, state.stepklaggrad, ref state.lastlcerr, ref state.lastlcidx, ref state.lastnlcerr, ref state.lastnlcidx, _params);
-            slpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.stepkxn, state.stepkfin, state.stepkjn, _params);
+            state2.lastlcerr = 0;
+            state2.lastlcidx = -1;
+            state2.lastnlcerr = 0;
+            state2.lastnlcidx = -1;
+            apserv.rvectorsetlengthatleast(ref state2.tmp0, n, _params);
+            lagrangianfg(state, curx, state.trustrad, curfi, curj, lagmult, state2.tmplagrangianfg, ref stepklagval, state2.stepklaggrad, ref state2.lastlcerr, ref state2.lastlcidx, ref state2.lastnlcerr, ref state2.lastnlcidx, _params);
+            slpcopystate(state, curx, curfi, curj, state2.stepkxn, state2.stepkfin, state2.stepkjn, _params);
             v = 0;
             for(i=0; i<=n-1; i++)
             {
-                state.stepknlaggrad[i] = state.stepklaggrad[i];
-                v = v+state.d[i]*state.stepklaggrad[i];
+                state2.stepknlaggrad[i] = state2.stepklaggrad[i];
+                v = v+state2.d[i]*state2.stepklaggrad[i];
             }
             if( (double)(v)>=(double)(0) )
             {
@@ -41529,36 +51496,45 @@ public partial class alglib
                 // directions which decrease L1 penalty and default augmentation of Lagrangian involves
                 // only L2 term.
                 //
+                // Append direction to the conjugacy constraints and retry direction generation.
+                //
                 // We make several retries with conjugate directions before giving up.
                 //
-                tracelpnondescent(_params);
-                apserv.inc(ref nondescentcnt, _params);
-                if( nondescentcnt>nondescentlimit )
+                if( dotrace )
                 {
+                    alglib.ap.trace(System.String.Format("> LP subproblem suggested nondescent step, skipping it (dLag={0,0:E3})\n", v));
+                }
+                apserv.inc(ref nondescentcnt, _params);
+                if( nondescentlimit>0 && nondescentcnt>nondescentlimit )
+                {
+                    if( dotrace )
+                    {
+                        alglib.ap.trace("> too many nondescent steps, stopping CG-like iterations\n");
+                    }
                     status = 1;
                     result = false;
                     return result;
                 }
-                goto lbl_3;
+                goto lbl_4;
             }
-            optserv.smoothnessmonitorstartlinesearch(smonitor, state.stepkx, state.stepkfi, state.stepkj, _params);
-            state.stepknlagval = state.stepklagval;
+            optserv.smoothnessmonitorstartlinesearch(smonitor, curx, curfi, curj, _params);
+            stepknlagval = stepklagval;
             mcnfev = 0;
             mcstage = 0;
             stp = 1.0;
-            linmin.mcsrch(n, ref state.stepkxn, ref state.stepknlagval, ref state.stepknlaggrad, state.d, ref stp, 1.0, slpgtol, ref mcinfo, ref mcnfev, ref state.tmp0, state.mcstate, ref mcstage, _params);
-        lbl_5:
+            linmin.mcsrch(n, ref state2.stepkxn, ref stepknlagval, ref state2.stepknlaggrad, state2.d, ref stp, 1.0, slpgtol, ref mcinfo, ref mcnfev, ref state2.tmp0, state2.mcstate, ref mcstage, _params);
+        lbl_6:
             if( mcstage==0 )
             {
-                goto lbl_6;
+                goto lbl_7;
             }
-            slpsendx(state, state.stepkxn, _params);
+            slpsendx(state, state2.stepkxn, _params);
             state.needfij = true;
-            state.rphase2state.stage = 0;
+            state2.rphase2state.stage = 0;
             goto lbl_rcomm;
         lbl_0:
             state.needfij = false;
-            if( !slpretrievefij(state, state.stepkfin, state.stepkjn, _params) )
+            if( !slpretrievefij(state, state2.stepkfin, state2.stepkjn, _params) )
             {
                 
                 //
@@ -41566,27 +51542,30 @@ public partial class alglib
                 //
                 status = 0;
                 state.repterminationtype = -8;
+                if( dotrace )
+                {
+                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
+                }
                 result = false;
                 return result;
             }
-            optserv.smoothnessmonitorenqueuepoint(smonitor, state.d, stp, state.stepkxn, state.stepkfin, state.stepkjn, _params);
-            lagrangianfg(state, state.stepkxn, state.trustrad, state.stepkfin, state.stepkjn, state.stepklagmult, ref state.stepknlagval, state.stepknlaggrad, ref state.lastlcerr, ref state.lastlcidx, ref state.lastnlcerr, ref state.lastnlcidx, _params);
-            linmin.mcsrch(n, ref state.stepkxn, ref state.stepknlagval, ref state.stepknlaggrad, state.d, ref stp, 1.0, slpgtol, ref mcinfo, ref mcnfev, ref state.tmp0, state.mcstate, ref mcstage, _params);
-            goto lbl_5;
-        lbl_6:
+            optserv.smoothnessmonitorenqueuepoint(smonitor, state2.d, stp, state2.stepkxn, state2.stepkfin, state2.stepkjn, _params);
+            lagrangianfg(state, state2.stepkxn, state.trustrad, state2.stepkfin, state2.stepkjn, lagmult, state2.tmplagrangianfg, ref stepknlagval, state2.stepknlaggrad, ref state2.lastlcerr, ref state2.lastlcidx, ref state2.lastnlcerr, ref state2.lastnlcidx, _params);
+            linmin.mcsrch(n, ref state2.stepkxn, ref stepknlagval, ref state2.stepknlaggrad, state2.d, ref stp, 1.0, slpgtol, ref mcinfo, ref mcnfev, ref state2.tmp0, state2.mcstate, ref mcstage, _params);
+            goto lbl_6;
+        lbl_7:
             optserv.smoothnessmonitorfinalizelinesearch(smonitor, _params);
             for(i=0; i<=n-1; i++)
             {
                 if( state.hasbndl[i] )
                 {
-                    state.stepkxn[i] = Math.Max(state.stepkxn[i], state.scaledbndl[i]);
+                    state2.stepkxn[i] = Math.Max(state2.stepkxn[i], state.scaledbndl[i]);
                 }
                 if( state.hasbndu[i] )
                 {
-                    state.stepkxn[i] = Math.Min(state.stepkxn[i], state.scaledbndu[i]);
+                    state2.stepkxn[i] = Math.Min(state2.stepkxn[i], state.scaledbndu[i]);
                 }
             }
-            tracelpstep(state, stp, mcinfo, mcnfev, _params);
             if( mcinfo<=0 )
             {
                 
@@ -41602,10 +51581,29 @@ public partial class alglib
                     // Let's decrease trust radius and try one more time.
                     //
                     state.trustrad = 0.5*state.trustrad;
+                    if( dotrace )
+                    {
+                        alglib.ap.trace("> line search failed miserably for unknown reason, decreasing trust radius\n");
+                    }
                     if( (double)(state.trustrad)<(double)(state.epsx) )
                     {
                         state.repterminationtype = 2;
                         status = 0;
+                        if( dotrace )
+                        {
+                            alglib.ap.trace(System.String.Format("> stopping condition met: trust radius is smaller than {0,0:E3}\n", state.epsx));
+                        }
+                    }
+                }
+                else
+                {
+                    
+                    //
+                    // Well, it can be normal
+                    //
+                    if( dotrace )
+                    {
+                        alglib.ap.trace("> line search failed miserably for unknown reason, proceeding further\n");
                     }
                 }
                 result = false;
@@ -41613,7 +51611,7 @@ public partial class alglib
             }
             if( mcinfo==1 )
             {
-                lpsubproblemupdatehessian(state, state.subsolver, state.stepkx, state.stepklaggrad, state.stepkxn, state.stepknlaggrad, _params);
+                lpsubproblemupdatehessian(state, state.subsolver, curx, state2.stepklaggrad, state2.stepkxn, state2.stepknlaggrad, _params);
             }
             
             //
@@ -41624,14 +51622,98 @@ public partial class alglib
             mx = 0;
             for(i=0; i<=n-1; i++)
             {
-                mx = Math.Max(mx, Math.Abs(state.stepkxn[i]-state.stepkx[i]));
-                v = v+math.sqr(state.stepkxn[i]-state.stepkx[i]);
-                vv = vv+(state.stepkjn[0,i]-state.stepkj[0,i])*(state.stepkxn[i]-state.stepkx[i]);
+                mx = Math.Max(mx, Math.Abs(state2.stepkxn[i]-curx[i]));
+                v = v+math.sqr(state2.stepkxn[i]-curx[i]);
+                vv = vv+(state2.stepkjn[0,i]-curj[0,i])*(state2.stepkxn[i]-curx[i]);
             }
+            gammaprev = gammamax;
             if( (double)(mx)>(double)(bfgstol) )
             {
                 gammamax = Math.Max(gammamax, Math.Abs(vv/v));
             }
+            
+            //
+            // Trace
+            //
+            if( !dotrace )
+            {
+                goto lbl_8;
+            }
+            if( !doprobing )
+            {
+                goto lbl_10;
+            }
+            optserv.smoothnessmonitorstartprobing(smonitor, 1.0, 2, state.trustrad, _params);
+        lbl_12:
+            if( !optserv.smoothnessmonitorprobe(smonitor, _params) )
+            {
+                goto lbl_13;
+            }
+            for(j=0; j<=n-1; j++)
+            {
+                state2.stepkxc[j] = curx[j]+smonitor.probingstp*state2.d[j];
+                if( state.hasbndl[j] )
+                {
+                    state2.stepkxc[j] = Math.Max(state2.stepkxc[j], state.scaledbndl[j]);
+                }
+                if( state.hasbndu[j] )
+                {
+                    state2.stepkxc[j] = Math.Min(state2.stepkxc[j], state.scaledbndu[j]);
+                }
+            }
+            slpsendx(state, state2.stepkxc, _params);
+            state.needfij = true;
+            state2.rphase2state.stage = 1;
+            goto lbl_rcomm;
+        lbl_1:
+            state.needfij = false;
+            if( !slpretrievefij(state, state2.stepkfic, state2.stepkjc, _params) )
+            {
+                goto lbl_13;
+            }
+            smonitor.probingf[0] = rawlagrangian(state, state2.stepkxc, state2.stepkfic, lagmult, state2.tmpmerit, _params);
+            smonitor.probingf[1] = state2.stepkfic[0];
+            goto lbl_12;
+        lbl_13:
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |   probing search direction suggested by LP subproblem    |\n");
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |  Step  | Lagrangian (unaugmentd)|    Target  function    |\n");
+            alglib.ap.trace("*** |along  D|     must be smooth     |     must be smooth     |\n");
+            alglib.ap.trace("*** |        | function   |    slope  | function   |    slope  |\n");
+            optserv.smoothnessmonitortraceprobingresults(smonitor, _params);
+        lbl_10:
+            mx = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                mx = Math.Max(mx, Math.Abs(state2.d[i])/state.trustrad);
+            }
+            f0 = meritfunction(state, curx, curfi, state2.meritlagmult, state2.tmpmerit, _params);
+            f1 = meritfunction(state, state2.stepkxn, state2.stepkfin, state2.meritlagmult, state2.tmpmerit, _params);
+            alglib.ap.trace("> LP subproblem produced good direction, minimization was performed\n");
+            alglib.ap.trace(System.String.Format("max(|Di|)/TrustRad = {0,0:F6}\n", mx));
+            alglib.ap.trace(System.String.Format("stp = {0,0:F6}\n", stp));
+            if( dotracexd )
+            {
+                alglib.ap.trace("X0 = ");
+                apserv.tracevectorautoprec(curx, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("D  = ");
+                apserv.tracevectorautoprec(state2.d, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("X1 = X0 + stp*D\n");
+                alglib.ap.trace("   = ");
+                apserv.tracevectorautoprec(state2.stepkxn, 0, n, _params);
+                alglib.ap.trace("\n");
+            }
+            alglib.ap.trace(System.String.Format("meritF:         {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", f0, f1, f1-f0));
+            alglib.ap.trace(System.String.Format("scaled-targetF: {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", curfi[0], state2.stepkfin[0], state2.stepkfin[0]-curfi[0]));
+            alglib.ap.trace(System.String.Format("aug.Lagrangian: {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", stepklagval, stepknlagval, stepknlagval-stepklagval));
+            if( (double)(gammamax)>(double)(gammaprev) )
+            {
+                alglib.ap.trace(System.String.Format("|H| = {0,0:E3} (Hessian norm increased)\n", gammamax));
+            }
+        lbl_8:
             
             //
             // Check status of the termination request
@@ -41647,23 +51729,25 @@ public partial class alglib
                 //
                 status = 0;
                 state.repterminationtype = 8;
-                tracenlpstep(state, _params);
-                tracefinalpoint(state, _params);
+                if( dotrace )
+                {
+                    alglib.ap.trace("# user requested termination\n");
+                }
                 result = false;
                 return result;
             }
-            slpcopystate(state, state.stepkxn, state.stepkfin, state.stepkjn, state.stepkx, state.stepkfi, state.stepkj, _params);
-            state.replcerr = state.lastlcerr;
-            state.replcidx = state.lastlcidx;
-            state.repnlcerr = state.lastnlcerr;
-            state.repnlcidx = state.lastnlcidx;
+            slpcopystate(state, state2.stepkxn, state2.stepkfin, state2.stepkjn, curx, curfi, curj, _params);
+            state.replcerr = state2.lastlcerr;
+            state.replcidx = state2.lastlcidx;
+            state.repnlcerr = state2.lastnlcerr;
+            state.repnlcidx = state2.lastnlcidx;
             apserv.inc(ref state.repinneriterationscount, _params);
-            slpsendx(state, state.stepkx, _params);
-            state.f = state.stepkfi[0];
+            slpsendx(state, curx, _params);
+            state.f = curfi[0]*state.fscales[0];
             state.xupdated = true;
-            state.rphase2state.stage = 1;
+            state2.rphase2state.stage = 2;
             goto lbl_rcomm;
-        lbl_1:
+        lbl_2:
             state.xupdated = false;
             
             //
@@ -41676,16 +51760,10 @@ public partial class alglib
                 // Iteration limit exhausted
                 //
                 status = 1;
-                result = false;
-                return result;
-            }
-            if( (double)(stp)<=(double)(slpstpclosetozero) )
-            {
-                
-                //
-                // Step is too close to zero, terminate iterations.
-                //
-                status = 1;
+                if( dotrace )
+                {
+                    alglib.ap.trace("# stopping criteria met (MaxIts iterations performed)\n");
+                }
                 result = false;
                 return result;
             }
@@ -41701,6 +51779,10 @@ public partial class alglib
                 // iteration and proceed to test of sufficient decrease of merit function.
                 //
                 status = 1;
+                if( dotrace )
+                {
+                    alglib.ap.trace("> step is close to 1, stopping iterations\n");
+                }
                 result = false;
                 return result;
             }
@@ -41713,27 +51795,17 @@ public partial class alglib
                 // terminate.
                 //
                 status = 1;
+                if( dotrace )
+                {
+                    alglib.ap.trace("> line search ended with bad MCINFO, no more CG-like iterations\n");
+                }
                 result = false;
                 return result;
             }
-            for(i=n; i<=nslack-1; i++)
-            {
-                if( state.d[i]>0 )
-                {
-                    
-                    //
-                    // Some relaxation variable is non-zero;
-                    // break - it means that we are far away from the feasible area.
-                    //
-                    status = 1;
-                    result = false;
-                    return result;
-                }
-            }
-        lbl_3:
-            innerk = innerk+1;
-            goto lbl_2;
         lbl_4:
+            innerk = innerk+1;
+            goto lbl_3;
+        lbl_5:
             result = false;
             return result;
             
@@ -41742,22 +51814,31 @@ public partial class alglib
             //
         lbl_rcomm:
             result = true;
-            state.rphase2state.ia[0] = n;
-            state.rphase2state.ia[1] = nslack;
-            state.rphase2state.ia[2] = nec;
-            state.rphase2state.ia[3] = nic;
-            state.rphase2state.ia[4] = nlec;
-            state.rphase2state.ia[5] = nlic;
-            state.rphase2state.ia[6] = mcinfo;
-            state.rphase2state.ia[7] = mcnfev;
-            state.rphase2state.ia[8] = mcstage;
-            state.rphase2state.ia[9] = i;
-            state.rphase2state.ia[10] = innerk;
-            state.rphase2state.ia[11] = nondescentcnt;
-            state.rphase2state.ra[0] = stp;
-            state.rphase2state.ra[1] = v;
-            state.rphase2state.ra[2] = vv;
-            state.rphase2state.ra[3] = mx;
+            state2.rphase2state.ia[0] = n;
+            state2.rphase2state.ia[1] = nslack;
+            state2.rphase2state.ia[2] = nec;
+            state2.rphase2state.ia[3] = nic;
+            state2.rphase2state.ia[4] = nlec;
+            state2.rphase2state.ia[5] = nlic;
+            state2.rphase2state.ia[6] = mcinfo;
+            state2.rphase2state.ia[7] = mcnfev;
+            state2.rphase2state.ia[8] = mcstage;
+            state2.rphase2state.ia[9] = i;
+            state2.rphase2state.ia[10] = j;
+            state2.rphase2state.ia[11] = innerk;
+            state2.rphase2state.ia[12] = nondescentcnt;
+            state2.rphase2state.ba[0] = dotrace;
+            state2.rphase2state.ba[1] = doprobing;
+            state2.rphase2state.ba[2] = dotracexd;
+            state2.rphase2state.ra[0] = stp;
+            state2.rphase2state.ra[1] = v;
+            state2.rphase2state.ra[2] = vv;
+            state2.rphase2state.ra[3] = mx;
+            state2.rphase2state.ra[4] = stepklagval;
+            state2.rphase2state.ra[5] = stepknlagval;
+            state2.rphase2state.ra[6] = gammaprev;
+            state2.rphase2state.ra[7] = f0;
+            state2.rphase2state.ra[8] = f1;
             return result;
         }
 
@@ -41807,6 +51888,7 @@ public partial class alglib
             int i = 0;
             int j = 0;
             double v = 0;
+            double vv = 0;
 
             n = state.n;
             nlec = state.nlec;
@@ -41814,12 +51896,13 @@ public partial class alglib
             v = 0;
             for(i=0; i<=nlec+nlic; i++)
             {
-                fis[i] = state.fi[i];
-                v = 0.1*v+state.fi[i];
+                vv = 1/state.fscales[i];
+                fis[i] = vv*state.fi[i];
+                v = 0.1*v+fis[i];
                 for(j=0; j<=n-1; j++)
                 {
-                    js[i,j] = state.j[i,j];
-                    v = 0.1*v+state.j[i,j];
+                    js[i,j] = vv*state.j[i,j];
+                    v = 0.1*v+js[i,j];
                 }
             }
             result = math.isfinite(v);
@@ -41876,6 +51959,7 @@ public partial class alglib
             double[] fi,
             double[,] j,
             double[] lagmult,
+            minslptmplagrangian tmp,
             ref double f,
             double[] g,
             ref double lcerr,
@@ -41895,7 +51979,6 @@ public partial class alglib
             double vact = 0;
             double vd = 0;
             double vviolate = 0;
-            double rhoi = 0;
             bool usesparsegemv = new bool();
             double dampingfactor = 0;
 
@@ -41935,15 +52018,15 @@ public partial class alglib
             if( nec+nic>0 )
             {
                 usesparsegemv = state.subsolver.sparserawlc.ridx[nec+nic]<apserv.sparselevel2density(_params)*n*(nec+nic);
-                apserv.rvectorsetlengthatleast(ref state.sclagtmp0, Math.Max(nec+nic, n), _params);
-                apserv.rvectorsetlengthatleast(ref state.sclagtmp1, Math.Max(nec+nic, n), _params);
+                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp0, Math.Max(nec+nic, n), _params);
+                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, Math.Max(nec+nic, n), _params);
                 if( usesparsegemv )
                 {
-                    sparse.sparsemv(state.subsolver.sparserawlc, x, ref state.sclagtmp0, _params);
+                    sparse.sparsemv(state.subsolver.sparserawlc, x, ref tmp.sclagtmp0, _params);
                 }
                 else
                 {
-                    ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, state.sclagtmp0, 0, _params);
+                    ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.sclagtmp0, 0, _params);
                 }
                 for(i=0; i<=nec+nic-1; i++)
                 {
@@ -41953,7 +52036,7 @@ public partial class alglib
                     //
                     // NOTE: here we expect that scaledCLEIC[] has normalized rows
                     //
-                    v = state.sclagtmp0[i]-state.scaledcleic[i,n];
+                    v = tmp.sclagtmp0[i]-state.scaledcleic[i,n];
                     if( i<nec || v>0 )
                     {
                         
@@ -41973,7 +52056,7 @@ public partial class alglib
                     // Prepare
                     //
                     vlag = lagmult[i];
-                    state.sclagtmp1[i] = 0;
+                    tmp.sclagtmp1[i] = 0;
                     
                     //
                     // Primary Lagrangian term
@@ -41990,7 +52073,7 @@ public partial class alglib
                         vd = vd*vd;
                     }
                     f = f+vlag*vact;
-                    state.sclagtmp1[i] = state.sclagtmp1[i]+vlag*vd;
+                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
                     
                     //
                     // Quadratic augmentation term
@@ -42003,28 +52086,27 @@ public partial class alglib
                     {
                         vact = 0;
                     }
-                    rhoi = apserv.coalesce(state.rho[i], 1.0, _params);
-                    f = f+0.5*rhoi*vact*vact;
-                    state.sclagtmp1[i] = state.sclagtmp1[i]+rhoi*vact;
+                    f = f+0.5*augmentationfactor*vact*vact;
+                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
                 }
                 if( usesparsegemv )
                 {
-                    sparse.sparsemtv(state.subsolver.sparserawlc, state.sclagtmp1, ref state.sclagtmp0, _params);
+                    sparse.sparsemtv(state.subsolver.sparserawlc, tmp.sclagtmp1, ref tmp.sclagtmp0, _params);
                     for(i=0; i<=n-1; i++)
                     {
-                        g[i] = g[i]+state.sclagtmp0[i];
+                        g[i] = g[i]+tmp.sclagtmp0[i];
                     }
                 }
                 else
                 {
-                    ablas.rmatrixgemv(n, nec+nic, 1.0, state.scaledcleic, 0, 0, 1, state.sclagtmp1, 0, 1.0, g, 0, _params);
+                    ablas.rmatrixgemv(n, nec+nic, 1.0, state.scaledcleic, 0, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
                 }
             }
             
             //
             // Lagrangian terms for nonlinear constraints
             //
-            apserv.rvectorsetlengthatleast(ref state.sclagtmp1, nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, nlec+nlic, _params);
             for(i=0; i<=nlec+nlic-1; i++)
             {
                 v = fi[1+i];
@@ -42035,7 +52117,7 @@ public partial class alglib
                     // Either equality constraint or violated inequality one.
                     // Update violation report.
                     //
-                    vviolate = Math.Abs(v);
+                    vviolate = Math.Abs(v)*state.fscales[1+i];
                     if( vviolate>nlcerr )
                     {
                         nlcerr = vviolate;
@@ -42043,7 +52125,7 @@ public partial class alglib
                     }
                 }
                 vlag = lagmult[nec+nic+i];
-                state.sclagtmp1[i] = 0;
+                tmp.sclagtmp1[i] = 0;
                 
                 //
                 // Lagrangian term
@@ -42060,7 +52142,7 @@ public partial class alglib
                     vd = vd*vd;
                 }
                 f = f+vlag*vact;
-                state.sclagtmp1[i] = state.sclagtmp1[i]+vlag*vd;
+                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
                 
                 //
                 // Augmentation term
@@ -42073,26 +52155,66 @@ public partial class alglib
                 {
                     vact = 0;
                 }
-                rhoi = apserv.coalesce(state.rho[nec+nic+i], 1.0, _params);
-                f = f+0.5*rhoi*vact*vact;
-                state.sclagtmp1[i] = state.sclagtmp1[i]+rhoi*vact;
+                f = f+0.5*augmentationfactor*vact*vact;
+                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
             }
-            ablas.rmatrixgemv(n, nlec+nlic, 1.0, j, 1, 0, 1, state.sclagtmp1, 0, 1.0, g, 0, _params);
+            ablas.rmatrixgemv(n, nlec+nlic, 1.0, j, 1, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
         }
 
 
         /*************************************************************************
-        This function calculates L1-penalized merit function.
+        This function calculates L1-penalized merit function
         *************************************************************************/
         private static double meritfunction(minslpstate state,
             double[] x,
-            double trustrad,
             double[] fi,
-            double[,] j,
             double[] lagmult,
+            minslptmpmerit tmp,
             alglib.xparams _params)
         {
             double result = 0;
+            double tmp0 = 0;
+            double tmp1 = 0;
+
+            meritfunctionandrawlagrangian(state, x, fi, lagmult, tmp, ref tmp0, ref tmp1, _params);
+            result = tmp0;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function calculates raw (unaugmented and smooth) Lagrangian
+        *************************************************************************/
+        private static double rawlagrangian(minslpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            minslptmpmerit tmp,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double tmp0 = 0;
+            double tmp1 = 0;
+
+            meritfunctionandrawlagrangian(state, x, fi, lagmult, tmp, ref tmp0, ref tmp1, _params);
+            result = tmp1;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function calculates L1-penalized merit function and raw  (smooth  and
+        un-augmented) Lagrangian
+        *************************************************************************/
+        private static void meritfunctionandrawlagrangian(minslpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            minslptmpmerit tmp,
+            ref double meritf,
+            ref double rawlag,
+            alglib.xparams _params)
+        {
             int i = 0;
             int n = 0;
             int nec = 0;
@@ -42101,6 +52223,9 @@ public partial class alglib
             int nlic = 0;
             double v = 0;
 
+            meritf = 0;
+            rawlag = 0;
+
             n = state.n;
             nec = state.nec;
             nic = state.nic;
@@ -42108,43 +52233,46 @@ public partial class alglib
             nlic = state.nlic;
             
             //
-            // Merit function: primary term
+            // Merit function and Lagrangian: primary term
             //
-            result = fi[0];
+            meritf = fi[0];
+            rawlag = fi[0];
             
             //
             // Merit function: augmentation and penalty for linear constraints
             //
-            apserv.rvectorsetlengthatleast(ref state.mftmp0, nec+nic, _params);
-            ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, state.mftmp0, 0, _params);
+            apserv.rvectorsetlengthatleast(ref tmp.mftmp0, nec+nic, _params);
+            ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.mftmp0, 0, _params);
             for(i=0; i<=nec+nic-1; i++)
             {
-                v = state.mftmp0[i]-state.scaledcleic[i,n];
+                v = tmp.mftmp0[i]-state.scaledcleic[i,n];
                 if( i<nec )
                 {
                     
                     //
-                    // Augmentation term
+                    // Merit function: augmentation term + L1 penalty term
                     //
-                    result = result+0.5*state.rho[i]*v*v;
+                    meritf = meritf+0.5*augmentationfactor*v*v;
+                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(lagmult[i])*Math.Abs(v);
                     
                     //
-                    // L1 penalty term
+                    // Raw Lagrangian
                     //
-                    result = result+meritfunctiongain*Math.Abs(lagmult[i]*v);
+                    rawlag = rawlag+lagmult[i]*v;
                 }
                 else
                 {
                     
                     //
-                    // Augmentation term
+                    // Merit function: augmentation term + L1 penalty term
                     //
-                    result = result+0.5*state.rho[i]*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Max(lagmult[i]*v, 0);
                     
                     //
-                    // L1 penalty term
+                    // Raw Lagrangian
                     //
-                    result = result+meritfunctiongain*Math.Max(lagmult[i]*v, 0);
+                    rawlag = rawlag+lagmult[i]*v;
                 }
             }
             
@@ -42158,83 +52286,31 @@ public partial class alglib
                 {
                     
                     //
-                    // Augmentation term
+                    // Merit function: augmentation term + L1 penalty term
                     //
-                    result = result+0.5*state.rho[nec+nic+i]*v*v;
+                    meritf = meritf+0.5*augmentationfactor*v*v;
+                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(lagmult[nec+nic+i]*v);
                     
                     //
-                    // L1 Penalty term
+                    // Raw Lagrangian
                     //
-                    result = result+meritfunctiongain*Math.Abs(lagmult[nec+nic+i]*v);
+                    rawlag = rawlag+lagmult[nec+nic+i]*v;
                 }
                 else
                 {
                     
                     //
-                    // Augmentation term
+                    // Merit function: augmentation term + L1 penalty term
                     //
-                    result = result+0.5*state.rho[nec+nic+i]*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Max(lagmult[nec+nic+i]*v, 0);
                     
                     //
-                    // Penalty term
+                    // Raw Lagrangian
                     //
-                    result = result+meritfunctiongain*Math.Max(lagmult[nec+nic+i]*v, 0);
+                    rawlag = rawlag+lagmult[nec+nic+i]*v;
                 }
             }
-            return result;
-        }
-
-
-        private static void tracebeginning(alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracelpstart(alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracelpfailure(alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracelpnondescent(alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracelpstep(minslpstate state,
-            double stp,
-            int i,
-            int f,
-            alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracemeritsearch(minslpstate state,
-            alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracemultistep(minslpstate state,
-            alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracenlpstep(minslpstate state,
-            alglib.xparams _params)
-        {
-        }
-
-
-        private static void tracefinalpoint(minslpstate state,
-            alglib.xparams _params)
-        {
         }
 
 
@@ -42315,6 +52391,7 @@ public partial class alglib
             public double[] nunlc;
             public bool userterminationneeded;
             public nlcslp.minslpstate slpsolverstate;
+            public nlcsqp.minsqpstate sqpsolverstate;
             public int smoothnessguardlevel;
             public optserv.smoothnessmonitor smonitor;
             public double[] lastscaleused;
@@ -42377,6 +52454,7 @@ public partial class alglib
                 nulc = new double[0];
                 nunlc = new double[0];
                 slpsolverstate = new nlcslp.minslpstate();
+                sqpsolverstate = new nlcsqp.minsqpstate();
                 smonitor = new optserv.smoothnessmonitor();
                 lastscaleused = new double[0];
             }
@@ -42450,6 +52528,7 @@ public partial class alglib
                 _result.nunlc = (double[])nunlc.Clone();
                 _result.userterminationneeded = userterminationneeded;
                 _result.slpsolverstate = (nlcslp.minslpstate)slpsolverstate.make_copy();
+                _result.sqpsolverstate = (nlcsqp.minsqpstate)sqpsolverstate.make_copy();
                 _result.smoothnessguardlevel = smoothnessguardlevel;
                 _result.smonitor = (optserv.smoothnessmonitor)smonitor.make_copy();
                 _result.lastscaleused = (double[])lastscaleused.Clone();
@@ -42583,8 +52662,8 @@ public partial class alglib
         * user must provide function value and gradient for F(), H(), G()
         * starting point X0 must be feasible or not too far away from the feasible
           set
-        * F(), G(), H() are twice continuously differentiable on the feasible  set
-          and its neighborhood
+        * F(), G(), H() are continuously differentiable on the  feasible  set  and
+          its neighborhood
         * nonlinear constraints G() and H() must have non-zero gradient at  G(x)=0
           and at H(x)=0. Say, constraint like x^2>=1 is supported, but x^2>=0   is
           NOT supported.
@@ -42611,16 +52690,21 @@ public partial class alglib
            sure that it will work with new ALGLIB releases.
            
            In the current release following solvers can be used:
-           * SLP solver (activated with minnlcsetalgoslp() function) -  successive
-             linear programming, recommended as the first step.
-           * AUL solver (activated with minnlcsetalgoaul() function)  -  augmented
-             Lagrangian method with dense preconditioner.
-         
-           SLP solver is the most robust one  in  ALGLIB  and  converges  in  less
-           iterations than AUL; however, each iteration has higher overhead  -  we
-           have to solve an LP problem. From  the  other  side,  AUL  has  cheaper
-           iterations - although it typically needs more of them, and also  it  is
-           less robust in nonconvex setting.
+           * SQP solver, recommended for medium-scale problems (less than thousand
+             of variables) with hard-to-evaluate target functions.  Requires  less
+             function  evaluations  than  other  solvers  but  each  step involves
+             solution of QP subproblem, so running time may be higher than that of
+             AUL (another recommended option). Activated  with  minnlcsetalgosqp()
+             function.
+           * AUL solver with dense  preconditioner,  recommended  for  large-scale
+             problems or for problems  with  cheap  target  function.  Needs  more
+             function evaluations that SQP (about  5x-10x  times  more),  but  its
+             iterations  are  much  cheaper  that  that  of  SQP.  Activated  with
+             minnlcsetalgoaul() function.
+           * SLP solver, successive linear programming. The slowest one,  requires
+             more target function evaluations that SQP and  AUL.  However,  it  is
+             somewhat more robust in tricky cases, so it can be used  as  a backup
+             plan. Activated with minnlcsetalgoslp() function.
 
         2. [optional] user activates OptGuard  integrity checker  which  tries  to
            detect possible errors in the user-supplied callbacks:
@@ -43288,8 +53372,8 @@ public partial class alglib
         Method for  Constrained  Minimization  (1999)"  by  D.GOLDFARB,  R.POLYAK,
         K. SCHEINBERG, I.YUZEFOVICH.
 
-        AUL solver can be significantly faster than SLP on easy problems, although
-        it is less robust than SLP (the "gold standard" of robust optimization).
+        AUL solver can be significantly faster than SQP on easy  problems  due  to
+        cheaper iterations, although it needs more function evaluations.
 
         Augmented Lagrangian algorithm works by converting problem  of  minimizing
         F(x) subject to equality/inequality constraints   to unconstrained problem
@@ -43502,6 +53586,13 @@ public partial class alglib
         programming-based optimization algorithm for solving nonlinear programming
         problems" (2010) by Claus Still and Tapio Westerlund.
 
+        This solver is the slowest one in ALGLIB, it requires more target function
+        evaluations that SQP and AUL. However it is somewhat more robust in tricky
+        cases, so it can be used as a backup plan. We recommend to use  this  algo
+        when SQP/AUL do not work (does not return  the  solution  you  expect). If
+        trying different approach gives same  results,  then  MAYBE  something  is
+        wrong with your optimization problem.
+
         Despite its name ("linear" = "first order method") this algorithm performs
         steps similar to that of conjugate gradients method;  internally  it  uses
         orthogonality/conjugacy requirement for subsequent steps  which  makes  it
@@ -43526,17 +53617,54 @@ public partial class alglib
           as much as possible
         * numerical differentiation does not  violate  box  constraints  (although
           general linear and nonlinear ones can be violated during differentiation)
-
-        However, following drawbacks can be noted:
-        * algorithm performance decreased on problems with dense constraints
-        * it has higher iteration cost than AUL - we have to solve an  LP  problem
-          at each step.
-
-        We recommend this algorithm as a first step; as soon as you make sure that
-        it converges, you can try switching to AUL which is sometimes much faster.
+        * from our experience, this algorithm is somewhat more  robust  in  really
+          difficult cases
 
         INPUT PARAMETERS:
             State   -   structure which stores algorithm state
+
+        ===== TRACING SLP SOLVER =================================================
+
+        SLP solver supports advanced tracing capabilities. You can trace algorithm
+        output by specifying following trace symbols (case-insensitive)  by  means
+        of trace_file() call:
+        * 'SLP'         - for basic trace of algorithm  steps and decisions.  Only
+                          short scalars (function values and deltas) are  printed.
+                          N-dimensional quantities like search directions are  NOT
+                          printed.
+                          It also prints OptGuard  integrity  checker  report when
+                          nonsmoothness of target/constraints is suspected.
+        * 'SLP.DETAILED'- for output of points being visited and search directions
+                          This  symbol  also  implicitly  defines  'SLP'. You  can
+                          control output format by additionally specifying:
+                          * nothing     to output in  6-digit exponential format
+                          * 'PREC.E15'  to output in 15-digit exponential format
+                          * 'PREC.F6'   to output in  6-digit fixed-point format
+        * 'SLP.PROBING' - to let algorithm insert additional function  evaluations
+                          before line search  in  order  to  build  human-readable
+                          chart of the raw  Lagrangian  (~40  additional  function
+                          evaluations is performed for  each  line  search).  This
+                          symbol also implicitly defines 'SLP'.
+        * 'OPTGUARD'    - for report of smoothness/continuity violations in target
+                          and/or constraints. This kind of reporting is   included
+                          in 'SLP', but it comes with lots of additional info.  If
+                          you  need  just  smoothness  monitoring,   specify  this
+                          setting.
+                          
+                          NOTE: this tag merely directs  OptGuard  output  to  log
+                                file. Even if you specify it, you  still  have  to
+                                configure OptGuard  by calling minnlcoptguard...()
+                                family of functions.
+
+        By default trace is disabled and adds  no  overhead  to  the  optimization
+        process. However, specifying any of the symbols adds some  formatting  and
+        output-related   overhead.  Specifying  'SLP.PROBING'  adds   even  larger
+        overhead due to additional function evaluations being performed.
+
+        You may specify multiple symbols by separating them with commas:
+        >
+        > alglib::trace_file("SLP,SLP.PROBING,PREC.F6", "path/to/trace.log")
+        > 
 
           -- ALGLIB --
              Copyright 02.04.2018 by Bochkanov Sergey
@@ -43545,6 +53673,97 @@ public partial class alglib
             alglib.xparams _params)
         {
             state.solvertype = 1;
+        }
+
+
+        /*************************************************************************
+        This   function  tells  MinNLC  optimizer to use SQP (Successive Quadratic
+        Programming) algorithm for nonlinearly constrained optimization.
+
+        This algorithm needs order of magnitude (5x-10x) less function evaluations
+        than AUL solver, but has higher overhead because each  iteration  involves
+        solution of quadratic programming problem.
+
+        Convergence is proved for the following case:
+        * function and constraints are continuously differentiable (C1 class)
+
+        This algorithm has following nice properties:
+        * no parameters to tune
+        * no convexity requirements for target function or constraints
+        * initial point can be infeasible
+        * algorithm respects box constraints in all intermediate points  (it  does
+          not even evaluate function outside of box constrained area)
+        * once linear constraints are enforced, algorithm will not violate them
+        * no such guarantees can be provided for nonlinear constraints,  but  once
+          nonlinear constraints are enforced, algorithm will try  to  respect them
+          as much as possible
+        * numerical differentiation does not  violate  box  constraints  (although
+          general linear and nonlinear ones can be violated during differentiation)
+
+        We recommend this algorithm as a default option for medium-scale  problems
+        (less than thousand of variables) or problems with target  function  being
+        hard to evaluate.
+
+        For   large-scale  problems  or  ones  with very  cheap  target   function
+        AUL solver can be better option.
+
+        INPUT PARAMETERS:
+            State   -   structure which stores algorithm state
+            
+        ===== INTERACTION WITH OPTGUARD ==========================================
+
+        OptGuard integrity  checker  allows us to catch problems  like  errors  in
+        gradients   and  discontinuity/nonsmoothness  of  the  target/constraints.
+        Latter kind of problems can be detected  by  looking  upon  line  searches
+        performed during optimization and searching for signs of nonsmoothness.
+
+        The problem with SQP is that it is too good for OptGuard to work - it does
+        not perform line searches. It typically  needs  1-2  function  evaluations
+        per step, and it is not enough for OptGuard to detect nonsmoothness.
+
+        So, if you suspect that your problem is nonsmooth, we recommend you to use
+        AUL or SLP solvers.
+
+        ===== TRACING SQP SOLVER =================================================
+
+        SQP solver supports advanced tracing capabilities. You can trace algorithm
+        output by specifying following trace symbols (case-insensitive)  by  means
+        of trace_file() call:
+        * 'SQP'         - for basic trace of algorithm  steps and decisions.  Only
+                          short scalars (function values and deltas) are  printed.
+                          N-dimensional quantities like search directions are  NOT
+                          printed.
+                          It also prints OptGuard  integrity  checker  report when
+                          nonsmoothness of target/constraints is suspected.
+        * 'SQP.DETAILED'- for output of points being visited and search directions
+                          This  symbol  also  implicitly  defines  'SQP'. You  can
+                          control output format by additionally specifying:
+                          * nothing     to output in  6-digit exponential format
+                          * 'PREC.E15'  to output in 15-digit exponential format
+                          * 'PREC.F6'   to output in  6-digit fixed-point format
+        * 'SQP.PROBING' - to let algorithm insert additional function  evaluations
+                          before line search  in  order  to  build  human-readable
+                          chart of the raw  Lagrangian  (~40  additional  function
+                          evaluations is performed for  each  line  search).  This
+                          symbol also implicitly defines 'SQP'.
+
+        By default trace is disabled and adds  no  overhead  to  the  optimization
+        process. However, specifying any of the symbols adds some  formatting  and
+        output-related   overhead.  Specifying  'SQP.PROBING'  adds   even  larger
+        overhead due to additional function evaluations being performed.
+
+        You may specify multiple symbols by separating them with commas:
+        >
+        > alglib::trace_file("SQP,SQP.PROBING,PREC.F6", "path/to/trace.log")
+        > 
+
+          -- ALGLIB --
+             Copyright 02.12.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minnlcsetalgosqp(minnlcstate state,
+            alglib.xparams _params)
+        {
+            state.solvertype = 2;
         }
 
 
@@ -43715,6 +53934,42 @@ public partial class alglib
             {
                 goto lbl_15;
             }
+            if( state.rstate.stage==16 )
+            {
+                goto lbl_16;
+            }
+            if( state.rstate.stage==17 )
+            {
+                goto lbl_17;
+            }
+            if( state.rstate.stage==18 )
+            {
+                goto lbl_18;
+            }
+            if( state.rstate.stage==19 )
+            {
+                goto lbl_19;
+            }
+            if( state.rstate.stage==20 )
+            {
+                goto lbl_20;
+            }
+            if( state.rstate.stage==21 )
+            {
+                goto lbl_21;
+            }
+            if( state.rstate.stage==22 )
+            {
+                goto lbl_22;
+            }
+            if( state.rstate.stage==23 )
+            {
+                goto lbl_23;
+            }
+            if( state.rstate.stage==24 )
+            {
+                goto lbl_24;
+            }
             
             //
             // Routine body
@@ -43769,12 +54024,12 @@ public partial class alglib
             //
             if( !((double)(state.diffstep)==(double)(0) && (double)(state.teststep)>(double)(0)) )
             {
-                goto lbl_16;
+                goto lbl_25;
             }
-        lbl_18:
+        lbl_27:
             if( !optserv.smoothnessmonitorcheckgradientatx0(state.smonitor, state.xstart, state.s, state.bndl, state.bndu, true, state.teststep, _params) )
             {
-                goto lbl_19;
+                goto lbl_28;
             }
             for(i=0; i<=n-1; i++)
             {
@@ -43793,16 +54048,16 @@ public partial class alglib
                     state.smonitor.j[i,k] = state.j[i,k];
                 }
             }
-            goto lbl_18;
-        lbl_19:
-        lbl_16:
+            goto lbl_27;
+        lbl_28:
+        lbl_25:
             
             //
             // AUL solver
             //
             if( state.solvertype!=0 )
             {
-                goto lbl_20;
+                goto lbl_29;
             }
             if( (double)(state.diffstep)!=(double)(0) )
             {
@@ -43816,10 +54071,10 @@ public partial class alglib
             state.rstateaul.ia = new int[8+1];
             state.rstateaul.ra = new double[7+1];
             state.rstateaul.stage = -1;
-        lbl_22:
+        lbl_31:
             if( !auliteration(state, state.smonitor, _params) )
             {
-                goto lbl_23;
+                goto lbl_32;
             }
             
             //
@@ -43828,7 +54083,7 @@ public partial class alglib
             //
             if( !((double)(state.diffstep)!=(double)(0) && state.needfij) )
             {
-                goto lbl_24;
+                goto lbl_33;
             }
             state.needfij = false;
             state.needfi = true;
@@ -43837,10 +54092,10 @@ public partial class alglib
                 state.xbase[i_] = state.x[i_];
             }
             k = 0;
-        lbl_26:
+        lbl_35:
             if( k>n-1 )
             {
-                goto lbl_28;
+                goto lbl_37;
             }
             for(i_=0; i_<=n-1;i_++)
             {
@@ -43895,8 +54150,8 @@ public partial class alglib
                 state.j[i,k] = (8*(state.fp1[i]-state.fm1[i])-(state.fp2[i]-state.fm2[i]))/(6*state.diffstep*state.s[i]);
             }
             k = k+1;
-            goto lbl_26;
-        lbl_28:
+            goto lbl_35;
+        lbl_37:
             for(i_=0; i_<=n-1;i_++)
             {
                 state.x[i_] = state.xbase[i_];
@@ -43910,8 +54165,8 @@ public partial class alglib
             //
             state.needfi = false;
             state.needfij = true;
-            goto lbl_22;
-        lbl_24:
+            goto lbl_31;
+        lbl_33:
             
             //
             // Forward request to caller
@@ -43919,18 +54174,18 @@ public partial class alglib
             state.rstate.stage = 6;
             goto lbl_rcomm;
         lbl_6:
-            goto lbl_22;
-        lbl_23:
+            goto lbl_31;
+        lbl_32:
             result = false;
             return result;
-        lbl_20:
+        lbl_29:
             
             //
             // SLP solver
             //
             if( state.solvertype!=1 )
             {
-                goto lbl_29;
+                goto lbl_38;
             }
             if( (double)(state.diffstep)!=(double)(0) )
             {
@@ -43942,10 +54197,10 @@ public partial class alglib
                 apserv.rvectorsetlengthatleast(ref state.fp2, 1+ng+nh, _params);
             }
             nlcslp.minslpinitbuf(state.bndl, state.bndu, state.s, state.xstart, n, state.cleic, state.lcsrcidx, state.nec, state.nic, state.ng, state.nh, state.epsx, state.maxits, state.slpsolverstate, _params);
-        lbl_31:
+        lbl_40:
             if( !nlcslp.minslpiteration(state.slpsolverstate, state.smonitor, state.userterminationneeded, _params) )
             {
-                goto lbl_32;
+                goto lbl_41;
             }
             
             //
@@ -43953,7 +54208,7 @@ public partial class alglib
             //
             if( !state.slpsolverstate.needfij )
             {
-                goto lbl_33;
+                goto lbl_42;
             }
             
             //
@@ -43961,7 +54216,7 @@ public partial class alglib
             //
             if( (double)(state.diffstep)!=(double)(0) )
             {
-                goto lbl_35;
+                goto lbl_44;
             }
             
             //
@@ -43981,8 +54236,8 @@ public partial class alglib
                     state.slpsolverstate.j[i,k] = state.j[i,k]*state.s[k];
                 }
             }
-            goto lbl_36;
-        lbl_35:
+            goto lbl_45;
+        lbl_44:
             
             //
             // Numerical differentiation
@@ -43991,16 +54246,16 @@ public partial class alglib
             state.needfi = true;
             unscale(state, state.slpsolverstate.x, state.slpsolverstate.scaledbndl, state.slpsolverstate.scaledbndu, state.xbase, _params);
             k = 0;
-        lbl_37:
+        lbl_46:
             if( k>n-1 )
             {
-                goto lbl_39;
+                goto lbl_48;
             }
             vleft = state.xbase[k]-state.s[k]*state.diffstep;
             vright = state.xbase[k]+state.s[k]*state.diffstep;
             if( !((state.hasbndl[k] && (double)(vleft)<(double)(state.bndl[k])) || (state.hasbndu[k] && (double)(vright)>(double)(state.bndu[k]))) )
             {
-                goto lbl_40;
+                goto lbl_49;
             }
             
             //
@@ -44025,7 +54280,7 @@ public partial class alglib
                 {
                     state.j[i,k] = 0;
                 }
-                goto lbl_38;
+                goto lbl_47;
             }
             for(i_=0; i_<=n-1;i_++)
             {
@@ -44055,8 +54310,8 @@ public partial class alglib
             {
                 state.j[i,k] = (state.fp1[i]-state.fm1[i])/(vright-vleft);
             }
-            goto lbl_41;
-        lbl_40:
+            goto lbl_50;
+        lbl_49:
             
             //
             // 4-point centered formula does not violate box constraints
@@ -44113,11 +54368,11 @@ public partial class alglib
             {
                 state.j[i,k] = (8*(state.fp1[i]-state.fm1[i])-(state.fp2[i]-state.fm2[i]))/(6*state.diffstep*state.s[k]);
             }
-        lbl_41:
-        lbl_38:
+        lbl_50:
+        lbl_47:
             k = k+1;
-            goto lbl_37;
-        lbl_39:
+            goto lbl_46;
+        lbl_48:
             for(i_=0; i_<=n-1;i_++)
             {
                 state.x[i_] = state.xbase[i_];
@@ -44135,12 +54390,13 @@ public partial class alglib
                     state.slpsolverstate.j[i,k] = state.j[i,k]*state.s[k];
                 }
             }
-        lbl_36:
-            goto lbl_31;
-        lbl_33:
+        lbl_45:
+            apserv.inc(ref state.repnfev, _params);
+            goto lbl_40;
+        lbl_42:
             if( !state.slpsolverstate.xupdated )
             {
-                goto lbl_42;
+                goto lbl_51;
             }
             
             //
@@ -44148,7 +54404,7 @@ public partial class alglib
             //
             if( !state.xrep )
             {
-                goto lbl_44;
+                goto lbl_53;
             }
             unscale(state, state.slpsolverstate.x, state.slpsolverstate.scaledbndl, state.slpsolverstate.scaledbndu, state.x, _params);
             state.f = state.slpsolverstate.f;
@@ -44157,12 +54413,12 @@ public partial class alglib
             goto lbl_rcomm;
         lbl_15:
             state.xupdated = false;
-        lbl_44:
-            goto lbl_31;
-        lbl_42:
+        lbl_53:
+            goto lbl_40;
+        lbl_51:
             alglib.ap.assert(state.slpsolverstate.needfij, "NLC:SLP:request");
-            goto lbl_31;
-        lbl_32:
+            goto lbl_40;
+        lbl_41:
             state.repterminationtype = state.slpsolverstate.repterminationtype;
             state.repouteriterationscount = state.slpsolverstate.repouteriterationscount;
             state.repinneriterationscount = state.slpsolverstate.repinneriterationscount;
@@ -44175,7 +54431,260 @@ public partial class alglib
             unscale(state, state.slpsolverstate.stepkx, state.slpsolverstate.scaledbndl, state.slpsolverstate.scaledbndu, state.xc, _params);
             result = false;
             return result;
-        lbl_29:
+        lbl_38:
+            
+            //
+            // SQP solver
+            //
+            if( state.solvertype!=2 )
+            {
+                goto lbl_55;
+            }
+            if( (double)(state.diffstep)!=(double)(0) )
+            {
+                apserv.rvectorsetlengthatleast(ref state.xbase, n, _params);
+                apserv.rvectorsetlengthatleast(ref state.fbase, 1+ng+nh, _params);
+                apserv.rvectorsetlengthatleast(ref state.fm2, 1+ng+nh, _params);
+                apserv.rvectorsetlengthatleast(ref state.fm1, 1+ng+nh, _params);
+                apserv.rvectorsetlengthatleast(ref state.fp1, 1+ng+nh, _params);
+                apserv.rvectorsetlengthatleast(ref state.fp2, 1+ng+nh, _params);
+            }
+            nlcsqp.minsqpinitbuf(state.bndl, state.bndu, state.s, state.xstart, n, state.cleic, state.lcsrcidx, state.nec, state.nic, state.ng, state.nh, state.epsx, state.maxits, state.sqpsolverstate, _params);
+        lbl_57:
+            if( !nlcsqp.minsqpiteration(state.sqpsolverstate, state.smonitor, state.userterminationneeded, _params) )
+            {
+                goto lbl_58;
+            }
+            
+            //
+            // Forward request to caller
+            //
+            if( !state.sqpsolverstate.needfij )
+            {
+                goto lbl_59;
+            }
+            
+            //
+            // Evaluate target function/Jacobian
+            //
+            if( (double)(state.diffstep)!=(double)(0) )
+            {
+                goto lbl_61;
+            }
+            
+            //
+            // Analytic Jacobian is provided
+            //
+            unscale(state, state.sqpsolverstate.x, state.sqpsolverstate.scaledbndl, state.sqpsolverstate.scaledbndu, state.x, _params);
+            state.needfij = true;
+            state.rstate.stage = 16;
+            goto lbl_rcomm;
+        lbl_16:
+            state.needfij = false;
+            for(i=0; i<=ng+nh; i++)
+            {
+                state.sqpsolverstate.fi[i] = state.fi[i];
+                for(k=0; k<=n-1; k++)
+                {
+                    state.sqpsolverstate.j[i,k] = state.j[i,k]*state.s[k];
+                }
+            }
+            goto lbl_62;
+        lbl_61:
+            
+            //
+            // Numerical differentiation
+            //
+            state.needfij = false;
+            state.needfi = true;
+            unscale(state, state.sqpsolverstate.x, state.sqpsolverstate.scaledbndl, state.sqpsolverstate.scaledbndu, state.xbase, _params);
+            k = 0;
+        lbl_63:
+            if( k>n-1 )
+            {
+                goto lbl_65;
+            }
+            vleft = state.xbase[k]-state.s[k]*state.diffstep;
+            vright = state.xbase[k]+state.s[k]*state.diffstep;
+            if( !((state.hasbndl[k] && (double)(vleft)<(double)(state.bndl[k])) || (state.hasbndu[k] && (double)(vright)>(double)(state.bndu[k]))) )
+            {
+                goto lbl_66;
+            }
+            
+            //
+            // Box constraint is violated by 4-point centered formula, use 2-point uncentered one
+            //
+            if( state.hasbndl[k] && (double)(vleft)<(double)(state.bndl[k]) )
+            {
+                vleft = state.bndl[k];
+            }
+            if( state.hasbndu[k] && (double)(vright)>(double)(state.bndu[k]) )
+            {
+                vright = state.bndu[k];
+            }
+            alglib.ap.assert((double)(vleft)<=(double)(vright), "MinNLC: integrity check failed");
+            if( (double)(vleft)==(double)(vright) )
+            {
+                
+                //
+                // Fixed variable
+                //
+                for(i=0; i<=ng+nh; i++)
+                {
+                    state.j[i,k] = 0;
+                }
+                goto lbl_64;
+            }
+            for(i_=0; i_<=n-1;i_++)
+            {
+                state.x[i_] = state.xbase[i_];
+            }
+            state.x[k] = vleft;
+            state.rstate.stage = 17;
+            goto lbl_rcomm;
+        lbl_17:
+            for(i_=0; i_<=ng+nh;i_++)
+            {
+                state.fm1[i_] = state.fi[i_];
+            }
+            for(i_=0; i_<=n-1;i_++)
+            {
+                state.x[i_] = state.xbase[i_];
+            }
+            state.x[k] = vright;
+            state.rstate.stage = 18;
+            goto lbl_rcomm;
+        lbl_18:
+            for(i_=0; i_<=ng+nh;i_++)
+            {
+                state.fp1[i_] = state.fi[i_];
+            }
+            for(i=0; i<=ng+nh; i++)
+            {
+                state.j[i,k] = (state.fp1[i]-state.fm1[i])/(vright-vleft);
+            }
+            goto lbl_67;
+        lbl_66:
+            
+            //
+            // 4-point centered formula does not violate box constraints
+            //
+            for(i_=0; i_<=n-1;i_++)
+            {
+                state.x[i_] = state.xbase[i_];
+            }
+            state.x[k] = state.x[k]-state.s[k]*state.diffstep;
+            state.rstate.stage = 19;
+            goto lbl_rcomm;
+        lbl_19:
+            for(i_=0; i_<=ng+nh;i_++)
+            {
+                state.fm2[i_] = state.fi[i_];
+            }
+            for(i_=0; i_<=n-1;i_++)
+            {
+                state.x[i_] = state.xbase[i_];
+            }
+            state.x[k] = state.x[k]-0.5*state.s[k]*state.diffstep;
+            state.rstate.stage = 20;
+            goto lbl_rcomm;
+        lbl_20:
+            for(i_=0; i_<=ng+nh;i_++)
+            {
+                state.fm1[i_] = state.fi[i_];
+            }
+            for(i_=0; i_<=n-1;i_++)
+            {
+                state.x[i_] = state.xbase[i_];
+            }
+            state.x[k] = state.x[k]+0.5*state.s[k]*state.diffstep;
+            state.rstate.stage = 21;
+            goto lbl_rcomm;
+        lbl_21:
+            for(i_=0; i_<=ng+nh;i_++)
+            {
+                state.fp1[i_] = state.fi[i_];
+            }
+            for(i_=0; i_<=n-1;i_++)
+            {
+                state.x[i_] = state.xbase[i_];
+            }
+            state.x[k] = state.x[k]+state.s[k]*state.diffstep;
+            state.rstate.stage = 22;
+            goto lbl_rcomm;
+        lbl_22:
+            for(i_=0; i_<=ng+nh;i_++)
+            {
+                state.fp2[i_] = state.fi[i_];
+            }
+            for(i=0; i<=ng+nh; i++)
+            {
+                state.j[i,k] = (8*(state.fp1[i]-state.fm1[i])-(state.fp2[i]-state.fm2[i]))/(6*state.diffstep*state.s[k]);
+            }
+        lbl_67:
+        lbl_64:
+            k = k+1;
+            goto lbl_63;
+        lbl_65:
+            for(i_=0; i_<=n-1;i_++)
+            {
+                state.x[i_] = state.xbase[i_];
+            }
+            state.rstate.stage = 23;
+            goto lbl_rcomm;
+        lbl_23:
+            state.needfi = false;
+            state.needfij = true;
+            for(i=0; i<=ng+nh; i++)
+            {
+                state.sqpsolverstate.fi[i] = state.fi[i];
+                for(k=0; k<=n-1; k++)
+                {
+                    state.sqpsolverstate.j[i,k] = state.j[i,k]*state.s[k];
+                }
+            }
+        lbl_62:
+            apserv.inc(ref state.repnfev, _params);
+            goto lbl_57;
+        lbl_59:
+            if( !state.sqpsolverstate.xupdated )
+            {
+                goto lbl_68;
+            }
+            
+            //
+            // Report current point
+            //
+            if( !state.xrep )
+            {
+                goto lbl_70;
+            }
+            unscale(state, state.sqpsolverstate.x, state.sqpsolverstate.scaledbndl, state.sqpsolverstate.scaledbndu, state.x, _params);
+            state.f = state.sqpsolverstate.f;
+            state.xupdated = true;
+            state.rstate.stage = 24;
+            goto lbl_rcomm;
+        lbl_24:
+            state.xupdated = false;
+        lbl_70:
+            goto lbl_57;
+        lbl_68:
+            alglib.ap.assert(state.sqpsolverstate.needfij, "NLC:SQP:request");
+            goto lbl_57;
+        lbl_58:
+            state.repterminationtype = state.sqpsolverstate.repterminationtype;
+            state.repouteriterationscount = state.sqpsolverstate.repiterationscount;
+            state.repinneriterationscount = state.sqpsolverstate.repiterationscount;
+            state.repbcerr = state.sqpsolverstate.repbcerr;
+            state.repbcidx = state.sqpsolverstate.repbcidx;
+            state.replcerr = state.sqpsolverstate.replcerr;
+            state.replcidx = state.sqpsolverstate.replcidx;
+            state.repnlcerr = state.sqpsolverstate.repnlcerr;
+            state.repnlcidx = state.sqpsolverstate.repnlcidx;
+            unscale(state, state.sqpsolverstate.stepkx, state.sqpsolverstate.scaledbndl, state.sqpsolverstate.scaledbndu, state.xc, _params);
+            result = false;
+            return result;
+        lbl_55:
             result = false;
             return result;
             
@@ -44302,6 +54811,10 @@ public partial class alglib
                               and/or gradients are recorded, but OptGuard does not
                               try to perform additional evaluations  in  order  to
                               get more information about suspicious locations.
+                              This kind of monitoring does not work well with  SQP
+                              because SQP solver needs just 1-2 function evaluations
+                              per step, which is not enough for OptGuard  to  make
+                              any conclusions.
           
         === EXPLANATION ==========================================================
 
@@ -44950,7 +55463,7 @@ public partial class alglib
             minnlcsetnlc(state, 0, 0, _params);
             minnlcsetcond(state, 0.0, 0, _params);
             minnlcsetxrep(state, false, _params);
-            minnlcsetalgoslp(state, _params);
+            minnlcsetalgosqp(state, _params);
             minnlcsetprecexactrobust(state, 0, _params);
             minnlcsetstpmax(state, 0.0, _params);
             minlbfgs.minlbfgscreate(n, Math.Min(lbfgsfactor, n), x, state.auloptimizer, _params);

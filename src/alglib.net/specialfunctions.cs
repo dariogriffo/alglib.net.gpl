@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.15.0 (source code generated 2019-02-20)
+ALGLIB 3.16.0 (source code generated 2019-12-19)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -185,7 +185,46 @@ public partial class alglib
     }
     
     /*************************************************************************
-    Normal distribution function
+    Same as normalcdf(), obsolete name.
+    *************************************************************************/
+    public static double normaldistribution(double x)
+    {
+    
+        return normaldistr.normaldistribution(x, null);
+    }
+    
+    public static double normaldistribution(double x, alglib.xparams _params)
+    {
+    
+        return normaldistr.normaldistribution(x, _params);
+    }
+    
+    /*************************************************************************
+    Normal distribution PDF
+
+    Returns Gaussian probability density function:
+
+                   1
+       f(x)  = --------- * exp(-x^2/2)
+               sqrt(2pi)
+
+    Cephes Math Library Release 2.8:  June, 2000
+    Copyright 1984, 1987, 1988, 1992, 2000 by Stephen L. Moshier
+    *************************************************************************/
+    public static double normalpdf(double x)
+    {
+    
+        return normaldistr.normalpdf(x, null);
+    }
+    
+    public static double normalpdf(double x, alglib.xparams _params)
+    {
+    
+        return normaldistr.normalpdf(x, _params);
+    }
+    
+    /*************************************************************************
+    Normal distribution CDF
 
     Returns the area under the Gaussian probability density
     function, integrated from minus infinity to x:
@@ -214,16 +253,16 @@ public partial class alglib
     Cephes Math Library Release 2.8:  June, 2000
     Copyright 1984, 1987, 1988, 1992, 2000 by Stephen L. Moshier
     *************************************************************************/
-    public static double normaldistribution(double x)
+    public static double normalcdf(double x)
     {
     
-        return normaldistr.normaldistribution(x, null);
+        return normaldistr.normalcdf(x, null);
     }
     
-    public static double normaldistribution(double x, alglib.xparams _params)
+    public static double normalcdf(double x, alglib.xparams _params)
     {
     
-        return normaldistr.normaldistribution(x, _params);
+        return normaldistr.normalcdf(x, _params);
     }
     
     /*************************************************************************
@@ -245,7 +284,22 @@ public partial class alglib
     }
     
     /*************************************************************************
-    Inverse of Normal distribution function
+    Same as invnormalcdf(), deprecated name
+    *************************************************************************/
+    public static double invnormaldistribution(double y0)
+    {
+    
+        return normaldistr.invnormaldistribution(y0, null);
+    }
+    
+    public static double invnormaldistribution(double y0, alglib.xparams _params)
+    {
+    
+        return normaldistr.invnormaldistribution(y0, _params);
+    }
+    
+    /*************************************************************************
+    Inverse of Normal CDF
 
     Returns the argument, x, for which the area under the
     Gaussian probability density function (integrated from
@@ -269,16 +323,93 @@ public partial class alglib
     Cephes Math Library Release 2.8:  June, 2000
     Copyright 1984, 1987, 1988, 1992, 2000 by Stephen L. Moshier
     *************************************************************************/
-    public static double invnormaldistribution(double y0)
+    public static double invnormalcdf(double y0)
     {
     
-        return normaldistr.invnormaldistribution(y0, null);
+        return normaldistr.invnormalcdf(y0, null);
     }
     
-    public static double invnormaldistribution(double y0, alglib.xparams _params)
+    public static double invnormalcdf(double y0, alglib.xparams _params)
     {
     
-        return normaldistr.invnormaldistribution(y0, _params);
+        return normaldistr.invnormalcdf(y0, _params);
+    }
+    
+    /*************************************************************************
+    Bivariate normal PDF
+
+    Returns probability density function of the bivariate  Gaussian  with
+    correlation parameter equal to Rho:
+
+                             1              (    x^2 - 2*rho*x*y + y^2  )
+        f(x,y,rho) = ----------------- * exp( - ----------------------- )
+                     2pi*sqrt(1-rho^2)      (        2*(1-rho^2)        )
+
+
+    with -1<rho<+1 and arbitrary x, y.
+
+    This function won't fail as long as Rho is in (-1,+1) range.
+
+      -- ALGLIB --
+         Copyright 15.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static double bivariatenormalpdf(double x, double y, double rho)
+    {
+    
+        return normaldistr.bivariatenormalpdf(x, y, rho, null);
+    }
+    
+    public static double bivariatenormalpdf(double x, double y, double rho, alglib.xparams _params)
+    {
+    
+        return normaldistr.bivariatenormalpdf(x, y, rho, _params);
+    }
+    
+    /*************************************************************************
+    Bivariate normal CDF
+
+    Returns the area under the bivariate Gaussian  PDF  with  correlation
+    parameter equal to Rho, integrated from minus infinity to (x,y):
+
+
+                                              x      y
+                                              -      -
+                                1            | |    | |
+        bvn(x,y,rho) = -------------------   |      |   f(u,v,rho)*du*dv
+                        2pi*sqrt(1-rho^2)  | |    | |
+                                            -      -
+                                           -INF   -INF
+
+
+    where
+
+                          (    u^2 - 2*rho*u*v + v^2  )
+        f(u,v,rho)   = exp( - ----------------------- )
+                          (        2*(1-rho^2)        )
+
+
+    with -1<rho<+1 and arbitrary x, y.
+
+    This subroutine uses high-precision approximation scheme proposed  by
+    Alan Genz in "Numerical  Computation  of  Rectangular  Bivariate  and
+    Trivariate Normal and  t  probabilities",  which  computes  CDF  with
+    absolute error roughly equal to 1e-14.
+
+    This function won't fail as long as Rho is in (-1,+1) range.
+
+      -- ALGLIB --
+         Copyright 15.11.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static double bivariatenormalcdf(double x, double y, double rho)
+    {
+    
+        return normaldistr.bivariatenormalcdf(x, y, rho, null);
+    }
+    
+    public static double bivariatenormalcdf(double x, double y, double rho, alglib.xparams _params)
+    {
+    
+        return normaldistr.bivariatenormalcdf(x, y, rho, _params);
     }
 
 }
@@ -3008,7 +3139,43 @@ public partial class alglib
 
 
         /*************************************************************************
-        Normal distribution function
+        Same as normalcdf(), obsolete name.
+        *************************************************************************/
+        public static double normaldistribution(double x,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = 0.5*(errorfunction(x/1.41421356237309504880, _params)+1);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Normal distribution PDF
+
+        Returns Gaussian probability density function:
+
+                       1
+           f(x)  = --------- * exp(-x^2/2)
+                   sqrt(2pi)
+
+        Cephes Math Library Release 2.8:  June, 2000
+        Copyright 1984, 1987, 1988, 1992, 2000 by Stephen L. Moshier
+        *************************************************************************/
+        public static double normalpdf(double x,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            alglib.ap.assert(math.isfinite(x), "NormalPDF: X is infinite");
+            result = Math.Exp(-(x*x/2))/Math.Sqrt(2*Math.PI);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Normal distribution CDF
 
         Returns the area under the Gaussian probability density
         function, integrated from minus infinity to x:
@@ -3037,7 +3204,7 @@ public partial class alglib
         Cephes Math Library Release 2.8:  June, 2000
         Copyright 1984, 1987, 1988, 1992, 2000 by Stephen L. Moshier
         *************************************************************************/
-        public static double normaldistribution(double x,
+        public static double normalcdf(double x,
             alglib.xparams _params)
         {
             double result = 0;
@@ -3064,7 +3231,20 @@ public partial class alglib
 
 
         /*************************************************************************
-        Inverse of Normal distribution function
+        Same as invnormalcdf(), deprecated name
+        *************************************************************************/
+        public static double invnormaldistribution(double y0,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = invnormalcdf(y0, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Inverse of Normal CDF
 
         Returns the argument, x, for which the area under the
         Gaussian probability density function (integrated from
@@ -3088,7 +3268,7 @@ public partial class alglib
         Cephes Math Library Release 2.8:  June, 2000
         Copyright 1984, 1987, 1988, 1992, 2000 by Stephen L. Moshier
         *************************************************************************/
-        public static double invnormaldistribution(double y0,
+        public static double invnormalcdf(double y0,
             alglib.xparams _params)
         {
             double result = 0;
@@ -3203,6 +3383,256 @@ public partial class alglib
                 x = -x;
             }
             result = x;
+            return result;
+        }
+
+
+        /*************************************************************************
+        Bivariate normal PDF
+
+        Returns probability density function of the bivariate  Gaussian  with
+        correlation parameter equal to Rho:
+
+                                 1              (    x^2 - 2*rho*x*y + y^2  )
+            f(x,y,rho) = ----------------- * exp( - ----------------------- )
+                         2pi*sqrt(1-rho^2)      (        2*(1-rho^2)        )
+
+
+        with -1<rho<+1 and arbitrary x, y.
+
+        This function won't fail as long as Rho is in (-1,+1) range.
+
+          -- ALGLIB --
+             Copyright 15.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double bivariatenormalpdf(double x,
+            double y,
+            double rho,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double onerho2 = 0;
+
+            alglib.ap.assert(math.isfinite(x), "BivariateNormalCDF: X is infinite");
+            alglib.ap.assert(math.isfinite(y), "BivariateNormalCDF: Y is infinite");
+            alglib.ap.assert(math.isfinite(rho), "BivariateNormalCDF: Rho is infinite");
+            alglib.ap.assert((double)(-1)<(double)(rho) && (double)(rho)<(double)(1), "BivariateNormalCDF: Rho is not in (-1,+1) range");
+            onerho2 = (1-rho)*(1+rho);
+            result = Math.Exp(-((x*x+y*y-2*rho*x*y)/(2*onerho2)))/(2*Math.PI*Math.Sqrt(onerho2));
+            return result;
+        }
+
+
+        /*************************************************************************
+        Bivariate normal CDF
+
+        Returns the area under the bivariate Gaussian  PDF  with  correlation
+        parameter equal to Rho, integrated from minus infinity to (x,y):
+
+
+                                                  x      y
+                                                  -      -  
+                                    1            | |    | | 
+            bvn(x,y,rho) = -------------------   |      |   f(u,v,rho)*du*dv
+                            2pi*sqrt(1-rho^2)  | |    | |    
+                                                -      -
+                                               -INF   -INF
+
+                                               
+        where
+
+                              (    u^2 - 2*rho*u*v + v^2  )
+            f(u,v,rho)   = exp( - ----------------------- )
+                              (        2*(1-rho^2)        )
+
+
+        with -1<rho<+1 and arbitrary x, y.
+
+        This subroutine uses high-precision approximation scheme proposed  by
+        Alan Genz in "Numerical  Computation  of  Rectangular  Bivariate  and
+        Trivariate Normal and  t  probabilities",  which  computes  CDF  with
+        absolute error roughly equal to 1e-14.
+
+        This function won't fail as long as Rho is in (-1,+1) range.
+
+          -- ALGLIB --
+             Copyright 15.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double bivariatenormalcdf(double x,
+            double y,
+            double rho,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double rangea = 0;
+            double rangeb = 0;
+            double s = 0;
+            double v = 0;
+            double v0 = 0;
+            double v1 = 0;
+            double fxys = 0;
+            double ta = 0;
+            double tb = 0;
+            double tc = 0;
+
+            alglib.ap.assert(math.isfinite(x), "BivariateNormalCDF: X is infinite");
+            alglib.ap.assert(math.isfinite(y), "BivariateNormalCDF: Y is infinite");
+            alglib.ap.assert(math.isfinite(rho), "BivariateNormalCDF: Rho is infinite");
+            alglib.ap.assert((double)(-1)<(double)(rho) && (double)(rho)<(double)(1), "BivariateNormalCDF: Rho is not in (-1,+1) range");
+            if( (double)(rho)==(double)(0) )
+            {
+                result = normalcdf(x, _params)*normalcdf(y, _params);
+                return result;
+            }
+            if( (double)(Math.Abs(rho))<=(double)(0.8) )
+            {
+                
+                //
+                // Rho is small, compute integral using using formula (3) by Alan Genz, integrated
+                // by means of 10-point Gauss-Legendre quadrature
+                //
+                rangea = 0;
+                rangeb = Math.Asin(rho);
+                v = 0;
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.2491470458134028, -0.1252334085114689, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.2491470458134028, 0.1252334085114689, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.2334925365383548, -0.3678314989981802, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.2334925365383548, 0.3678314989981802, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.2031674267230659, -0.5873179542866175, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.2031674267230659, 0.5873179542866175, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.1600783285433462, -0.7699026741943047, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.1600783285433462, 0.7699026741943047, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.1069393259953184, -0.9041172563704749, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.1069393259953184, 0.9041172563704749, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.0471753363865118, -0.9815606342467192, _params);
+                v = v+bvnintegrate3(rangea, rangeb, x, y, 0.0471753363865118, 0.9815606342467192, _params);
+                v = v*0.5*(rangeb-rangea)/(2*Math.PI);
+                result = normalcdf(x, _params)*normalcdf(y, _params)+v;
+            }
+            else
+            {
+                
+                //
+                // Rho is large, compute integral using using formula (6) by Alan Genz, integrated
+                // by means of 20-point Gauss-Legendre quadrature.
+                //
+                x = -x;
+                y = -y;
+                s = Math.Sign(rho);
+                if( (double)(s)>(double)(0) )
+                {
+                    fxys = normalcdf(-Math.Max(x, y), _params);
+                }
+                else
+                {
+                    fxys = Math.Max(0.0, normalcdf(-x, _params)-normalcdf(y, _params));
+                }
+                rangea = 0;
+                rangeb = Math.Sqrt((1-rho)*(1+rho));
+                
+                //
+                // Compute first term (analytic integral) from formula (6)
+                //
+                ta = rangeb;
+                tb = Math.Abs(x-s*y);
+                tc = (4-s*x*y)/8;
+                v0 = ta*(1-tc*(tb*tb-ta*ta)/3)*Math.Exp(-(tb*tb/(2*ta*ta)))-tb*(1-tc*tb*tb/3)*Math.Sqrt(2*Math.PI)*normalcdf(-(tb/ta), _params);
+                v0 = v0*Math.Exp(-(s*x*y/2))/(2*Math.PI);
+                
+                //
+                // Compute second term (numerical integral, 20-point Gauss-Legendre rule) from formula (6)
+                //
+                v1 = 0;
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1527533871307258, -0.0765265211334973, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1527533871307258, 0.0765265211334973, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1491729864726037, -0.2277858511416451, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1491729864726037, 0.2277858511416451, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1420961093183820, -0.3737060887154195, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1420961093183820, 0.3737060887154195, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1316886384491766, -0.5108670019508271, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1316886384491766, 0.5108670019508271, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1181945319615184, -0.6360536807265150, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1181945319615184, 0.6360536807265150, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1019301198172404, -0.7463319064601508, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.1019301198172404, 0.7463319064601508, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0832767415767048, -0.8391169718222188, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0832767415767048, 0.8391169718222188, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0626720483341091, -0.9122344282513259, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0626720483341091, 0.9122344282513259, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0406014298003869, -0.9639719272779138, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0406014298003869, 0.9639719272779138, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0176140071391521, -0.9931285991850949, _params);
+                v1 = v1+bvnintegrate6(rangea, rangeb, x, y, s, 0.0176140071391521, 0.9931285991850949, _params);
+                v1 = v1*0.5*(rangeb-rangea)/(2*Math.PI);
+                result = fxys-s*(v0+v1);
+            }
+            result = Math.Max(result, 0);
+            result = Math.Min(result, 1);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Internal function which computes integrand of  formula  (3)  by  Alan
+        Genz times Gaussian weights (passed by user).
+
+          -- ALGLIB --
+             Copyright 15.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double bvnintegrate3(double rangea,
+            double rangeb,
+            double x,
+            double y,
+            double gw,
+            double gx,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double r = 0;
+            double t2 = 0;
+            double dd = 0;
+            double sinr = 0;
+            double cosr = 0;
+
+            r = (rangeb-rangea)*0.5*gx+(rangeb+rangea)*0.5;
+            t2 = Math.Tan(0.5*r);
+            dd = 1/(1+t2*t2);
+            sinr = 2*t2*dd;
+            cosr = (1-t2*t2)*dd;
+            result = gw*Math.Exp(-((x*x+y*y-2*x*y*sinr)/(2*cosr*cosr)));
+            return result;
+        }
+
+
+        /*************************************************************************
+        Internal function which computes integrand of  formula  (6)  by  Alan
+        Genz times Gaussian weights (passed by user).
+
+          -- ALGLIB --
+             Copyright 15.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double bvnintegrate6(double rangea,
+            double rangeb,
+            double x,
+            double y,
+            double s,
+            double gw,
+            double gx,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double r = 0;
+            double exphsk22x2 = 0;
+            double exphsk2 = 0;
+            double sqrt1x2 = 0;
+            double exphsk1sqrt1x2 = 0;
+
+            r = (rangeb-rangea)*0.5*gx+(rangeb+rangea)*0.5;
+            exphsk22x2 = Math.Exp(-((x-s*y)*(x-s*y)/(2*r*r)));
+            exphsk2 = Math.Exp(-(x*s*y/2));
+            sqrt1x2 = Math.Sqrt((1-r)*(1+r));
+            exphsk1sqrt1x2 = Math.Exp(-(x*s*y/(1+sqrt1x2)));
+            result = gw*exphsk22x2*(exphsk1sqrt1x2/sqrt1x2-exphsk2*(1+(4-x*y*s)*r*r/8));
             return result;
         }
 

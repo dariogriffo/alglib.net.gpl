@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.15.0 (source code generated 2019-02-20)
+ALGLIB 3.16.0 (source code generated 2019-12-19)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -3461,6 +3461,83 @@ public partial class alglib
         rep = new sparsesolverreport();
         x = new double[0];
         directsparsesolvers.sparsecholeskysolvesks(a.innerobj, n, isupper, b, rep.innerobj, ref x, _params);
+    }
+    
+    /*************************************************************************
+    Sparse linear solver for A*x=b with general (nonsymmetric) N*N sparse real
+    matrix A, N*1 vectors x and b.
+
+    This solver converts input matrix to CRS format, performs LU factorization
+    and uses sparse triangular solvers to get solution of the original system.
+
+    INPUT PARAMETERS
+        A       -   sparse matrix, must be NxN exactly, any storage format
+        N       -   size of A, N>0
+        B       -   array[0..N-1], right part
+
+    OUTPUT PARAMETERS
+        X       -   array[N], it contains:
+                    * rep.terminationtype>0    =>  solution
+                    * rep.terminationtype=-3   =>  filled by zeros
+        Rep     -   solver report, following fields are set:
+                    * rep.terminationtype - solver status; >0 for success,
+                      set to -3 on failure (degenerate system).
+
+      -- ALGLIB --
+         Copyright 26.12.2017 by Bochkanov Sergey
+    *************************************************************************/
+    public static void sparsesolve(sparsematrix a, int n, double[] b, out double[] x, out sparsesolverreport rep)
+    {
+        x = new double[0];
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsesolve(a.innerobj, n, b, ref x, rep.innerobj, null);
+    }
+    
+    public static void sparsesolve(sparsematrix a, int n, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
+    {
+        x = new double[0];
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsesolve(a.innerobj, n, b, ref x, rep.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    Sparse linear solver for A*x=b with general (nonsymmetric) N*N sparse real
+    matrix A given by its LU factorization, N*1 vectors x and b.
+
+    IMPORTANT: this solver requires input matrix  to  be  in  the  CRS  sparse
+               storage format. An exception will  be  generated  if  you  pass
+               matrix in some other format (HASH or SKS).
+
+    INPUT PARAMETERS
+        A       -   LU factorization of the sparse matrix, must be NxN exactly
+                    in CRS storage format
+        P, Q    -   pivot indexes from LU factorization
+        N       -   size of A, N>0
+        B       -   array[0..N-1], right part
+
+    OUTPUT PARAMETERS
+        X       -   array[N], it contains:
+                    * rep.terminationtype>0    =>  solution
+                    * rep.terminationtype=-3   =>  filled by zeros
+        Rep     -   solver report, following fields are set:
+                    * rep.terminationtype - solver status; >0 for success,
+                      set to -3 on failure (degenerate system).
+
+      -- ALGLIB --
+         Copyright 26.12.2017 by Bochkanov Sergey
+    *************************************************************************/
+    public static void sparselusolve(sparsematrix a, int[] p, int[] q, int n, double[] b, out double[] x, out sparsesolverreport rep)
+    {
+        x = new double[0];
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparselusolve(a.innerobj, p, q, n, b, ref x, rep.innerobj, null);
+    }
+    
+    public static void sparselusolve(sparsematrix a, int[] p, int[] q, int n, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
+    {
+        x = new double[0];
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparselusolve(a.innerobj, p, q, n, b, ref x, rep.innerobj, _params);
     }
 
 }
@@ -10664,6 +10741,178 @@ public partial class alglib
             {
                 sparse.sparsetrsv(a, isupper, false, 0, x, _params);
                 sparse.sparsetrsv(a, isupper, false, 1, x, _params);
+            }
+            rep.terminationtype = 1;
+        }
+
+
+        /*************************************************************************
+        Sparse linear solver for A*x=b with general (nonsymmetric) N*N sparse real
+        matrix A, N*1 vectors x and b.
+
+        This solver converts input matrix to CRS format, performs LU factorization
+        and uses sparse triangular solvers to get solution of the original system.
+
+        INPUT PARAMETERS
+            A       -   sparse matrix, must be NxN exactly, any storage format
+            N       -   size of A, N>0
+            B       -   array[0..N-1], right part
+
+        OUTPUT PARAMETERS
+            X       -   array[N], it contains:
+                        * rep.terminationtype>0    =>  solution
+                        * rep.terminationtype=-3   =>  filled by zeros
+            Rep     -   solver report, following fields are set:
+                        * rep.terminationtype - solver status; >0 for success,
+                          set to -3 on failure (degenerate system).
+
+          -- ALGLIB --
+             Copyright 26.12.2017 by Bochkanov Sergey
+        *************************************************************************/
+        public static void sparsesolve(sparse.sparsematrix a,
+            int n,
+            double[] b,
+            ref double[] x,
+            sparsesolverreport rep,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            sparse.sparsematrix a2 = new sparse.sparsematrix();
+            int[] pivp = new int[0];
+            int[] pivq = new int[0];
+
+            x = new double[0];
+
+            alglib.ap.assert(n>0, "SparseSolve: N<=0");
+            alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseSolve: rows(A)!=N");
+            alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseSolve: cols(A)!=N");
+            alglib.ap.assert(alglib.ap.len(b)>=n, "SparseSolve: length(B)<N");
+            alglib.ap.assert(apserv.isfinitevector(b, n, _params), "SparseSolve: B contains infinities or NANs");
+            initreport(rep, _params);
+            x = new double[n];
+            sparse.sparsecopytocrs(a, a2, _params);
+            if( !trfac.sparselu(a2, 0, ref pivp, ref pivq, _params) )
+            {
+                rep.terminationtype = -3;
+                for(i=0; i<=n-1; i++)
+                {
+                    x[i] = 0;
+                }
+                return;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                x[i] = b[i];
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                j = pivp[i];
+                v = x[i];
+                x[i] = x[j];
+                x[j] = v;
+            }
+            sparse.sparsetrsv(a2, false, true, 0, x, _params);
+            sparse.sparsetrsv(a2, true, false, 0, x, _params);
+            for(i=n-1; i>=0; i--)
+            {
+                j = pivq[i];
+                v = x[i];
+                x[i] = x[j];
+                x[j] = v;
+            }
+            rep.terminationtype = 1;
+        }
+
+
+        /*************************************************************************
+        Sparse linear solver for A*x=b with general (nonsymmetric) N*N sparse real
+        matrix A given by its LU factorization, N*1 vectors x and b.
+
+        IMPORTANT: this solver requires input matrix  to  be  in  the  CRS  sparse
+                   storage format. An exception will  be  generated  if  you  pass
+                   matrix in some other format (HASH or SKS).
+
+        INPUT PARAMETERS
+            A       -   LU factorization of the sparse matrix, must be NxN exactly
+                        in CRS storage format
+            P, Q    -   pivot indexes from LU factorization
+            N       -   size of A, N>0
+            B       -   array[0..N-1], right part
+
+        OUTPUT PARAMETERS
+            X       -   array[N], it contains:
+                        * rep.terminationtype>0    =>  solution
+                        * rep.terminationtype=-3   =>  filled by zeros
+            Rep     -   solver report, following fields are set:
+                        * rep.terminationtype - solver status; >0 for success,
+                          set to -3 on failure (degenerate system).
+
+          -- ALGLIB --
+             Copyright 26.12.2017 by Bochkanov Sergey
+        *************************************************************************/
+        public static void sparselusolve(sparse.sparsematrix a,
+            int[] p,
+            int[] q,
+            int n,
+            double[] b,
+            ref double[] x,
+            sparsesolverreport rep,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+
+            x = new double[0];
+
+            alglib.ap.assert(n>0, "SparseLUSolve: N<=0");
+            alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseLUSolve: rows(A)!=N");
+            alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseLUSolve: cols(A)!=N");
+            alglib.ap.assert(sparse.sparseiscrs(a, _params), "SparseLUSolve: A is not an SKS matrix");
+            alglib.ap.assert(alglib.ap.len(b)>=n, "SparseLUSolve: length(B)<N");
+            alglib.ap.assert(apserv.isfinitevector(b, n, _params), "SparseLUSolve: B contains infinities or NANs");
+            alglib.ap.assert(alglib.ap.len(p)>=n, "SparseLUSolve: length(P)<N");
+            alglib.ap.assert(alglib.ap.len(q)>=n, "SparseLUSolve: length(Q)<N");
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(p[i]>=i && p[i]<n, "SparseLUSolve: P is corrupted");
+                alglib.ap.assert(q[i]>=i && q[i]<n, "SparseLUSolve: Q is corrupted");
+            }
+            initreport(rep, _params);
+            x = new double[n];
+            for(i=0; i<=n-1; i++)
+            {
+                if( a.didx[i]==a.uidx[i] || a.vals[a.didx[i]]==0.0 )
+                {
+                    rep.terminationtype = -3;
+                    for(i=0; i<=n-1; i++)
+                    {
+                        x[i] = 0;
+                    }
+                    return;
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                x[i] = b[i];
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                j = p[i];
+                v = x[i];
+                x[i] = x[j];
+                x[j] = v;
+            }
+            sparse.sparsetrsv(a, false, true, 0, x, _params);
+            sparse.sparsetrsv(a, true, false, 0, x, _params);
+            for(i=n-1; i>=0; i--)
+            {
+                j = q[i];
+                v = x[i];
+                x[i] = x[j];
+                x[j] = v;
             }
             rep.terminationtype = 1;
         }

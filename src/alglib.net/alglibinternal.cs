@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.15.0 (source code generated 2019-02-20)
+ALGLIB 3.16.0 (source code generated 2019-12-19)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -836,6 +836,27 @@ public partial class alglib
 
 
         /*************************************************************************
+        Resizes X and fills by zeros
+
+          -- ALGLIB --
+             Copyright 20.03.2009 by Bochkanov Sergey
+        *************************************************************************/
+        public static void setlengthzero(ref double[] x,
+            int n,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            alglib.ap.assert(n>=0, "SetLengthZero: N<0");
+            x = new double[n];
+            for(i=0; i<=n-1; i++)
+            {
+                x[i] = 0;
+            }
+        }
+
+
+        /*************************************************************************
         If Length(X)<N, resizes X
 
           -- ALGLIB --
@@ -902,6 +923,27 @@ public partial class alglib
                 if( alglib.ap.rows(x)<m || alglib.ap.cols(x)<n )
                 {
                     x = new double[m, n];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        If Cols(X)<N or Rows(X)<M, resizes X
+
+          -- ALGLIB --
+             Copyright 20.03.2009 by Bochkanov Sergey
+        *************************************************************************/
+        public static void bmatrixsetlengthatleast(ref bool[,] x,
+            int m,
+            int n,
+            alglib.xparams _params)
+        {
+            if( m>0 && n>0 )
+            {
+                if( alglib.ap.rows(x)<m || alglib.ap.cols(x)<n )
+                {
+                    x = new bool[m, n];
                 }
             }
         }
@@ -2015,6 +2057,36 @@ public partial class alglib
 
 
         /*************************************************************************
+        This function is used to swap two cols of the matrix; if NRows<0, automatically
+        determined from the matrix size.
+        *************************************************************************/
+        public static void swapcols(double[,] a,
+            int j0,
+            int j1,
+            int nrows,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            double v = 0;
+
+            if( j0==j1 )
+            {
+                return;
+            }
+            if( nrows<0 )
+            {
+                nrows = alglib.ap.rows(a);
+            }
+            for(i=0; i<=nrows-1; i++)
+            {
+                v = a[i,j0];
+                a[i,j0] = a[i,j1];
+                a[i,j1] = v;
+            }
+        }
+
+
+        /*************************************************************************
         This function is used to swap two "entries" in 1-dimensional array composed
         from D-element entries
         *************************************************************************/
@@ -2137,6 +2209,20 @@ public partial class alglib
             alglib.xparams _params)
         {
             v = v+1;
+        }
+
+
+        /*************************************************************************
+        This function is used to increment value of integer variable; name of  the
+        function suggests that increment is done in multithreaded setting  in  the
+        thread-unsafe manner (optional progress reports which do not need guaranteed
+        correctness)
+        *************************************************************************/
+        public static void threadunsafeincby(ref int v,
+            int k,
+            alglib.xparams _params)
+        {
+            v = v+k;
         }
 
 
@@ -3219,6 +3305,289 @@ public partial class alglib
             task1 = tasksize-task0;
             alglib.ap.assert(task0>=1, "SplitLength: internal error");
             alglib.ap.assert(task1>=1, "SplitLength: internal error");
+        }
+
+
+        /*************************************************************************
+        Outputs vector A[I0,I1-1] to trace log using either:
+        a)  6-digit exponential format (no trace flags is set)
+        b) 15-ditit exponential format ('PREC.E15' trace flag is set)
+        b)  6-ditit fixed-point format ('PREC.F6' trace flag is set)
+
+        This function checks trace flags every time it is called.
+        *************************************************************************/
+        public static void tracevectorautoprec(double[] a,
+            int i0,
+            int i1,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int prectouse = 0;
+
+            
+            //
+            // Determine precision to use
+            //
+            prectouse = 0;
+            if( ap.istraceenabled("PREC.E15", _params) )
+            {
+                prectouse = 1;
+            }
+            if( ap.istraceenabled("PREC.F6", _params) )
+            {
+                prectouse = 2;
+            }
+            
+            //
+            // Output
+            //
+            alglib.ap.trace("[ ");
+            for(i=i0; i<=i1-1; i++)
+            {
+                if( prectouse==0 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,14:E6}", a[i]));
+                }
+                if( prectouse==1 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,23:E15}", a[i]));
+                }
+                if( prectouse==2 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,13:F6}", a[i]));
+                }
+                if( i<i1-1 )
+                {
+                    alglib.ap.trace(" ");
+                }
+            }
+            alglib.ap.trace(" ]");
+        }
+
+
+        /*************************************************************************
+        Unscales/unshifts vector A[N] by computing A*Scl+Sft and outputs result to
+        trace log using either:
+        a)  6-digit exponential format (no trace flags is set)
+        b) 15-ditit exponential format ('PREC.E15' trace flag is set)
+        b)  6-ditit fixed-point format ('PREC.F6' trace flag is set)
+
+        This function checks trace flags every time it is called.
+        Both Scl and Sft can be omitted.
+        *************************************************************************/
+        public static void tracevectorunscaledunshiftedautoprec(double[] x,
+            int n,
+            double[] scl,
+            bool applyscl,
+            double[] sft,
+            bool applysft,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int prectouse = 0;
+            double v = 0;
+
+            
+            //
+            // Determine precision to use
+            //
+            prectouse = 0;
+            if( ap.istraceenabled("PREC.E15", _params) )
+            {
+                prectouse = 1;
+            }
+            if( ap.istraceenabled("PREC.F6", _params) )
+            {
+                prectouse = 2;
+            }
+            
+            //
+            // Output
+            //
+            alglib.ap.trace("[ ");
+            for(i=0; i<=n-1; i++)
+            {
+                v = x[i];
+                if( applyscl )
+                {
+                    v = v*scl[i];
+                }
+                if( applysft )
+                {
+                    v = v+sft[i];
+                }
+                if( prectouse==0 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,14:E6}", v));
+                }
+                if( prectouse==1 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,23:E15}", v));
+                }
+                if( prectouse==2 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,13:F6}", v));
+                }
+                if( i<n-1 )
+                {
+                    alglib.ap.trace(" ");
+                }
+            }
+            alglib.ap.trace(" ]");
+        }
+
+
+        /*************************************************************************
+        Outputs vector of 1-norms of rows [I0,I1-1] of A[I0...I1-1,J0...J1-1]   to
+        trace log using either:
+        a)  6-digit exponential format (no trace flags is set)
+        b) 15-ditit exponential format ('PREC.E15' trace flag is set)
+        b)  6-ditit fixed-point format ('PREC.F6' trace flag is set)
+
+        This function checks trace flags every time it is called.
+        *************************************************************************/
+        public static void tracerownrm1autoprec(double[,] a,
+            int i0,
+            int i1,
+            int j0,
+            int j1,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            int prectouse = 0;
+
+            
+            //
+            // Determine precision to use
+            //
+            prectouse = 0;
+            if( ap.istraceenabled("PREC.E15", _params) )
+            {
+                prectouse = 1;
+            }
+            if( ap.istraceenabled("PREC.F6", _params) )
+            {
+                prectouse = 2;
+            }
+            
+            //
+            // Output
+            //
+            alglib.ap.trace("[ ");
+            for(i=i0; i<=i1-1; i++)
+            {
+                v = 0;
+                for(j=j0; j<=j1-1; j++)
+                {
+                    v = Math.Max(v, Math.Abs(a[i,j]));
+                }
+                if( prectouse==0 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,14:E6}", v));
+                }
+                if( prectouse==1 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,23:E15}", v));
+                }
+                if( prectouse==2 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,13:F6}", v));
+                }
+                if( i<i1-1 )
+                {
+                    alglib.ap.trace(" ");
+                }
+            }
+            alglib.ap.trace(" ]");
+        }
+
+
+        /*************************************************************************
+        Outputs vector A[I0,I1-1] to trace log using E8 precision
+        *************************************************************************/
+        public static void tracevectore6(double[] a,
+            int i0,
+            int i1,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            alglib.ap.trace("[ ");
+            for(i=i0; i<=i1-1; i++)
+            {
+                alglib.ap.trace(System.String.Format("{0,14:E6}", a[i]));
+                if( i<i1-1 )
+                {
+                    alglib.ap.trace(" ");
+                }
+            }
+            alglib.ap.trace(" ]");
+        }
+
+
+        /*************************************************************************
+        Outputs vector A[I0,I1-1] to trace log using E8 or E15 precision
+        *************************************************************************/
+        public static void tracevectore615(double[] a,
+            int i0,
+            int i1,
+            bool usee15,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            alglib.ap.trace("[ ");
+            for(i=i0; i<=i1-1; i++)
+            {
+                if( usee15 )
+                {
+                    alglib.ap.trace(System.String.Format("{0,23:E15}", a[i]));
+                }
+                else
+                {
+                    alglib.ap.trace(System.String.Format("{0,14:E6}", a[i]));
+                }
+                if( i<i1-1 )
+                {
+                    alglib.ap.trace(" ");
+                }
+            }
+            alglib.ap.trace(" ]");
+        }
+
+
+        /*************************************************************************
+        Outputs vector of 1-norms of rows [I0,I1-1] of A[I0...I1-1,J0...J1-1]   to
+        trace log using E8 precision
+        *************************************************************************/
+        public static void tracerownrm1e6(double[,] a,
+            int i0,
+            int i1,
+            int j0,
+            int j1,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+
+            alglib.ap.trace("[ ");
+            for(i=i0; i<=i1-1; i++)
+            {
+                v = 0;
+                for(j=j0; j<=j1-1; j++)
+                {
+                    v = Math.Max(v, Math.Abs(a[i,j]));
+                }
+                alglib.ap.trace(System.String.Format("{0,14:E6}", v));
+                if( i<i1-1 )
+                {
+                    alglib.ap.trace(" ");
+                }
+            }
+            alglib.ap.trace(" ]");
         }
 
 

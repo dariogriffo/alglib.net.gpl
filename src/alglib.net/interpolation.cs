@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.15.0 (source code generated 2019-02-20)
+ALGLIB 3.16.0 (source code generated 2019-12-19)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -2755,242 +2755,88 @@ public partial class alglib
     }
     
     /*************************************************************************
-    Fitting by penalized cubic spline.
+    Fitting by smoothing (penalized) cubic spline.
 
-    Equidistant grid with M nodes on [min(x,xc),max(x,xc)] is  used  to  build
-    basis functions. Basis functions are cubic splines with  natural  boundary
-    conditions. Problem is regularized by  adding non-linearity penalty to the
-    usual least squares penalty function:
+    This function approximates N scattered points (some of X[] may be equal to
+    each other) by cubic spline with M  nodes  at  equidistant  grid  spanning
+    interval [min(x,xc),max(x,xc)].
 
-        S(x) = arg min { LS + P }, where
-        LS   = SUM { w[i]^2*(y[i] - S(x[i]))^2 } - least squares penalty
-        P    = C*10^rho*integral{ S''(x)^2*dx } - non-linearity penalty
-        rho  - tunable constant given by user
-        C    - automatically determined scale parameter,
-               makes penalty invariant with respect to scaling of X, Y, W.
+    The problem is regularized by adding nonlinearity penalty to  usual  least
+    squares penalty function:
 
-      ! COMMERCIAL EDITION OF ALGLIB:
-      !
-      ! Commercial Edition of ALGLIB includes following important improvements
-      ! of this function:
-      ! * high-performance native backend with same C# interface (C# version)
-      ! * multithreading support (C++ and C# versions)
-      ! * hardware vendor (Intel) implementations of linear algebra primitives
-      !   (C++ and C# versions, x86/x64 platform)
-      !
-      ! We recommend you to read 'Working with commercial version' section  of
-      ! ALGLIB Reference Manual in order to find out how to  use  performance-
-      ! related features provided by commercial edition of ALGLIB.
+        MERIT_FUNC = F_LS + F_NL
+
+    where F_LS is a least squares error  term,  and  F_NL  is  a  nonlinearity
+    penalty which is roughly proportional to LambdaNS*integral{ S''(x)^2*dx }.
+    Algorithm applies automatic renormalization of F_NL  which  makes  penalty
+    term roughly invariant to scaling of X[] and changes in M.
+
+    This function is a new edition  of  penalized  regression  spline fitting,
+    a fast and compact one which needs much less resources that  its  previous
+    version: just O(maxMN) memory and O(maxMN*log(maxMN)) time.
+
+    NOTE: it is OK to run this function with both M<<N and M>>N;  say,  it  is
+          possible to process 100 points with 1000-node spline.
 
     INPUT PARAMETERS:
-        X   -   points, array[0..N-1].
-        Y   -   function values, array[0..N-1].
-        N   -   number of points (optional):
-                * N>0
-                * if given, only first N elements of X/Y are processed
-                * if not given, automatically determined from X/Y sizes
-        M   -   number of basis functions ( = number_of_nodes), M>=4.
-        Rho -   regularization  constant  passed   by   user.   It   penalizes
-                nonlinearity in the regression spline. It  is  logarithmically
-                scaled,  i.e.  actual  value  of  regularization  constant  is
-                calculated as 10^Rho. It is automatically scaled so that:
-                * Rho=2.0 corresponds to moderate amount of nonlinearity
-                * generally, it should be somewhere in the [-8.0,+8.0]
-                If you do not want to penalize nonlineary,
-                pass small Rho. Values as low as -15 should work.
+        X           -   points, array[0..N-1].
+        Y           -   function values, array[0..N-1].
+        N           -   number of points (optional):
+                        * N>0
+                        * if given, only first N elements of X/Y are processed
+                        * if not given, automatically determined from lengths
+        M           -   number of basis functions ( = number_of_nodes), M>=4.
+        LambdaNS    -   LambdaNS>=0, regularization  constant  passed by user.
+                        It penalizes nonlinearity in the regression spline.
+                        Possible values to start from are 0.00001, 0.1, 1
 
     OUTPUT PARAMETERS:
-        Info-   same format as in LSFitLinearWC() subroutine.
-                * Info>0    task is solved
-                * Info<=0   an error occured:
-                            -4 means inconvergence of internal SVD or
-                               Cholesky decomposition; problem may be
-                               too ill-conditioned (very rare)
         S   -   spline interpolant.
         Rep -   Following fields are set:
                 * RMSError      rms error on the (X,Y).
                 * AvgError      average error on the (X,Y).
                 * AvgRelError   average relative error on the non-zero Y
                 * MaxError      maximum error
-                                NON-WEIGHTED ERRORS ARE CALCULATED
-
-    IMPORTANT:
-        this subroitine doesn't calculate task's condition number for K<>0.
-
-    NOTE 1: additional nodes are added to the spline outside  of  the  fitting
-    interval to force linearity when x<min(x,xc) or x>max(x,xc).  It  is  done
-    for consistency - we penalize non-linearity  at [min(x,xc),max(x,xc)],  so
-    it is natural to force linearity outside of this interval.
-
-    NOTE 2: function automatically sorts points,  so  caller may pass unsorted
-    array.
 
       -- ALGLIB PROJECT --
-         Copyright 18.08.2009 by Bochkanov Sergey
+         Copyright 27.08.2019 by Bochkanov Sergey
     *************************************************************************/
-    public static void spline1dfitpenalized(double[] x, double[] y, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
+    public static void spline1dfit(double[] x, double[] y, int n, int m, double lambdans, out spline1dinterpolant s, out spline1dfitreport rep)
     {
-        info = 0;
         s = new spline1dinterpolant();
         rep = new spline1dfitreport();
-        spline1d.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
+        spline1d.spline1dfit(x, y, n, m, lambdans, s.innerobj, rep.innerobj, null);
     }
     
-    public static void spline1dfitpenalized(double[] x, double[] y, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
+    public static void spline1dfit(double[] x, double[] y, int n, int m, double lambdans, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
     {
-        info = 0;
         s = new spline1dinterpolant();
         rep = new spline1dfitreport();
-        spline1d.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
+        spline1d.spline1dfit(x, y, n, m, lambdans, s.innerobj, rep.innerobj, _params);
     }
             
-    public static void spline1dfitpenalized(double[] x, double[] y, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
+    public static void spline1dfit(double[] x, double[] y, int m, double lambdans, out spline1dinterpolant s, out spline1dfitreport rep)
     {
         int n;
         if( (ap.len(x)!=ap.len(y)))
-            throw new alglibexception("Error while calling 'spline1dfitpenalized': looks like one of arguments has wrong size");
-        info = 0;
+            throw new alglibexception("Error while calling 'spline1dfit': looks like one of arguments has wrong size");
         s = new spline1dinterpolant();
         rep = new spline1dfitreport();
         n = ap.len(x);
-        spline1d.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
+        spline1d.spline1dfit(x, y, n, m, lambdans, s.innerobj, rep.innerobj, null);
     
         return;
     }
             
-    public static void spline1dfitpenalized(double[] x, double[] y, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
+    public static void spline1dfit(double[] x, double[] y, int m, double lambdans, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
     {
         int n;
         if( (ap.len(x)!=ap.len(y)))
-            throw new alglibexception("Error while calling 'spline1dfitpenalized': looks like one of arguments has wrong size");
-        info = 0;
+            throw new alglibexception("Error while calling 'spline1dfit': looks like one of arguments has wrong size");
         s = new spline1dinterpolant();
         rep = new spline1dfitreport();
         n = ap.len(x);
-        spline1d.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
-    
-        return;
-    }
-    
-    /*************************************************************************
-    Weighted fitting by penalized cubic spline.
-
-    Equidistant grid with M nodes on [min(x,xc),max(x,xc)] is  used  to  build
-    basis functions. Basis functions are cubic splines with  natural  boundary
-    conditions. Problem is regularized by  adding non-linearity penalty to the
-    usual least squares penalty function:
-
-        S(x) = arg min { LS + P }, where
-        LS   = SUM { w[i]^2*(y[i] - S(x[i]))^2 } - least squares penalty
-        P    = C*10^rho*integral{ S''(x)^2*dx } - non-linearity penalty
-        rho  - tunable constant given by user
-        C    - automatically determined scale parameter,
-               makes penalty invariant with respect to scaling of X, Y, W.
-
-      ! COMMERCIAL EDITION OF ALGLIB:
-      !
-      ! Commercial Edition of ALGLIB includes following important improvements
-      ! of this function:
-      ! * high-performance native backend with same C# interface (C# version)
-      ! * multithreading support (C++ and C# versions)
-      ! * hardware vendor (Intel) implementations of linear algebra primitives
-      !   (C++ and C# versions, x86/x64 platform)
-      !
-      ! We recommend you to read 'Working with commercial version' section  of
-      ! ALGLIB Reference Manual in order to find out how to  use  performance-
-      ! related features provided by commercial edition of ALGLIB.
-
-    INPUT PARAMETERS:
-        X   -   points, array[0..N-1].
-        Y   -   function values, array[0..N-1].
-        W   -   weights, array[0..N-1]
-                Each summand in square  sum  of  approximation deviations from
-                given  values  is  multiplied  by  the square of corresponding
-                weight. Fill it by 1's if you don't  want  to  solve  weighted
-                problem.
-        N   -   number of points (optional):
-                * N>0
-                * if given, only first N elements of X/Y/W are processed
-                * if not given, automatically determined from X/Y/W sizes
-        M   -   number of basis functions ( = number_of_nodes), M>=4.
-        Rho -   regularization  constant  passed   by   user.   It   penalizes
-                nonlinearity in the regression spline. It  is  logarithmically
-                scaled,  i.e.  actual  value  of  regularization  constant  is
-                calculated as 10^Rho. It is automatically scaled so that:
-                * Rho=2.0 corresponds to moderate amount of nonlinearity
-                * generally, it should be somewhere in the [-8.0,+8.0]
-                If you do not want to penalize nonlineary,
-                pass small Rho. Values as low as -15 should work.
-
-    OUTPUT PARAMETERS:
-        Info-   same format as in LSFitLinearWC() subroutine.
-                * Info>0    task is solved
-                * Info<=0   an error occured:
-                            -4 means inconvergence of internal SVD or
-                               Cholesky decomposition; problem may be
-                               too ill-conditioned (very rare)
-        S   -   spline interpolant.
-        Rep -   Following fields are set:
-                * RMSError      rms error on the (X,Y).
-                * AvgError      average error on the (X,Y).
-                * AvgRelError   average relative error on the non-zero Y
-                * MaxError      maximum error
-                                NON-WEIGHTED ERRORS ARE CALCULATED
-
-    IMPORTANT:
-        this subroitine doesn't calculate task's condition number for K<>0.
-
-    NOTE 1: additional nodes are added to the spline outside  of  the  fitting
-    interval to force linearity when x<min(x,xc) or x>max(x,xc).  It  is  done
-    for consistency - we penalize non-linearity  at [min(x,xc),max(x,xc)],  so
-    it is natural to force linearity outside of this interval.
-
-    NOTE 2: function automatically sorts points,  so  caller may pass unsorted
-    array.
-
-      -- ALGLIB PROJECT --
-         Copyright 19.10.2010 by Bochkanov Sergey
-    *************************************************************************/
-    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
-    {
-        info = 0;
-        s = new spline1dinterpolant();
-        rep = new spline1dfitreport();
-        spline1d.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
-    }
-    
-    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
-    {
-        info = 0;
-        s = new spline1dinterpolant();
-        rep = new spline1dfitreport();
-        spline1d.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
-    }
-            
-    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
-    {
-        int n;
-        if( (ap.len(x)!=ap.len(y)) || (ap.len(x)!=ap.len(w)))
-            throw new alglibexception("Error while calling 'spline1dfitpenalizedw': looks like one of arguments has wrong size");
-        info = 0;
-        s = new spline1dinterpolant();
-        rep = new spline1dfitreport();
-        n = ap.len(x);
-        spline1d.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
-    
-        return;
-    }
-            
-    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
-    {
-        int n;
-        if( (ap.len(x)!=ap.len(y)) || (ap.len(x)!=ap.len(w)))
-            throw new alglibexception("Error while calling 'spline1dfitpenalizedw': looks like one of arguments has wrong size");
-        info = 0;
-        s = new spline1dinterpolant();
-        rep = new spline1dfitreport();
-        n = ap.len(x);
-        spline1d.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
+        spline1d.spline1dfit(x, y, n, m, lambdans, s.innerobj, rep.innerobj, _params);
     
         return;
     }
@@ -11464,6 +11310,118 @@ public partial class alglib
         rhi = 0;
         intcomp.nsfitspherex(xy, npoints, nx, problemtype, epsx, aulits, penalty, ref cx, ref rlo, ref rhi, _params);
     }
+    
+    /*************************************************************************
+    This function is an obsolete and deprecated version of fitting by
+    penalized cubic spline.
+
+    It was superseded by spline1dfit(), which is an orders of magnitude faster
+    and more memory-efficient implementation.
+
+    Do NOT use this function in the new code!
+
+      -- ALGLIB PROJECT --
+         Copyright 18.08.2009 by Bochkanov Sergey
+    *************************************************************************/
+    public static void spline1dfitpenalized(double[] x, double[] y, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
+    {
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        intcomp.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
+    }
+    
+    public static void spline1dfitpenalized(double[] x, double[] y, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
+    {
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        intcomp.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
+    }
+            
+    public static void spline1dfitpenalized(double[] x, double[] y, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
+    {
+        int n;
+        if( (ap.len(x)!=ap.len(y)))
+            throw new alglibexception("Error while calling 'spline1dfitpenalized': looks like one of arguments has wrong size");
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        n = ap.len(x);
+        intcomp.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
+    
+        return;
+    }
+            
+    public static void spline1dfitpenalized(double[] x, double[] y, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
+    {
+        int n;
+        if( (ap.len(x)!=ap.len(y)))
+            throw new alglibexception("Error while calling 'spline1dfitpenalized': looks like one of arguments has wrong size");
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        n = ap.len(x);
+        intcomp.spline1dfitpenalized(x, y, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
+    
+        return;
+    }
+    
+    /*************************************************************************
+    This function is an obsolete and deprecated version of fitting by
+    penalized cubic spline.
+
+    It was superseded by spline1dfit(), which is an orders of magnitude faster
+    and more memory-efficient implementation.
+
+    Do NOT use this function in the new code!
+
+      -- ALGLIB PROJECT --
+         Copyright 19.10.2010 by Bochkanov Sergey
+    *************************************************************************/
+    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
+    {
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        intcomp.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
+    }
+    
+    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int n, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
+    {
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        intcomp.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
+    }
+            
+    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep)
+    {
+        int n;
+        if( (ap.len(x)!=ap.len(y)) || (ap.len(x)!=ap.len(w)))
+            throw new alglibexception("Error while calling 'spline1dfitpenalizedw': looks like one of arguments has wrong size");
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        n = ap.len(x);
+        intcomp.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, null);
+    
+        return;
+    }
+            
+    public static void spline1dfitpenalizedw(double[] x, double[] y, double[] w, int m, double rho, out int info, out spline1dinterpolant s, out spline1dfitreport rep, alglib.xparams _params)
+    {
+        int n;
+        if( (ap.len(x)!=ap.len(y)) || (ap.len(x)!=ap.len(w)))
+            throw new alglibexception("Error while calling 'spline1dfitpenalizedw': looks like one of arguments has wrong size");
+        info = 0;
+        s = new spline1dinterpolant();
+        rep = new spline1dfitreport();
+        n = ap.len(x);
+        intcomp.spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s.innerobj, rep.innerobj, _params);
+    
+        return;
+    }
 
 }
 public partial class alglib
@@ -15741,6 +15699,10 @@ public partial class alglib
 
 
 
+        public const double lambdareg = 1.0e-9;
+        public const double cholreg = 1.0e-12;
+
+
         /*************************************************************************
         This subroutine builds linear spline interpolant
 
@@ -17653,499 +17615,428 @@ public partial class alglib
 
 
         /*************************************************************************
-        Fitting by penalized cubic spline.
+        Fitting by smoothing (penalized) cubic spline.
 
-        Equidistant grid with M nodes on [min(x,xc),max(x,xc)] is  used  to  build
-        basis functions. Basis functions are cubic splines with  natural  boundary
-        conditions. Problem is regularized by  adding non-linearity penalty to the
-        usual least squares penalty function:
+        This function approximates N scattered points (some of X[] may be equal to
+        each other) by cubic spline with M  nodes  at  equidistant  grid  spanning
+        interval [min(x,xc),max(x,xc)].
 
-            S(x) = arg min { LS + P }, where
-            LS   = SUM { w[i]^2*(y[i] - S(x[i]))^2 } - least squares penalty
-            P    = C*10^rho*integral{ S''(x)^2*dx } - non-linearity penalty
-            rho  - tunable constant given by user
-            C    - automatically determined scale parameter,
-                   makes penalty invariant with respect to scaling of X, Y, W.
+        The problem is regularized by adding nonlinearity penalty to  usual  least
+        squares penalty function:
 
-          ! COMMERCIAL EDITION OF ALGLIB:
-          ! 
-          ! Commercial Edition of ALGLIB includes following important improvements
-          ! of this function:
-          ! * high-performance native backend with same C# interface (C# version)
-          ! * multithreading support (C++ and C# versions)
-          ! * hardware vendor (Intel) implementations of linear algebra primitives
-          !   (C++ and C# versions, x86/x64 platform)
-          ! 
-          ! We recommend you to read 'Working with commercial version' section  of
-          ! ALGLIB Reference Manual in order to find out how to  use  performance-
-          ! related features provided by commercial edition of ALGLIB.
+            MERIT_FUNC = F_LS + F_NL
+
+        where F_LS is a least squares error  term,  and  F_NL  is  a  nonlinearity
+        penalty which is roughly proportional to LambdaNS*integral{ S''(x)^2*dx }.
+        Algorithm applies automatic renormalization of F_NL  which  makes  penalty
+        term roughly invariant to scaling of X[] and changes in M.
+
+        This function is a new edition  of  penalized  regression  spline fitting,
+        a fast and compact one which needs much less resources that  its  previous
+        version: just O(maxMN) memory and O(maxMN*log(maxMN)) time.
+
+        NOTE: it is OK to run this function with both M<<N and M>>N;  say,  it  is
+              possible to process 100 points with 1000-node spline.
                    
         INPUT PARAMETERS:
-            X   -   points, array[0..N-1].
-            Y   -   function values, array[0..N-1].
-            N   -   number of points (optional):
-                    * N>0
-                    * if given, only first N elements of X/Y are processed
-                    * if not given, automatically determined from X/Y sizes
-            M   -   number of basis functions ( = number_of_nodes), M>=4.
-            Rho -   regularization  constant  passed   by   user.   It   penalizes
-                    nonlinearity in the regression spline. It  is  logarithmically
-                    scaled,  i.e.  actual  value  of  regularization  constant  is
-                    calculated as 10^Rho. It is automatically scaled so that:
-                    * Rho=2.0 corresponds to moderate amount of nonlinearity
-                    * generally, it should be somewhere in the [-8.0,+8.0]
-                    If you do not want to penalize nonlineary,
-                    pass small Rho. Values as low as -15 should work.
+            X           -   points, array[0..N-1].
+            Y           -   function values, array[0..N-1].
+            N           -   number of points (optional):
+                            * N>0
+                            * if given, only first N elements of X/Y are processed
+                            * if not given, automatically determined from lengths
+            M           -   number of basis functions ( = number_of_nodes), M>=4.
+            LambdaNS    -   LambdaNS>=0, regularization  constant  passed by user.
+                            It penalizes nonlinearity in the regression spline.
+                            Possible values to start from are 0.00001, 0.1, 1
 
         OUTPUT PARAMETERS:
-            Info-   same format as in LSFitLinearWC() subroutine.
-                    * Info>0    task is solved
-                    * Info<=0   an error occured:
-                                -4 means inconvergence of internal SVD or
-                                   Cholesky decomposition; problem may be
-                                   too ill-conditioned (very rare)
             S   -   spline interpolant.
             Rep -   Following fields are set:
                     * RMSError      rms error on the (X,Y).
                     * AvgError      average error on the (X,Y).
                     * AvgRelError   average relative error on the non-zero Y
                     * MaxError      maximum error
-                                    NON-WEIGHTED ERRORS ARE CALCULATED
-
-        IMPORTANT:
-            this subroitine doesn't calculate task's condition number for K<>0.
-
-        NOTE 1: additional nodes are added to the spline outside  of  the  fitting
-        interval to force linearity when x<min(x,xc) or x>max(x,xc).  It  is  done
-        for consistency - we penalize non-linearity  at [min(x,xc),max(x,xc)],  so
-        it is natural to force linearity outside of this interval.
-
-        NOTE 2: function automatically sorts points,  so  caller may pass unsorted
-        array.
 
           -- ALGLIB PROJECT --
-             Copyright 18.08.2009 by Bochkanov Sergey
+             Copyright 27.08.2019 by Bochkanov Sergey
         *************************************************************************/
-        public static void spline1dfitpenalized(double[] x,
+        public static void spline1dfit(double[] x,
             double[] y,
             int n,
             int m,
-            double rho,
-            ref int info,
+            double lambdans,
             spline1dinterpolant s,
             spline1dfitreport rep,
             alglib.xparams _params)
         {
-            double[] w = new double[0];
-            int i = 0;
-
-            x = (double[])x.Clone();
-            y = (double[])y.Clone();
-            info = 0;
-
-            alglib.ap.assert(n>=1, "Spline1DFitPenalized: N<1!");
-            alglib.ap.assert(m>=4, "Spline1DFitPenalized: M<4!");
-            alglib.ap.assert(alglib.ap.len(x)>=n, "Spline1DFitPenalized: Length(X)<N!");
-            alglib.ap.assert(alglib.ap.len(y)>=n, "Spline1DFitPenalized: Length(Y)<N!");
-            alglib.ap.assert(apserv.isfinitevector(x, n, _params), "Spline1DFitPenalized: X contains infinite or NAN values!");
-            alglib.ap.assert(apserv.isfinitevector(y, n, _params), "Spline1DFitPenalized: Y contains infinite or NAN values!");
-            alglib.ap.assert(math.isfinite(rho), "Spline1DFitPenalized: Rho is infinite!");
-            w = new double[n];
-            for(i=0; i<=n-1; i++)
-            {
-                w[i] = 1;
-            }
-            spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s, rep, _params);
-        }
-
-
-        /*************************************************************************
-        Weighted fitting by penalized cubic spline.
-
-        Equidistant grid with M nodes on [min(x,xc),max(x,xc)] is  used  to  build
-        basis functions. Basis functions are cubic splines with  natural  boundary
-        conditions. Problem is regularized by  adding non-linearity penalty to the
-        usual least squares penalty function:
-
-            S(x) = arg min { LS + P }, where
-            LS   = SUM { w[i]^2*(y[i] - S(x[i]))^2 } - least squares penalty
-            P    = C*10^rho*integral{ S''(x)^2*dx } - non-linearity penalty
-            rho  - tunable constant given by user
-            C    - automatically determined scale parameter,
-                   makes penalty invariant with respect to scaling of X, Y, W.
-
-          ! COMMERCIAL EDITION OF ALGLIB:
-          ! 
-          ! Commercial Edition of ALGLIB includes following important improvements
-          ! of this function:
-          ! * high-performance native backend with same C# interface (C# version)
-          ! * multithreading support (C++ and C# versions)
-          ! * hardware vendor (Intel) implementations of linear algebra primitives
-          !   (C++ and C# versions, x86/x64 platform)
-          ! 
-          ! We recommend you to read 'Working with commercial version' section  of
-          ! ALGLIB Reference Manual in order to find out how to  use  performance-
-          ! related features provided by commercial edition of ALGLIB.
-                   
-        INPUT PARAMETERS:
-            X   -   points, array[0..N-1].
-            Y   -   function values, array[0..N-1].
-            W   -   weights, array[0..N-1]
-                    Each summand in square  sum  of  approximation deviations from
-                    given  values  is  multiplied  by  the square of corresponding
-                    weight. Fill it by 1's if you don't  want  to  solve  weighted
-                    problem.
-            N   -   number of points (optional):
-                    * N>0
-                    * if given, only first N elements of X/Y/W are processed
-                    * if not given, automatically determined from X/Y/W sizes
-            M   -   number of basis functions ( = number_of_nodes), M>=4.
-            Rho -   regularization  constant  passed   by   user.   It   penalizes
-                    nonlinearity in the regression spline. It  is  logarithmically
-                    scaled,  i.e.  actual  value  of  regularization  constant  is
-                    calculated as 10^Rho. It is automatically scaled so that:
-                    * Rho=2.0 corresponds to moderate amount of nonlinearity
-                    * generally, it should be somewhere in the [-8.0,+8.0]
-                    If you do not want to penalize nonlineary,
-                    pass small Rho. Values as low as -15 should work.
-
-        OUTPUT PARAMETERS:
-            Info-   same format as in LSFitLinearWC() subroutine.
-                    * Info>0    task is solved
-                    * Info<=0   an error occured:
-                                -4 means inconvergence of internal SVD or
-                                   Cholesky decomposition; problem may be
-                                   too ill-conditioned (very rare)
-            S   -   spline interpolant.
-            Rep -   Following fields are set:
-                    * RMSError      rms error on the (X,Y).
-                    * AvgError      average error on the (X,Y).
-                    * AvgRelError   average relative error on the non-zero Y
-                    * MaxError      maximum error
-                                    NON-WEIGHTED ERRORS ARE CALCULATED
-
-        IMPORTANT:
-            this subroitine doesn't calculate task's condition number for K<>0.
-
-        NOTE 1: additional nodes are added to the spline outside  of  the  fitting
-        interval to force linearity when x<min(x,xc) or x>max(x,xc).  It  is  done
-        for consistency - we penalize non-linearity  at [min(x,xc),max(x,xc)],  so
-        it is natural to force linearity outside of this interval.
-
-        NOTE 2: function automatically sorts points,  so  caller may pass unsorted
-        array.
-
-          -- ALGLIB PROJECT --
-             Copyright 19.10.2010 by Bochkanov Sergey
-        *************************************************************************/
-        public static void spline1dfitpenalizedw(double[] x,
-            double[] y,
-            double[] w,
-            int n,
-            int m,
-            double rho,
-            ref int info,
-            spline1dinterpolant s,
-            spline1dfitreport rep,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            int b = 0;
-            double v = 0;
-            double relcnt = 0;
+            int bfrad = 0;
             double xa = 0;
             double xb = 0;
-            double sa = 0;
-            double sb = 0;
-            double[] xoriginal = new double[0];
-            double[] yoriginal = new double[0];
-            double pdecay = 0;
-            double tdecay = 0;
-            double[,] fmatrix = new double[0,0];
-            double[] fcolumn = new double[0];
-            double[] y2 = new double[0];
-            double[] w2 = new double[0];
-            double[] xc = new double[0];
-            double[] yc = new double[0];
-            int[] dc = new int[0];
-            double fdmax = 0;
-            double admax = 0;
-            double[,] amatrix = new double[0,0];
-            double[,] d2matrix = new double[0,0];
-            double fa = 0;
-            double ga = 0;
-            double fb = 0;
-            double gb = 0;
-            double lambdav = 0;
-            double[] bx = new double[0];
-            double[] by = new double[0];
-            double[] bd1 = new double[0];
-            double[] bd2 = new double[0];
-            double[] tx = new double[0];
-            double[] ty = new double[0];
-            double[] td = new double[0];
-            spline1dinterpolant bs = new spline1dinterpolant();
-            double[,] nmatrix = new double[0,0];
-            double[] rightpart = new double[0];
-            fbls.fblslincgstate cgstate = new fbls.fblslincgstate();
-            double[] c = new double[0];
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double v = 0;
+            double dv = 0;
+            double d2v = 0;
+            int gridexpansion = 0;
+            double[] xywork = new double[0];
+            double[,] vterm = new double[0,0];
+            double[] sx = new double[0];
+            double[] sy = new double[0];
+            double[] sdy = new double[0];
+            double[] tmpx = new double[0];
+            double[] tmpy = new double[0];
+            spline1dinterpolant basis1 = new spline1dinterpolant();
+            sparse.sparsematrix av = new sparse.sparsematrix();
+            sparse.sparsematrix ah = new sparse.sparsematrix();
+            sparse.sparsematrix ata = new sparse.sparsematrix();
+            double[] targets = new double[0];
+            double meany = 0;
+            int lsqrcnt = 0;
+            int nrel = 0;
+            double rss = 0;
+            double tss = 0;
+            int arows = 0;
             double[] tmp0 = new double[0];
-            int i_ = 0;
-            int i1_ = 0;
+            double[] tmp1 = new double[0];
+            linlsqr.linlsqrstate solver = new linlsqr.linlsqrstate();
+            linlsqr.linlsqrreport srep = new linlsqr.linlsqrreport();
+            double creg = 0;
+            double mxata = 0;
+            int bw = 0;
+            int[] nzidx = new int[0];
+            double[] nzval = new double[0];
+            int nzcnt = 0;
+            double scaletargetsby = 0;
+            double scalepenaltyby = 0;
 
             x = (double[])x.Clone();
             y = (double[])y.Clone();
-            w = (double[])w.Clone();
-            info = 0;
 
-            alglib.ap.assert(n>=1, "Spline1DFitPenalizedW: N<1!");
-            alglib.ap.assert(m>=4, "Spline1DFitPenalizedW: M<4!");
-            alglib.ap.assert(alglib.ap.len(x)>=n, "Spline1DFitPenalizedW: Length(X)<N!");
-            alglib.ap.assert(alglib.ap.len(y)>=n, "Spline1DFitPenalizedW: Length(Y)<N!");
-            alglib.ap.assert(alglib.ap.len(w)>=n, "Spline1DFitPenalizedW: Length(W)<N!");
-            alglib.ap.assert(apserv.isfinitevector(x, n, _params), "Spline1DFitPenalizedW: X contains infinite or NAN values!");
-            alglib.ap.assert(apserv.isfinitevector(y, n, _params), "Spline1DFitPenalizedW: Y contains infinite or NAN values!");
-            alglib.ap.assert(apserv.isfinitevector(w, n, _params), "Spline1DFitPenalizedW: Y contains infinite or NAN values!");
-            alglib.ap.assert(math.isfinite(rho), "Spline1DFitPenalizedW: Rho is infinite!");
+            alglib.ap.assert(n>=1, "Spline1DFit: N<1!");
+            alglib.ap.assert(m>=1, "Spline1DFit: M<1!");
+            alglib.ap.assert(alglib.ap.len(x)>=n, "Spline1DFit: Length(X)<N!");
+            alglib.ap.assert(alglib.ap.len(y)>=n, "Spline1DFit: Length(Y)<N!");
+            alglib.ap.assert(apserv.isfinitevector(x, n, _params), "Spline1DFit: X contains infinite or NAN values!");
+            alglib.ap.assert(apserv.isfinitevector(y, n, _params), "Spline1DFit: Y contains infinite or NAN values!");
+            alglib.ap.assert(math.isfinite(lambdans), "Spline1DFit: LambdaNS is infinite!");
+            alglib.ap.assert((double)(lambdans)>=(double)(0), "Spline1DFit: LambdaNS<0!");
+            bfrad = 2;
+            lsqrcnt = 10;
             
             //
-            // Prepare LambdaV
+            // Sort points.
+            // Determine actual area size, make sure that XA<XB
             //
-            v = -(Math.Log(math.machineepsilon)/Math.Log(10));
-            if( (double)(rho)<(double)(-v) )
+            tsort.tagsortfastr(ref x, ref y, ref tmpx, ref tmpy, n, _params);
+            xa = x[0];
+            xb = x[n-1];
+            if( (double)(xa)==(double)(xb) )
             {
-                rho = -v;
+                v = xa;
+                if( (double)(v)>=(double)(0) )
+                {
+                    xa = v/2-1;
+                    xb = v*2+1;
+                }
+                else
+                {
+                    xa = v*2-1;
+                    xb = v/2+1;
+                }
             }
-            if( (double)(rho)>(double)(v) )
+            alglib.ap.assert((double)(xa)<(double)(xb), "Spline1DFit: integrity error");
+            
+            //
+            // Perform a grid correction according to current grid expansion size.
+            //
+            m = Math.Max(m, 4);
+            gridexpansion = 1;
+            v = (xb-xa)/m;
+            xa = xa-v*gridexpansion;
+            xb = xb+v*gridexpansion;
+            m = m+2*gridexpansion;
+            
+            //
+            // Convert X/Y to work representation, remove linear trend (in
+            // order to improve condition number).
+            //
+            // Compute total-sum-of-squares (needed later for R2 coefficient).
+            //
+            xywork = new double[2*n];
+            for(i=0; i<=n-1; i++)
             {
-                rho = v;
+                xywork[2*i+0] = (x[i]-xa)/(xb-xa);
+                xywork[2*i+1] = y[i];
             }
-            lambdav = Math.Pow(10, rho);
-            
-            //
-            // Sort X, Y, W
-            //
-            heapsortdpoints(ref x, ref y, ref w, n, _params);
-            
-            //
-            // Scale X, Y, XC, YC
-            //
-            intfitserv.lsfitscalexy(ref x, ref y, ref w, n, ref xc, ref yc, dc, 0, ref xa, ref xb, ref sa, ref sb, ref xoriginal, ref yoriginal, _params);
-            
-            //
-            // Allocate space
-            //
-            fmatrix = new double[n, m];
-            amatrix = new double[m, m];
-            d2matrix = new double[m, m];
-            bx = new double[m];
-            by = new double[m];
-            fcolumn = new double[n];
-            nmatrix = new double[m, m];
-            rightpart = new double[m];
-            tmp0 = new double[Math.Max(m, n)];
-            c = new double[m];
-            
-            //
-            // Fill:
-            // * FMatrix by values of basis functions
-            // * TmpAMatrix by second derivatives of I-th function at J-th point
-            // * CMatrix by constraints
-            //
-            fdmax = 0;
-            for(b=0; b<=m-1; b++)
+            intfitserv.buildpriorterm1(xywork, n, 1, 1, 1, 0.0, ref vterm, _params);
+            meany = 0;
+            for(i=0; i<=n-1; i++)
             {
-                
-                //
-                // Prepare I-th basis function
-                //
-                for(j=0; j<=m-1; j++)
-                {
-                    bx[j] = (double)(2*j)/(double)(m-1)-1;
-                    by[j] = 0;
-                }
-                by[b] = 1;
-                spline1dgriddiff2cubic(bx, by, m, 2, 0.0, 2, 0.0, ref bd1, ref bd2, _params);
-                spline1dbuildcubic(bx, by, m, 2, 0.0, 2, 0.0, bs, _params);
-                
-                //
-                // Calculate B-th column of FMatrix
-                // Update FDMax (maximum column norm)
-                //
-                spline1dconvcubic(bx, by, m, 2, 0.0, 2, 0.0, x, n, ref fcolumn, _params);
-                for(i_=0; i_<=n-1;i_++)
-                {
-                    fmatrix[i_,b] = fcolumn[i_];
-                }
-                v = 0;
-                for(i=0; i<=n-1; i++)
-                {
-                    v = v+math.sqr(w[i]*fcolumn[i]);
-                }
-                fdmax = Math.Max(fdmax, v);
-                
-                //
-                // Fill temporary with second derivatives of basis function
-                //
-                for(i_=0; i_<=m-1;i_++)
-                {
-                    d2matrix[b,i_] = bd2[i_];
-                }
+                meany = meany+y[i];
+            }
+            meany = meany/n;
+            tss = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                tss = tss+math.sqr(y[i]-meany);
             }
             
             //
-            // * calculate penalty matrix A
-            // * calculate max of diagonal elements of A
-            // * calculate PDecay - coefficient before penalty matrix
+            // Build 1D compact basis function
+            // Generate design matrix AV ("vertical") and its transpose AH ("horizontal").
             //
+            tmpx = new double[7];
+            tmpy = new double[7];
+            tmpx[0] = -((double)3/(double)(m-1));
+            tmpx[1] = -((double)2/(double)(m-1));
+            tmpx[2] = -((double)1/(double)(m-1));
+            tmpx[3] = (double)0/(double)(m-1);
+            tmpx[4] = (double)1/(double)(m-1);
+            tmpx[5] = (double)2/(double)(m-1);
+            tmpx[6] = (double)3/(double)(m-1);
+            tmpy[0] = 0;
+            tmpy[1] = 0;
+            tmpy[2] = (double)1/(double)12;
+            tmpy[3] = (double)2/(double)6;
+            tmpy[4] = (double)1/(double)12;
+            tmpy[5] = 0;
+            tmpy[6] = 0;
+            spline1dbuildcubic(tmpx, tmpy, alglib.ap.len(tmpx), 2, 0.0, 2, 0.0, basis1, _params);
+            arows = n+2*m;
+            sparse.sparsecreate(arows, m, 0, av, _params);
+            apserv.setlengthzero(ref targets, arows, _params);
+            scaletargetsby = 1/Math.Sqrt(n);
+            scalepenaltyby = 1/Math.Sqrt(m);
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Generate design matrix row #I which corresponds to I-th dataset point
+                //
+                k = (int)Math.Floor(apserv.boundval(xywork[2*i+0]*(m-1), 0, m-1, _params));
+                k0 = Math.Max(k-(bfrad-1), 0);
+                k1 = Math.Min(k+bfrad, m-1);
+                for(j=k0; j<=k1; j++)
+                {
+                    sparse.sparseset(av, i, j, spline1dcalc(basis1, xywork[2*i+0]-(double)j/(double)(m-1), _params)*scaletargetsby, _params);
+                }
+                targets[i] = xywork[2*i+1]*scaletargetsby;
+            }
             for(i=0; i<=m-1; i++)
             {
-                for(j=i; j<=m-1; j++)
+                
+                //
+                // Generate design matrix row #(I+N) which corresponds to nonlinearity penalty at I-th node
+                //
+                k0 = Math.Max(i-(bfrad-1), 0);
+                k1 = Math.Min(i+(bfrad-1), m-1);
+                for(j=k0; j<=k1; j++)
+                {
+                    spline1ddiff(basis1, (double)i/(double)(m-1)-(double)j/(double)(m-1), ref v, ref dv, ref d2v, _params);
+                    sparse.sparseset(av, n+i, j, lambdans*d2v*scalepenaltyby, _params);
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Generate design matrix row #(I+N+M) which corresponds to regularization for I-th coefficient
+                //
+                sparse.sparseset(av, n+m+i, i, lambdareg, _params);
+            }
+            sparse.sparseconverttocrs(av, _params);
+            sparse.sparsecopytransposecrs(av, ah, _params);
+            
+            //
+            // Build 7-diagonal (bandwidth=3) normal equations matrix and perform Cholesky
+            // decomposition (to be used later as preconditioner for LSQR iterations).
+            //
+            bw = 3;
+            sparse.sparsecreatesksband(m, m, bw, ata, _params);
+            mxata = 0;
+            for(i=0; i<=m-1; i++)
+            {
+                for(j=i; j<=Math.Min(i+bw, m-1); j++)
                 {
                     
                     //
-                    // calculate integral(B_i''*B_j'') where B_i and B_j are
-                    // i-th and j-th basis splines.
-                    // B_i and B_j are piecewise linear functions.
+                    // Get pattern of nonzeros in one of the rows (let it be I-th one)
+                    // and compute dot product only for nonzero entries.
                     //
+                    sparse.sparsegetcompressedrow(ah, i, ref nzidx, ref nzval, ref nzcnt, _params);
                     v = 0;
-                    for(b=0; b<=m-2; b++)
+                    for(k=0; k<=nzcnt-1; k++)
                     {
-                        fa = d2matrix[i,b];
-                        fb = d2matrix[i,b+1];
-                        ga = d2matrix[j,b];
-                        gb = d2matrix[j,b+1];
-                        v = v+(bx[b+1]-bx[b])*(fa*ga+(fa*(gb-ga)+ga*(fb-fa))/2+(fb-fa)*(gb-ga)/3);
+                        v = v+sparse.sparseget(ah, i, nzidx[k], _params)*sparse.sparseget(ah, j, nzidx[k], _params);
                     }
-                    amatrix[i,j] = v;
-                    amatrix[j,i] = v;
+                    
+                    //
+                    // Update ATA and max(ATA)
+                    //
+                    sparse.sparseset(ata, i, j, v, _params);
+                    if( i==j )
+                    {
+                        mxata = Math.Max(mxata, Math.Abs(v));
+                    }
                 }
             }
-            admax = 0;
+            mxata = apserv.coalesce(mxata, 1.0, _params);
+            creg = cholreg;
+            while( true )
+            {
+                
+                //
+                // Regularization
+                //
+                for(i=0; i<=m-1; i++)
+                {
+                    sparse.sparseset(ata, i, i, sparse.sparseget(ata, i, i, _params)+mxata*creg, _params);
+                }
+                
+                //
+                // Try Cholesky factorization.
+                //
+                if( !trfac.sparsecholeskyskyline(ata, m, true, _params) )
+                {
+                    
+                    //
+                    // Factorization failed, increase regularizer and repeat
+                    //
+                    creg = apserv.coalesce(10*creg, 1.0E-12, _params);
+                    continue;
+                }
+                break;
+            }
+            
+            //
+            // Solve with preconditioned LSQR:
+            //
+            // use Cholesky factor U of squared design matrix A'*A to
+            // transform min|A*x-b| to min|[A*inv(U)]*y-b| with y=U*x.
+            //
+            // Preconditioned problem is solved with LSQR solver, which
+            // gives superior results to normal equations approach. Due
+            // to Cholesky preconditioner being utilized we can solve
+            // problem in just a few iterations.
+            //
+            apserv.rvectorsetlengthatleast(ref tmp0, arows, _params);
+            apserv.rvectorsetlengthatleast(ref tmp1, m, _params);
+            linlsqr.linlsqrcreatebuf(arows, m, solver, _params);
+            linlsqr.linlsqrsetb(solver, targets, _params);
+            linlsqr.linlsqrsetcond(solver, 1.0E-14, 1.0E-14, lsqrcnt, _params);
+            while( linlsqr.linlsqriteration(solver, _params) )
+            {
+                if( solver.needmv )
+                {
+                    for(i=0; i<=m-1; i++)
+                    {
+                        tmp1[i] = solver.x[i];
+                    }
+                    
+                    //
+                    // Use Cholesky factorization of the system matrix
+                    // as preconditioner: solve TRSV(U,Solver.X)
+                    //
+                    sparse.sparsetrsv(ata, true, false, 0, tmp1, _params);
+                    
+                    //
+                    // After preconditioning is done, multiply by A
+                    //
+                    sparse.sparsemv(av, tmp1, ref solver.mv, _params);
+                }
+                if( solver.needmtv )
+                {
+                    
+                    //
+                    // Multiply by design matrix A
+                    //
+                    sparse.sparsemtv(av, solver.x, ref solver.mtv, _params);
+                    
+                    //
+                    // Multiply by preconditioner: solve TRSV(U',A*Solver.X)
+                    //
+                    sparse.sparsetrsv(ata, true, false, 1, solver.mtv, _params);
+                }
+            }
+            linlsqr.linlsqrresults(solver, ref tmp1, srep, _params);
+            sparse.sparsetrsv(ata, true, false, 0, tmp1, _params);
+            
+            //
+            // Generate output spline as a table of spline valued and first
+            // derivatives at nodes (used to build Hermite spline)
+            //
+            sx = new double[m];
+            sy = new double[m];
+            sdy = new double[m];
             for(i=0; i<=m-1; i++)
             {
-                admax = Math.Max(admax, Math.Abs(amatrix[i,i]));
+                sx[i] = (double)i/(double)(m-1);
+                sy[i] = 0;
+                sdy[i] = 0;
             }
-            pdecay = lambdav*fdmax/admax;
+            for(i=0; i<=m-1; i++)
+            {
+                k0 = Math.Max(i-(bfrad-1), 0);
+                k1 = Math.Min(i+bfrad, m-1);
+                for(j=k0; j<=k1; j++)
+                {
+                    spline1ddiff(basis1, (double)j/(double)(m-1)-(double)i/(double)(m-1), ref v, ref dv, ref d2v, _params);
+                    sy[j] = sy[j]+tmp1[i]*v;
+                    sdy[j] = sdy[j]+tmp1[i]*dv;
+                }
+            }
             
             //
-            // Calculate TDecay for Tikhonov regularization
+            // Calculate model values
             //
-            tdecay = fdmax*(1+pdecay)*10*math.machineepsilon;
-            
-            //
-            // Prepare system
-            //
-            // NOTE: FMatrix is spoiled during this process
-            //
+            sparse.sparsemv(av, tmp1, ref tmp0, _params);
             for(i=0; i<=n-1; i++)
             {
-                v = w[i];
-                for(i_=0; i_<=m-1;i_++)
-                {
-                    fmatrix[i,i_] = v*fmatrix[i,i_];
-                }
+                tmp0[i] = tmp0[i]/scaletargetsby;
             }
-            ablas.rmatrixgemm(m, m, n, 1.0, fmatrix, 0, 0, 1, fmatrix, 0, 0, 0, 0.0, nmatrix, 0, 0, _params);
-            for(i=0; i<=m-1; i++)
-            {
-                for(j=0; j<=m-1; j++)
-                {
-                    nmatrix[i,j] = nmatrix[i,j]+pdecay*amatrix[i,j];
-                }
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                nmatrix[i,i] = nmatrix[i,i]+tdecay;
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                rightpart[i] = 0;
-            }
-            for(i=0; i<=n-1; i++)
-            {
-                v = y[i]*w[i];
-                for(i_=0; i_<=m-1;i_++)
-                {
-                    rightpart[i_] = rightpart[i_] + v*fmatrix[i,i_];
-                }
-            }
-            
-            //
-            // Solve system
-            //
-            if( !trfac.spdmatrixcholesky(ref nmatrix, m, true, _params) )
-            {
-                info = -4;
-                return;
-            }
-            fbls.fblscholeskysolve(nmatrix, 1.0, m, true, rightpart, ref tmp0, _params);
-            for(i_=0; i_<=m-1;i_++)
-            {
-                c[i_] = rightpart[i_];
-            }
-            
-            //
-            // add nodes to force linearity outside of the fitting interval
-            //
-            spline1dgriddiffcubic(bx, c, m, 2, 0.0, 2, 0.0, ref bd1, _params);
-            tx = new double[m+2];
-            ty = new double[m+2];
-            td = new double[m+2];
-            i1_ = (0) - (1);
-            for(i_=1; i_<=m;i_++)
-            {
-                tx[i_] = bx[i_+i1_];
-            }
-            i1_ = (0) - (1);
-            for(i_=1; i_<=m;i_++)
-            {
-                ty[i_] = rightpart[i_+i1_];
-            }
-            i1_ = (0) - (1);
-            for(i_=1; i_<=m;i_++)
-            {
-                td[i_] = bd1[i_+i1_];
-            }
-            tx[0] = tx[1]-(tx[2]-tx[1]);
-            ty[0] = ty[1]-td[1]*(tx[2]-tx[1]);
-            td[0] = td[1];
-            tx[m+1] = tx[m]+(tx[m]-tx[m-1]);
-            ty[m+1] = ty[m]+td[m]*(tx[m]-tx[m-1]);
-            td[m+1] = td[m];
-            spline1dbuildhermite(tx, ty, td, m+2, s, _params);
-            spline1dlintransx(s, 2/(xb-xa), -((xa+xb)/(xb-xa)), _params);
-            spline1dlintransy(s, sb-sa, sa, _params);
-            info = 1;
-            
-            //
-            // Fill report
-            //
+            rss = 0.0;
+            nrel = 0;
             rep.rmserror = 0;
+            rep.maxerror = 0;
             rep.avgerror = 0;
             rep.avgrelerror = 0;
-            rep.maxerror = 0;
-            relcnt = 0;
-            spline1dconvcubic(bx, rightpart, m, 2, 0.0, 2, 0.0, x, n, ref fcolumn, _params);
             for(i=0; i<=n-1; i++)
             {
-                v = (sb-sa)*fcolumn[i]+sa;
-                rep.rmserror = rep.rmserror+math.sqr(v-yoriginal[i]);
-                rep.avgerror = rep.avgerror+Math.Abs(v-yoriginal[i]);
-                if( (double)(yoriginal[i])!=(double)(0) )
+                v = xywork[2*i+1]-tmp0[i];
+                rss = rss+v*v;
+                rep.rmserror = rep.rmserror+math.sqr(v);
+                rep.avgerror = rep.avgerror+Math.Abs(v);
+                rep.maxerror = Math.Max(rep.maxerror, Math.Abs(v));
+                if( (double)(y[i])!=(double)(0) )
                 {
-                    rep.avgrelerror = rep.avgrelerror+Math.Abs(v-yoriginal[i])/Math.Abs(yoriginal[i]);
-                    relcnt = relcnt+1;
+                    rep.avgrelerror = rep.avgrelerror+Math.Abs(v/y[i]);
+                    nrel = nrel+1;
                 }
-                rep.maxerror = Math.Max(rep.maxerror, Math.Abs(v-yoriginal[i]));
             }
             rep.rmserror = Math.Sqrt(rep.rmserror/n);
             rep.avgerror = rep.avgerror/n;
-            if( (double)(relcnt)!=(double)(0) )
+            rep.avgrelerror = rep.avgrelerror/apserv.coalesce(nrel, 1.0, _params);
+            
+            //
+            // Append prior term.
+            // Transform spline to original coordinates.
+            // Output.
+            //
+            for(i=0; i<=m-1; i++)
             {
-                rep.avgrelerror = rep.avgrelerror/relcnt;
+                sy[i] = sy[i]+vterm[0,0]*sx[i]+vterm[0,1];
+                sdy[i] = sdy[i]+vterm[0,0];
             }
+            for(i=0; i<=m-1; i++)
+            {
+                sx[i] = sx[i]*(xb-xa)+xa;
+                sdy[i] = sdy[i]/(xb-xa);
+            }
+            spline1dbuildhermite(sx, sy, sdy, m, s, _params);
         }
 
 
@@ -47882,6 +47773,374 @@ public partial class alglib
             rhi = 0;
 
             fitsphere.fitspherex(xy, npoints, nx, problemtype, epsx, aulits, penalty, ref cx, ref rlo, ref rhi, _params);
+        }
+
+
+        /*************************************************************************
+        This function is an obsolete and deprecated version of fitting by
+        penalized cubic spline.
+
+        It was superseded by spline1dfit(), which is an orders of magnitude faster
+        and more memory-efficient implementation.
+
+        Do NOT use this function in the new code!
+
+          -- ALGLIB PROJECT --
+             Copyright 18.08.2009 by Bochkanov Sergey
+        *************************************************************************/
+        public static void spline1dfitpenalized(double[] x,
+            double[] y,
+            int n,
+            int m,
+            double rho,
+            ref int info,
+            spline1d.spline1dinterpolant s,
+            spline1d.spline1dfitreport rep,
+            alglib.xparams _params)
+        {
+            double[] w = new double[0];
+            int i = 0;
+
+            x = (double[])x.Clone();
+            y = (double[])y.Clone();
+            info = 0;
+
+            alglib.ap.assert(n>=1, "Spline1DFitPenalized: N<1!");
+            alglib.ap.assert(m>=4, "Spline1DFitPenalized: M<4!");
+            alglib.ap.assert(alglib.ap.len(x)>=n, "Spline1DFitPenalized: Length(X)<N!");
+            alglib.ap.assert(alglib.ap.len(y)>=n, "Spline1DFitPenalized: Length(Y)<N!");
+            alglib.ap.assert(apserv.isfinitevector(x, n, _params), "Spline1DFitPenalized: X contains infinite or NAN values!");
+            alglib.ap.assert(apserv.isfinitevector(y, n, _params), "Spline1DFitPenalized: Y contains infinite or NAN values!");
+            alglib.ap.assert(math.isfinite(rho), "Spline1DFitPenalized: Rho is infinite!");
+            w = new double[n];
+            for(i=0; i<=n-1; i++)
+            {
+                w[i] = 1;
+            }
+            spline1dfitpenalizedw(x, y, w, n, m, rho, ref info, s, rep, _params);
+        }
+
+
+        /*************************************************************************
+        This function is an obsolete and deprecated version of fitting by
+        penalized cubic spline.
+
+        It was superseded by spline1dfit(), which is an orders of magnitude faster
+        and more memory-efficient implementation.
+
+        Do NOT use this function in the new code!
+
+          -- ALGLIB PROJECT --
+             Copyright 19.10.2010 by Bochkanov Sergey
+        *************************************************************************/
+        public static void spline1dfitpenalizedw(double[] x,
+            double[] y,
+            double[] w,
+            int n,
+            int m,
+            double rho,
+            ref int info,
+            spline1d.spline1dinterpolant s,
+            spline1d.spline1dfitreport rep,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int b = 0;
+            double v = 0;
+            double relcnt = 0;
+            double xa = 0;
+            double xb = 0;
+            double sa = 0;
+            double sb = 0;
+            double[] xoriginal = new double[0];
+            double[] yoriginal = new double[0];
+            double pdecay = 0;
+            double tdecay = 0;
+            double[,] fmatrix = new double[0,0];
+            double[] fcolumn = new double[0];
+            double[] y2 = new double[0];
+            double[] w2 = new double[0];
+            double[] xc = new double[0];
+            double[] yc = new double[0];
+            int[] dc = new int[0];
+            double fdmax = 0;
+            double admax = 0;
+            double[,] amatrix = new double[0,0];
+            double[,] d2matrix = new double[0,0];
+            double fa = 0;
+            double ga = 0;
+            double fb = 0;
+            double gb = 0;
+            double lambdav = 0;
+            double[] bx = new double[0];
+            double[] by = new double[0];
+            double[] bd1 = new double[0];
+            double[] bd2 = new double[0];
+            double[] tx = new double[0];
+            double[] ty = new double[0];
+            double[] td = new double[0];
+            spline1d.spline1dinterpolant bs = new spline1d.spline1dinterpolant();
+            double[,] nmatrix = new double[0,0];
+            double[] rightpart = new double[0];
+            fbls.fblslincgstate cgstate = new fbls.fblslincgstate();
+            double[] c = new double[0];
+            double[] tmp0 = new double[0];
+            int i_ = 0;
+            int i1_ = 0;
+
+            x = (double[])x.Clone();
+            y = (double[])y.Clone();
+            w = (double[])w.Clone();
+            info = 0;
+
+            alglib.ap.assert(n>=1, "Spline1DFitPenalizedW: N<1!");
+            alglib.ap.assert(m>=4, "Spline1DFitPenalizedW: M<4!");
+            alglib.ap.assert(alglib.ap.len(x)>=n, "Spline1DFitPenalizedW: Length(X)<N!");
+            alglib.ap.assert(alglib.ap.len(y)>=n, "Spline1DFitPenalizedW: Length(Y)<N!");
+            alglib.ap.assert(alglib.ap.len(w)>=n, "Spline1DFitPenalizedW: Length(W)<N!");
+            alglib.ap.assert(apserv.isfinitevector(x, n, _params), "Spline1DFitPenalizedW: X contains infinite or NAN values!");
+            alglib.ap.assert(apserv.isfinitevector(y, n, _params), "Spline1DFitPenalizedW: Y contains infinite or NAN values!");
+            alglib.ap.assert(apserv.isfinitevector(w, n, _params), "Spline1DFitPenalizedW: Y contains infinite or NAN values!");
+            alglib.ap.assert(math.isfinite(rho), "Spline1DFitPenalizedW: Rho is infinite!");
+            
+            //
+            // Prepare LambdaV
+            //
+            v = -(Math.Log(math.machineepsilon)/Math.Log(10));
+            if( (double)(rho)<(double)(-v) )
+            {
+                rho = -v;
+            }
+            if( (double)(rho)>(double)(v) )
+            {
+                rho = v;
+            }
+            lambdav = Math.Pow(10, rho);
+            
+            //
+            // Sort X, Y, W
+            //
+            spline1d.heapsortdpoints(ref x, ref y, ref w, n, _params);
+            
+            //
+            // Scale X, Y, XC, YC
+            //
+            intfitserv.lsfitscalexy(ref x, ref y, ref w, n, ref xc, ref yc, dc, 0, ref xa, ref xb, ref sa, ref sb, ref xoriginal, ref yoriginal, _params);
+            
+            //
+            // Allocate space
+            //
+            fmatrix = new double[n, m];
+            amatrix = new double[m, m];
+            d2matrix = new double[m, m];
+            bx = new double[m];
+            by = new double[m];
+            fcolumn = new double[n];
+            nmatrix = new double[m, m];
+            rightpart = new double[m];
+            tmp0 = new double[Math.Max(m, n)];
+            c = new double[m];
+            
+            //
+            // Fill:
+            // * FMatrix by values of basis functions
+            // * TmpAMatrix by second derivatives of I-th function at J-th point
+            // * CMatrix by constraints
+            //
+            fdmax = 0;
+            for(b=0; b<=m-1; b++)
+            {
+                
+                //
+                // Prepare I-th basis function
+                //
+                for(j=0; j<=m-1; j++)
+                {
+                    bx[j] = (double)(2*j)/(double)(m-1)-1;
+                    by[j] = 0;
+                }
+                by[b] = 1;
+                spline1d.spline1dgriddiff2cubic(bx, by, m, 2, 0.0, 2, 0.0, ref bd1, ref bd2, _params);
+                spline1d.spline1dbuildcubic(bx, by, m, 2, 0.0, 2, 0.0, bs, _params);
+                
+                //
+                // Calculate B-th column of FMatrix
+                // Update FDMax (maximum column norm)
+                //
+                spline1d.spline1dconvcubic(bx, by, m, 2, 0.0, 2, 0.0, x, n, ref fcolumn, _params);
+                for(i_=0; i_<=n-1;i_++)
+                {
+                    fmatrix[i_,b] = fcolumn[i_];
+                }
+                v = 0;
+                for(i=0; i<=n-1; i++)
+                {
+                    v = v+math.sqr(w[i]*fcolumn[i]);
+                }
+                fdmax = Math.Max(fdmax, v);
+                
+                //
+                // Fill temporary with second derivatives of basis function
+                //
+                for(i_=0; i_<=m-1;i_++)
+                {
+                    d2matrix[b,i_] = bd2[i_];
+                }
+            }
+            
+            //
+            // * calculate penalty matrix A
+            // * calculate max of diagonal elements of A
+            // * calculate PDecay - coefficient before penalty matrix
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                for(j=i; j<=m-1; j++)
+                {
+                    
+                    //
+                    // calculate integral(B_i''*B_j'') where B_i and B_j are
+                    // i-th and j-th basis splines.
+                    // B_i and B_j are piecewise linear functions.
+                    //
+                    v = 0;
+                    for(b=0; b<=m-2; b++)
+                    {
+                        fa = d2matrix[i,b];
+                        fb = d2matrix[i,b+1];
+                        ga = d2matrix[j,b];
+                        gb = d2matrix[j,b+1];
+                        v = v+(bx[b+1]-bx[b])*(fa*ga+(fa*(gb-ga)+ga*(fb-fa))/2+(fb-fa)*(gb-ga)/3);
+                    }
+                    amatrix[i,j] = v;
+                    amatrix[j,i] = v;
+                }
+            }
+            admax = 0;
+            for(i=0; i<=m-1; i++)
+            {
+                admax = Math.Max(admax, Math.Abs(amatrix[i,i]));
+            }
+            pdecay = lambdav*fdmax/admax;
+            
+            //
+            // Calculate TDecay for Tikhonov regularization
+            //
+            tdecay = fdmax*(1+pdecay)*10*math.machineepsilon;
+            
+            //
+            // Prepare system
+            //
+            // NOTE: FMatrix is spoiled during this process
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                v = w[i];
+                for(i_=0; i_<=m-1;i_++)
+                {
+                    fmatrix[i,i_] = v*fmatrix[i,i_];
+                }
+            }
+            ablas.rmatrixgemm(m, m, n, 1.0, fmatrix, 0, 0, 1, fmatrix, 0, 0, 0, 0.0, nmatrix, 0, 0, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                for(j=0; j<=m-1; j++)
+                {
+                    nmatrix[i,j] = nmatrix[i,j]+pdecay*amatrix[i,j];
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                nmatrix[i,i] = nmatrix[i,i]+tdecay;
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                rightpart[i] = 0;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                v = y[i]*w[i];
+                for(i_=0; i_<=m-1;i_++)
+                {
+                    rightpart[i_] = rightpart[i_] + v*fmatrix[i,i_];
+                }
+            }
+            
+            //
+            // Solve system
+            //
+            if( !trfac.spdmatrixcholesky(ref nmatrix, m, true, _params) )
+            {
+                info = -4;
+                return;
+            }
+            fbls.fblscholeskysolve(nmatrix, 1.0, m, true, rightpart, ref tmp0, _params);
+            for(i_=0; i_<=m-1;i_++)
+            {
+                c[i_] = rightpart[i_];
+            }
+            
+            //
+            // add nodes to force linearity outside of the fitting interval
+            //
+            spline1d.spline1dgriddiffcubic(bx, c, m, 2, 0.0, 2, 0.0, ref bd1, _params);
+            tx = new double[m+2];
+            ty = new double[m+2];
+            td = new double[m+2];
+            i1_ = (0) - (1);
+            for(i_=1; i_<=m;i_++)
+            {
+                tx[i_] = bx[i_+i1_];
+            }
+            i1_ = (0) - (1);
+            for(i_=1; i_<=m;i_++)
+            {
+                ty[i_] = rightpart[i_+i1_];
+            }
+            i1_ = (0) - (1);
+            for(i_=1; i_<=m;i_++)
+            {
+                td[i_] = bd1[i_+i1_];
+            }
+            tx[0] = tx[1]-(tx[2]-tx[1]);
+            ty[0] = ty[1]-td[1]*(tx[2]-tx[1]);
+            td[0] = td[1];
+            tx[m+1] = tx[m]+(tx[m]-tx[m-1]);
+            ty[m+1] = ty[m]+td[m]*(tx[m]-tx[m-1]);
+            td[m+1] = td[m];
+            spline1d.spline1dbuildhermite(tx, ty, td, m+2, s, _params);
+            spline1d.spline1dlintransx(s, 2/(xb-xa), -((xa+xb)/(xb-xa)), _params);
+            spline1d.spline1dlintransy(s, sb-sa, sa, _params);
+            info = 1;
+            
+            //
+            // Fill report
+            //
+            rep.rmserror = 0;
+            rep.avgerror = 0;
+            rep.avgrelerror = 0;
+            rep.maxerror = 0;
+            relcnt = 0;
+            spline1d.spline1dconvcubic(bx, rightpart, m, 2, 0.0, 2, 0.0, x, n, ref fcolumn, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                v = (sb-sa)*fcolumn[i]+sa;
+                rep.rmserror = rep.rmserror+math.sqr(v-yoriginal[i]);
+                rep.avgerror = rep.avgerror+Math.Abs(v-yoriginal[i]);
+                if( (double)(yoriginal[i])!=(double)(0) )
+                {
+                    rep.avgrelerror = rep.avgrelerror+Math.Abs(v-yoriginal[i])/Math.Abs(yoriginal[i]);
+                    relcnt = relcnt+1;
+                }
+                rep.maxerror = Math.Max(rep.maxerror, Math.Abs(v-yoriginal[i]));
+            }
+            rep.rmserror = Math.Sqrt(rep.rmserror/n);
+            rep.avgerror = rep.avgerror/n;
+            if( (double)(relcnt)!=(double)(0) )
+            {
+                rep.avgrelerror = rep.avgrelerror/relcnt;
+            }
         }
 
 

@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.15.0 (source code generated 2019-02-20)
+ALGLIB 3.16.0 (source code generated 2019-12-19)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -8836,7 +8836,7 @@ public partial class alglib
     /*************************************************************************
     A random forest (decision forest) builder object.
 
-    Used to store dataset and specify random forest training algorithm settings.
+    Used to store dataset and specify decision forest training algorithm settings.
     *************************************************************************/
     public class decisionforestbuilder : alglibobject
     {
@@ -8938,12 +8938,14 @@ public partial class alglib
     /*************************************************************************
     Decision forest training report.
 
+    === training/oob errors ==================================================
+
     Following fields store training set errors:
-    * relclserror       -   fraction of misclassified cases, [0,1]
-    * avgce             -   average cross-entropy in bits per symbol
-    * rmserror          -   root-mean-square error
-    * avgerror          -   average error
-    * avgrelerror       -   average relative error
+    * relclserror           -   fraction of misclassified cases, [0,1]
+    * avgce                 -   average cross-entropy in bits per symbol
+    * rmserror              -   root-mean-square error
+    * avgerror              -   average error
+    * avgrelerror           -   average relative error
 
     Out-of-bag estimates are stored in fields with same names, but "oob" prefix.
 
@@ -8952,6 +8954,60 @@ public partial class alglib
 
     For regression problems:
     * RELCLS and AVGCE errors are zero
+
+    === variable importance ==================================================
+
+    Following fields are used to store variable importance information:
+
+    * topvars               -   variables ordered from the most  important  to
+                                less  important  ones  (according  to  current
+                                choice of importance raiting).
+                                For example, topvars[0] contains index of  the
+                                most important variable, and topvars[0:2]  are
+                                indexes of 3 most important ones and so on.
+
+    * varimportances        -   array[nvars], ratings (the  larger,  the  more
+                                important the variable  is,  always  in  [0,1]
+                                range).
+                                By default, filled  by  zeros  (no  importance
+                                ratings are  provided  unless  you  explicitly
+                                request them).
+                                Zero rating means that variable is not important,
+                                however you will rarely encounter such a thing,
+                                in many cases  unimportant  variables  produce
+                                nearly-zero (but nonzero) ratings.
+
+    Variable importance report must be EXPLICITLY requested by calling:
+    * dfbuildersetimportancegini() function, if you need out-of-bag Gini-based
+      importance rating also known as MDI  (fast to  calculate,  resistant  to
+      overfitting  issues,   but   has   some   bias  towards  continuous  and
+      high-cardinality categorical variables)
+    * dfbuildersetimportancetrngini() function, if you need training set Gini-
+      -based importance rating (what other packages typically report).
+    * dfbuildersetimportancepermutation() function, if you  need  permutation-
+      based importance rating also known as MDA (slower to calculate, but less
+      biased)
+    * dfbuildersetimportancenone() function,  if  you  do  not  need  importance
+      ratings - ratings will be zero, topvars[] will be [0,1,2,...]
+
+    Different importance ratings (Gini or permutation) produce  non-comparable
+    values. Although in all cases rating values lie in [0,1] range, there  are
+    exist differences:
+    * informally speaking, Gini importance rating tends to divide "unit amount
+      of importance"  between  several  important  variables, i.e. it produces
+      estimates which roughly sum to 1.0 (or less than 1.0, if your  task  can
+      not be solved exactly). If all variables  are  equally  important,  they
+      will have same rating,  roughly  1/NVars,  even  if  every  variable  is
+      critically important.
+    * from the other side, permutation importance tells us what percentage  of
+      the model predictive power will be ruined  by  permuting  this  specific
+      variable. It does not produce estimates which  sum  to  one.  Critically
+      important variable will have rating close  to  1.0,  and  you  may  have
+      multiple variables with such a rating.
+
+    More information on variable importance ratings can be found  in  comments
+    on the dfbuildersetimportancegini() and dfbuildersetimportancepermutation()
+    functions.
     *************************************************************************/
     public class dfreport : alglibobject
     {
@@ -8968,6 +9024,8 @@ public partial class alglib
         public double oobrmserror { get { return _innerobj.oobrmserror; } set { _innerobj.oobrmserror = value; } }
         public double oobavgerror { get { return _innerobj.oobavgerror; } set { _innerobj.oobavgerror = value; } }
         public double oobavgrelerror { get { return _innerobj.oobavgrelerror; } set { _innerobj.oobavgrelerror = value; } }
+        public int[] topvars { get { return _innerobj.topvars; } set { _innerobj.topvars = value; } }
+        public double[] varimportances { get { return _innerobj.varimportances; } set { _innerobj.varimportances = value; } }
     
         public dfreport()
         {
@@ -9112,7 +9170,7 @@ public partial class alglib
     
     /*************************************************************************
     This subroutine creates DecisionForestBuilder  object  which  is  used  to
-    train random forests.
+    train decision forests.
 
     By default, new builder stores empty dataset and some  reasonable  default
     settings. At the very least, you should specify dataset prior to  building
@@ -9121,8 +9179,8 @@ public partial class alglib
 
     Following actions are mandatory:
     * calling dfbuildersetdataset() to specify dataset
-    * calling dfbuilderbuildrandomforest() to build random forest using current
-      dataset and default settings
+    * calling dfbuilderbuildrandomforest()  to  build  decision  forest  using
+      current dataset and default settings
 
     Additionally, you may call:
     * dfbuildersetrndvars() or dfbuildersetrndvarsratio() to specify number of
@@ -9193,8 +9251,8 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This function sets number of variables (in [1,NVars] range) used by random
-    forest construction algorithm.
+    This function sets number  of  variables  (in  [1,NVars]  range)  used  by
+    decision forest construction algorithm.
 
     The default option is to use roughly sqrt(NVars) variables.
 
@@ -9222,7 +9280,7 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This function sets number of variables used by random forest  construction
+    This function sets number of variables used by decision forest construction
     algorithm as a fraction of total variable count (0,1) range.
 
     The default option is to use roughly sqrt(NVars) variables.
@@ -9250,8 +9308,8 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This function tells random forest builder to automatically  choose  number
-    of  variables  used  by  random  forest  construction  algorithm.  Roughly
+    This function tells decision forest builder to automatically choose number
+    of  variables  used  by  decision forest construction  algorithm.  Roughly
     sqrt(NVars) variables will be used.
 
     INPUT PARAMETERS:
@@ -9276,7 +9334,7 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This function sets size of dataset subsample generated the  random  forest
+    This function sets size of dataset subsample generated the decision forest
     construction algorithm. Size is specified as a fraction of  total  dataset
     size.
 
@@ -9313,7 +9371,7 @@ public partial class alglib
     This function sets seed used by internal RNG for  random  subsampling  and
     random selection of variable subsets.
 
-    By default, random seed is used, i.e. every time you build random  forest,
+    By default random seed is used, i.e. every time you build decision forest,
     we seed generator with new value  obtained  from  system-wide  RNG.  Thus,
     decision forest builder returns non-deterministic results. You can  change
     such behavior by specyfing fixed positive seed value.
@@ -9323,11 +9381,11 @@ public partial class alglib
         SeedVal     -   seed value:
                         * positive values are used for seeding RNG with fixed
                           seed, i.e. subsequent runs on same data will return
-                          same random forests
+                          same decision forests
                         * non-positive seed means that random seed is used
                           for every run of builder, i.e. subsequent  runs  on
-                          same datasets will return slightly different random
-                          forests
+                          same  datasets  will  return   slightly   different
+                          decision forests
 
     OUTPUT PARAMETERS:
         S           -   decision forest builder, see
@@ -9350,7 +9408,7 @@ public partial class alglib
     /*************************************************************************
     This function sets random decision forest construction algorithm.
 
-    As for now, only one random forest construction algorithm is  supported  -
+    As for now, only one decision forest construction algorithm is supported -
     a dense "baseline" RDF algorithm.
 
     INPUT PARAMETERS:
@@ -9377,7 +9435,7 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This  function  sets  split  selection  algorithm  used  by random forests
+    This  function  sets  split  selection  algorithm used by decision  forest
     classifier. You may choose several algorithms, with  different  speed  and
     quality of the results.
 
@@ -9407,6 +9465,243 @@ public partial class alglib
     }
     
     /*************************************************************************
+    This  function  tells  decision  forest  construction  algorithm  to   use
+    Gini impurity based variable importance estimation (also known as MDI).
+
+    This version of importance estimation algorithm analyzes mean decrease  in
+    impurity (MDI) on training sample during  splits.  The result  is  divided
+    by impurity at the root node in order to produce estimate in [0,1] range.
+
+    Such estimates are fast to calculate and beautifully  normalized  (sum  to
+    one) but have following downsides:
+    * They ALWAYS sum to 1.0, even if output is completely unpredictable. I.e.
+      MDI allows to order variables by importance, but does not  tell us about
+      "absolute" importances of variables
+    * there exist some bias towards continuous and high-cardinality categorical
+      variables
+
+    NOTE: informally speaking, MDA (permutation importance) rating answers the
+          question  "what  part  of  the  model  predictive power is ruined by
+          permuting k-th variable?" while MDI tells us "what part of the model
+          predictive power was achieved due to usage of k-th variable".
+
+          Thus, MDA rates each variable independently at "0 to 1"  scale while
+          MDI (and OOB-MDI too) tends to divide "unit  amount  of  importance"
+          between several important variables.
+
+          If  all  variables  are  equally  important,  they  will  have  same
+          MDI/OOB-MDI rating, equal (for OOB-MDI: roughly equal)  to  1/NVars.
+          However, roughly  same  picture  will  be  produced   for  the  "all
+          variables provide information no one is critical" situation  and for
+          the "all variables are critical, drop any one, everything is ruined"
+          situation.
+
+          Contrary to that, MDA will rate critical variable as ~1.0 important,
+          and important but non-critical variable will  have  less  than  unit
+          rating.
+
+    NOTE: quite an often MDA and MDI return same results. It generally happens
+          on problems with low test set error (a few  percents  at  most)  and
+          large enough training set to avoid overfitting.
+
+          The difference between MDA, MDI and OOB-MDI becomes  important  only
+          on "hard" tasks with high test set error and/or small training set.
+
+    INPUT PARAMETERS:
+        S           -   decision forest builder object
+
+    OUTPUT PARAMETERS:
+        S           -   decision forest builder object. Next call to the forest
+                        construction function will produce:
+                        * importance estimates in rep.varimportances field
+                        * variable ranks in rep.topvars field
+
+      -- ALGLIB --
+         Copyright 29.07.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void dfbuildersetimportancetrngini(decisionforestbuilder s)
+    {
+    
+        dforest.dfbuildersetimportancetrngini(s.innerobj, null);
+    }
+    
+    public static void dfbuildersetimportancetrngini(decisionforestbuilder s, alglib.xparams _params)
+    {
+    
+        dforest.dfbuildersetimportancetrngini(s.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    This  function  tells  decision  forest  construction  algorithm  to   use
+    out-of-bag version of Gini variable importance estimation (also  known  as
+    OOB-MDI).
+
+    This version of importance estimation algorithm analyzes mean decrease  in
+    impurity (MDI) on out-of-bag sample during splits. The result  is  divided
+    by impurity at the root node in order to produce estimate in [0,1] range.
+
+    Such estimates are fast to calculate and resistant to  overfitting  issues
+    (thanks to the  out-of-bag  estimates  used). However, OOB Gini rating has
+    following downsides:
+    * there exist some bias towards continuous and high-cardinality categorical
+      variables
+    * Gini rating allows us to order variables by importance, but it  is  hard
+      to define importance of the variable by itself.
+
+    NOTE: informally speaking, MDA (permutation importance) rating answers the
+          question  "what  part  of  the  model  predictive power is ruined by
+          permuting k-th variable?" while MDI tells us "what part of the model
+          predictive power was achieved due to usage of k-th variable".
+
+          Thus, MDA rates each variable independently at "0 to 1"  scale while
+          MDI (and OOB-MDI too) tends to divide "unit  amount  of  importance"
+          between several important variables.
+
+          If  all  variables  are  equally  important,  they  will  have  same
+          MDI/OOB-MDI rating, equal (for OOB-MDI: roughly equal)  to  1/NVars.
+          However, roughly  same  picture  will  be  produced   for  the  "all
+          variables provide information no one is critical" situation  and for
+          the "all variables are critical, drop any one, everything is ruined"
+          situation.
+
+          Contrary to that, MDA will rate critical variable as ~1.0 important,
+          and important but non-critical variable will  have  less  than  unit
+          rating.
+
+    NOTE: quite an often MDA and MDI return same results. It generally happens
+          on problems with low test set error (a few  percents  at  most)  and
+          large enough training set to avoid overfitting.
+
+          The difference between MDA, MDI and OOB-MDI becomes  important  only
+          on "hard" tasks with high test set error and/or small training set.
+
+    INPUT PARAMETERS:
+        S           -   decision forest builder object
+
+    OUTPUT PARAMETERS:
+        S           -   decision forest builder object. Next call to the forest
+                        construction function will produce:
+                        * importance estimates in rep.varimportances field
+                        * variable ranks in rep.topvars field
+
+      -- ALGLIB --
+         Copyright 29.07.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void dfbuildersetimportanceoobgini(decisionforestbuilder s)
+    {
+    
+        dforest.dfbuildersetimportanceoobgini(s.innerobj, null);
+    }
+    
+    public static void dfbuildersetimportanceoobgini(decisionforestbuilder s, alglib.xparams _params)
+    {
+    
+        dforest.dfbuildersetimportanceoobgini(s.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    This  function  tells  decision  forest  construction  algorithm  to   use
+    permutation variable importance estimator (also known as MDA).
+
+    This version of importance estimation algorithm analyzes mean increase  in
+    out-of-bag sum of squared  residuals  after  random  permutation  of  J-th
+    variable. The result is divided by error computed with all variables being
+    perturbed in order to produce R-squared-like estimate in [0,1] range.
+
+    Such estimate  is  slower to calculate than Gini-based rating  because  it
+    needs multiple inference runs for each of variables being studied.
+
+    ALGLIB uses parallelized and highly  optimized  algorithm  which  analyzes
+    path through the decision tree and allows  to  handle  most  perturbations
+    in O(1) time; nevertheless, requesting MDA importances may increase forest
+    construction time from 10% to 200% (or more,  if  you  have  thousands  of
+    variables).
+
+    However, MDA rating has following benefits over Gini-based ones:
+    * no bias towards specific variable types
+    * ability to directly evaluate "absolute" importance of some  variable  at
+      "0 to 1" scale (contrary to Gini-based rating, which returns comparative
+      importances).
+
+    NOTE: informally speaking, MDA (permutation importance) rating answers the
+          question  "what  part  of  the  model  predictive power is ruined by
+          permuting k-th variable?" while MDI tells us "what part of the model
+          predictive power was achieved due to usage of k-th variable".
+
+          Thus, MDA rates each variable independently at "0 to 1"  scale while
+          MDI (and OOB-MDI too) tends to divide "unit  amount  of  importance"
+          between several important variables.
+
+          If  all  variables  are  equally  important,  they  will  have  same
+          MDI/OOB-MDI rating, equal (for OOB-MDI: roughly equal)  to  1/NVars.
+          However, roughly  same  picture  will  be  produced   for  the  "all
+          variables provide information no one is critical" situation  and for
+          the "all variables are critical, drop any one, everything is ruined"
+          situation.
+
+          Contrary to that, MDA will rate critical variable as ~1.0 important,
+          and important but non-critical variable will  have  less  than  unit
+          rating.
+
+    NOTE: quite an often MDA and MDI return same results. It generally happens
+          on problems with low test set error (a few  percents  at  most)  and
+          large enough training set to avoid overfitting.
+
+          The difference between MDA, MDI and OOB-MDI becomes  important  only
+          on "hard" tasks with high test set error and/or small training set.
+
+    INPUT PARAMETERS:
+        S           -   decision forest builder object
+
+    OUTPUT PARAMETERS:
+        S           -   decision forest builder object. Next call to the forest
+                        construction function will produce:
+                        * importance estimates in rep.varimportances field
+                        * variable ranks in rep.topvars field
+
+      -- ALGLIB --
+         Copyright 29.07.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void dfbuildersetimportancepermutation(decisionforestbuilder s)
+    {
+    
+        dforest.dfbuildersetimportancepermutation(s.innerobj, null);
+    }
+    
+    public static void dfbuildersetimportancepermutation(decisionforestbuilder s, alglib.xparams _params)
+    {
+    
+        dforest.dfbuildersetimportancepermutation(s.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    This  function  tells  decision  forest  construction  algorithm  to  skip
+    variable importance estimation.
+
+    INPUT PARAMETERS:
+        S           -   decision forest builder object
+
+    OUTPUT PARAMETERS:
+        S           -   decision forest builder object. Next call to the forest
+                        construction function will result in forest being built
+                        without variable importance estimation.
+
+      -- ALGLIB --
+         Copyright 29.07.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static void dfbuildersetimportancenone(decisionforestbuilder s)
+    {
+    
+        dforest.dfbuildersetimportancenone(s.innerobj, null);
+    }
+    
+    public static void dfbuildersetimportancenone(decisionforestbuilder s, alglib.xparams _params)
+    {
+    
+        dforest.dfbuildersetimportancenone(s.innerobj, _params);
+    }
+    
+    /*************************************************************************
     This function is an alias for dfbuilderpeekprogress(), left in ALGLIB  for
     backward compatibility reasons.
 
@@ -9426,14 +9721,14 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This function is used to peek into random forest construction process from
-    other thread and get current progress indicator. It returns value in [0,1].
+    This function is used to peek into  decision  forest  construction process
+    from some other thread and get current progress indicator.
 
-    You can "peek" into decision forest builder from another thread.
+    It returns value in [0,1].
 
     INPUT PARAMETERS:
-        S           -   decision forest builder object used  to  build  random
-                        forest in some other thread
+        S           -   decision forest builder object used  to  build  forest
+                        in some other thread
 
     RESULT:
         progress value, in [0,1]
@@ -9454,11 +9749,23 @@ public partial class alglib
     }
     
     /*************************************************************************
-    This subroutine builds random forest according to current settings,  using
+    This subroutine builds decision forest according to current settings using
     dataset internally stored in the builder object. Dense algorithm is used.
 
     NOTE: this   function   uses   dense  algorithm  for  forest  construction
           independently from the dataset format (dense or sparse).
+
+    NOTE: forest built with this function is  stored  in-memory  using  64-bit
+          data structures for offsets/indexes/split values. It is possible  to
+          convert  forest  into  more  memory-efficient   compressed    binary
+          representation.  Depending  on  the  problem  properties,  3.7x-5.7x
+          compression factors are possible.
+
+          The downsides of compression are (a) slight reduction in  the  model
+          accuracy and (b) ~1.5x reduction in  the  inference  speed  (due  to
+          increased complexity of the storage format).
+
+          See comments on dfbinarycompression() for more info.
 
     Default settings are used by the algorithm; you can tweak  them  with  the
     help of the following functions:
@@ -9483,8 +9790,35 @@ public partial class alglib
         NTrees      -   NTrees>=1, number of trees to train
 
     OUTPUT PARAMETERS:
-        DF          -   decision forest
-        Rep         -   report
+        DF          -   decision forest. You can compress this forest to  more
+                        compact 16-bit representation with dfbinarycompression()
+        Rep         -   report, see below for information on its fields.
+
+    === report information produced by forest construction function ==========
+
+    Decision forest training report includes following information:
+    * training set errors
+    * out-of-bag estimates of errors
+    * variable importance ratings
+
+    Following fields are used to store information:
+    * training set errors are stored in rep.relclserror, rep.avgce, rep.rmserror,
+      rep.avgerror and rep.avgrelerror
+    * out-of-bag estimates of errors are stored in rep.oobrelclserror, rep.oobavgce,
+      rep.oobrmserror, rep.oobavgerror and rep.oobavgrelerror
+
+    Variable importance reports, if requested by dfbuildersetimportancegini(),
+    dfbuildersetimportancetrngini() or dfbuildersetimportancepermutation()
+    call, are stored in:
+    * rep.varimportances field stores importance ratings
+    * rep.topvars stores variable indexes ordered from the most important to
+      less important ones
+
+    You can find more information about report fields in:
+    * comments on dfreport structure
+    * comments on dfbuildersetimportancegini function
+    * comments on dfbuildersetimportancetrngini function
+    * comments on dfbuildersetimportancepermutation function
 
       -- ALGLIB --
          Copyright 21.05.2018 by Bochkanov Sergey
@@ -9501,6 +9835,57 @@ public partial class alglib
         df = new decisionforest();
         rep = new dfreport();
         dforest.dfbuilderbuildrandomforest(s.innerobj, ntrees, df.innerobj, rep.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    This function performs binary compression of the decision forest.
+
+    Original decision forest produced by the  forest  builder  is stored using
+    64-bit representation for all numbers - offsets, variable  indexes,  split
+    points.
+
+    It is possible to significantly reduce model size by means of:
+    * using compressed  dynamic encoding for integers  (offsets  and  variable
+      indexes), which uses just 1 byte to store small ints  (less  than  128),
+      just 2 bytes for larger values (less than 128^2) and so on
+    * storing floating point numbers using 8-bit exponent and 16-bit mantissa
+
+    As  result,  model  needs  significantly  less  memory (compression factor
+    depends on  variable and class counts). In particular:
+    * NVars<128   and NClasses<128 result in 4.4x-5.7x model size reduction
+    * NVars<16384 and NClasses<128 result in 3.7x-4.5x model size reduction
+
+    Such storage format performs lossless compression  of  all  integers,  but
+    compression of floating point values (split values) is lossy, with roughly
+    0.01% relative error introduced during rounding. Thus, we recommend you to
+    re-evaluate model accuracy after compression.
+
+    Another downside  of  compression  is  ~1.5x reduction  in  the  inference
+    speed due to necessity of dynamic decompression of the compressed model.
+
+    INPUT PARAMETERS:
+        DF      -   decision forest built by forest builder
+
+    OUTPUT PARAMETERS:
+        DF      -   replaced by compressed forest
+
+    RESULT:
+        compression factor (in-RAM size of the compressed model vs than of the
+        uncompressed one), positive number larger than 1.0
+
+      -- ALGLIB --
+         Copyright 22.07.2019 by Bochkanov Sergey
+    *************************************************************************/
+    public static double dfbinarycompression(decisionforest df)
+    {
+    
+        return dforest.dfbinarycompression(df.innerobj, null);
+    }
+    
+    public static double dfbinarycompression(decisionforest df, alglib.xparams _params)
+    {
+    
+        return dforest.dfbinarycompression(df.innerobj, _params);
     }
     
     /*************************************************************************
@@ -37760,7 +38145,7 @@ public partial class alglib
         /*************************************************************************
         A random forest (decision forest) builder object.
 
-        Used to store dataset and specify random forest training algorithm settings.
+        Used to store dataset and specify decision forest training algorithm settings.
         *************************************************************************/
         public class decisionforestbuilder : apobject
         {
@@ -37776,6 +38161,7 @@ public partial class alglib
             public double rdfvars;
             public int rdfglobalseed;
             public int rdfsplitstrength;
+            public int rdfimportance;
             public double[] dsmin;
             public double[] dsmax;
             public bool[] dsbinary;
@@ -37787,6 +38173,9 @@ public partial class alglib
             public alglib.smp.shared_pool votepool;
             public alglib.smp.shared_pool treepool;
             public alglib.smp.shared_pool treefactory;
+            public bool neediobmatrix;
+            public bool[,] iobmatrix;
+            public int[] varimpshuffle2;
             public decisionforestbuilder()
             {
                 init();
@@ -37804,6 +38193,8 @@ public partial class alglib
                 votepool = new alglib.smp.shared_pool();
                 treepool = new alglib.smp.shared_pool();
                 treefactory = new alglib.smp.shared_pool();
+                iobmatrix = new bool[0,0];
+                varimpshuffle2 = new int[0];
             }
             public override alglib.apobject make_copy()
             {
@@ -37820,6 +38211,7 @@ public partial class alglib
                 _result.rdfvars = rdfvars;
                 _result.rdfglobalseed = rdfglobalseed;
                 _result.rdfsplitstrength = rdfsplitstrength;
+                _result.rdfimportance = rdfimportance;
                 _result.dsmin = (double[])dsmin.Clone();
                 _result.dsmax = (double[])dsmax.Clone();
                 _result.dsbinary = (bool[])dsbinary.Clone();
@@ -37831,6 +38223,9 @@ public partial class alglib
                 _result.votepool = (alglib.smp.shared_pool)votepool.make_copy();
                 _result.treepool = (alglib.smp.shared_pool)treepool.make_copy();
                 _result.treefactory = (alglib.smp.shared_pool)treefactory.make_copy();
+                _result.neediobmatrix = neediobmatrix;
+                _result.iobmatrix = (bool[,])iobmatrix.Clone();
+                _result.varimpshuffle2 = (int[])varimpshuffle2.Clone();
                 return _result;
             }
         };
@@ -37847,6 +38242,8 @@ public partial class alglib
             public int[] trnlabelsi;
             public int[] oobset;
             public int oobsize;
+            public double[] ooblabelsr;
+            public int[] ooblabelsi;
             public double[] treebuf;
             public double[] curvals;
             public double[] bestvals;
@@ -37856,6 +38253,7 @@ public partial class alglib
             public double[] tmp1r;
             public double[] tmp2r;
             public double[] tmp3r;
+            public int[] tmpnrms2;
             public int[] classtotals0;
             public int[] classtotals1;
             public int[] classtotals01;
@@ -37871,6 +38269,8 @@ public partial class alglib
                 trnlabelsr = new double[0];
                 trnlabelsi = new int[0];
                 oobset = new int[0];
+                ooblabelsr = new double[0];
+                ooblabelsi = new int[0];
                 treebuf = new double[0];
                 curvals = new double[0];
                 bestvals = new double[0];
@@ -37880,6 +38280,7 @@ public partial class alglib
                 tmp1r = new double[0];
                 tmp2r = new double[0];
                 tmp3r = new double[0];
+                tmpnrms2 = new int[0];
                 classtotals0 = new int[0];
                 classtotals1 = new int[0];
                 classtotals01 = new int[0];
@@ -37896,6 +38297,8 @@ public partial class alglib
                 _result.trnlabelsi = (int[])trnlabelsi.Clone();
                 _result.oobset = (int[])oobset.Clone();
                 _result.oobsize = oobsize;
+                _result.ooblabelsr = (double[])ooblabelsr.Clone();
+                _result.ooblabelsi = (int[])ooblabelsi.Clone();
                 _result.treebuf = (double[])treebuf.Clone();
                 _result.curvals = (double[])curvals.Clone();
                 _result.bestvals = (double[])bestvals.Clone();
@@ -37905,6 +38308,7 @@ public partial class alglib
                 _result.tmp1r = (double[])tmp1r.Clone();
                 _result.tmp2r = (double[])tmp2r.Clone();
                 _result.tmp3r = (double[])tmp3r.Clone();
+                _result.tmpnrms2 = (int[])tmpnrms2.Clone();
                 _result.classtotals0 = (int[])classtotals0.Clone();
                 _result.classtotals1 = (int[])classtotals1.Clone();
                 _result.classtotals01 = (int[])classtotals01.Clone();
@@ -37919,6 +38323,7 @@ public partial class alglib
             public double[] oobtotals;
             public int[] trncounts;
             public int[] oobcounts;
+            public double[] giniimportances;
             public dfvotebuf()
             {
                 init();
@@ -37929,6 +38334,7 @@ public partial class alglib
                 oobtotals = new double[0];
                 trncounts = new int[0];
                 oobcounts = new int[0];
+                giniimportances = new double[0];
             }
             public override alglib.apobject make_copy()
             {
@@ -37937,6 +38343,58 @@ public partial class alglib
                 _result.oobtotals = (double[])oobtotals.Clone();
                 _result.trncounts = (int[])trncounts.Clone();
                 _result.oobcounts = (int[])oobcounts.Clone();
+                _result.giniimportances = (double[])giniimportances.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        Permutation importance buffer object, stores permutation-related losses
+        for some subset of the dataset + some temporaries
+
+        Losses      -   array[NVars+2], stores sum of squared residuals for each
+                        permutation type:
+                        * Losses[0..NVars-1] stores losses for permutation in J-th variable
+                        * Losses[NVars] stores loss for all variables being randomly perturbed
+                        * Losses[NVars+1] stores loss for unperturbed dataset
+        *************************************************************************/
+        public class dfpermimpbuf : apobject
+        {
+            public double[] losses;
+            public double[] xraw;
+            public double[] xdist;
+            public double[] xcur;
+            public double[] y;
+            public double[] yv;
+            public double[] targety;
+            public int[] startnodes;
+            public dfpermimpbuf()
+            {
+                init();
+            }
+            public override void init()
+            {
+                losses = new double[0];
+                xraw = new double[0];
+                xdist = new double[0];
+                xcur = new double[0];
+                y = new double[0];
+                yv = new double[0];
+                targety = new double[0];
+                startnodes = new int[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                dfpermimpbuf _result = new dfpermimpbuf();
+                _result.losses = (double[])losses.Clone();
+                _result.xraw = (double[])xraw.Clone();
+                _result.xdist = (double[])xdist.Clone();
+                _result.xcur = (double[])xcur.Clone();
+                _result.y = (double[])y.Clone();
+                _result.yv = (double[])yv.Clone();
+                _result.targety = (double[])targety.Clone();
+                _result.startnodes = (int[])startnodes.Clone();
                 return _result;
             }
         };
@@ -37945,6 +38403,7 @@ public partial class alglib
         public class dftreebuf : apobject
         {
             public double[] treebuf;
+            public int treeidx;
             public dftreebuf()
             {
                 init();
@@ -37957,6 +38416,7 @@ public partial class alglib
             {
                 dftreebuf _result = new dftreebuf();
                 _result.treebuf = (double[])treebuf.Clone();
+                _result.treeidx = treeidx;
                 return _result;
             }
         };
@@ -37997,12 +38457,15 @@ public partial class alglib
         *************************************************************************/
         public class decisionforest : apobject
         {
+            public int forestformat;
+            public bool usemantissa8;
             public int nvars;
             public int nclasses;
             public int ntrees;
             public int bufsize;
             public double[] trees;
             public decisionforestbuffer buffer;
+            public byte[] trees8;
             public decisionforest()
             {
                 init();
@@ -38011,16 +38474,20 @@ public partial class alglib
             {
                 trees = new double[0];
                 buffer = new decisionforestbuffer();
+                trees8 = new byte[0];
             }
             public override alglib.apobject make_copy()
             {
                 decisionforest _result = new decisionforest();
+                _result.forestformat = forestformat;
+                _result.usemantissa8 = usemantissa8;
                 _result.nvars = nvars;
                 _result.nclasses = nclasses;
                 _result.ntrees = ntrees;
                 _result.bufsize = bufsize;
                 _result.trees = (double[])trees.Clone();
                 _result.buffer = (decisionforestbuffer)buffer.make_copy();
+                _result.trees8 = (byte[])trees8.Clone();
                 return _result;
             }
         };
@@ -38029,12 +38496,14 @@ public partial class alglib
         /*************************************************************************
         Decision forest training report.
 
+        === training/oob errors ==================================================
+
         Following fields store training set errors:
-        * relclserror       -   fraction of misclassified cases, [0,1]
-        * avgce             -   average cross-entropy in bits per symbol
-        * rmserror          -   root-mean-square error
-        * avgerror          -   average error
-        * avgrelerror       -   average relative error
+        * relclserror           -   fraction of misclassified cases, [0,1]
+        * avgce                 -   average cross-entropy in bits per symbol
+        * rmserror              -   root-mean-square error
+        * avgerror              -   average error
+        * avgrelerror           -   average relative error
 
         Out-of-bag estimates are stored in fields with same names, but "oob" prefix.
 
@@ -38043,6 +38512,60 @@ public partial class alglib
 
         For regression problems:
         * RELCLS and AVGCE errors are zero
+
+        === variable importance ==================================================
+
+        Following fields are used to store variable importance information:
+
+        * topvars               -   variables ordered from the most  important  to
+                                    less  important  ones  (according  to  current
+                                    choice of importance raiting).
+                                    For example, topvars[0] contains index of  the
+                                    most important variable, and topvars[0:2]  are
+                                    indexes of 3 most important ones and so on.
+                                    
+        * varimportances        -   array[nvars], ratings (the  larger,  the  more
+                                    important the variable  is,  always  in  [0,1]
+                                    range).
+                                    By default, filled  by  zeros  (no  importance
+                                    ratings are  provided  unless  you  explicitly
+                                    request them).
+                                    Zero rating means that variable is not important,
+                                    however you will rarely encounter such a thing,
+                                    in many cases  unimportant  variables  produce
+                                    nearly-zero (but nonzero) ratings.
+
+        Variable importance report must be EXPLICITLY requested by calling:
+        * dfbuildersetimportancegini() function, if you need out-of-bag Gini-based
+          importance rating also known as MDI  (fast to  calculate,  resistant  to
+          overfitting  issues,   but   has   some   bias  towards  continuous  and
+          high-cardinality categorical variables)
+        * dfbuildersetimportancetrngini() function, if you need training set Gini-
+          -based importance rating (what other packages typically report).
+        * dfbuildersetimportancepermutation() function, if you  need  permutation-
+          based importance rating also known as MDA (slower to calculate, but less
+          biased)
+        * dfbuildersetimportancenone() function,  if  you  do  not  need  importance
+          ratings - ratings will be zero, topvars[] will be [0,1,2,...]
+
+        Different importance ratings (Gini or permutation) produce  non-comparable
+        values. Although in all cases rating values lie in [0,1] range, there  are
+        exist differences:
+        * informally speaking, Gini importance rating tends to divide "unit amount
+          of importance"  between  several  important  variables, i.e. it produces
+          estimates which roughly sum to 1.0 (or less than 1.0, if your  task  can
+          not be solved exactly). If all variables  are  equally  important,  they
+          will have same rating,  roughly  1/NVars,  even  if  every  variable  is
+          critically important.
+        * from the other side, permutation importance tells us what percentage  of
+          the model predictive power will be ruined  by  permuting  this  specific
+          variable. It does not produce estimates which  sum  to  one.  Critically
+          important variable will have rating close  to  1.0,  and  you  may  have
+          multiple variables with such a rating.
+
+        More information on variable importance ratings can be found  in  comments
+        on the dfbuildersetimportancegini() and dfbuildersetimportancepermutation()
+        functions.
         *************************************************************************/
         public class dfreport : apobject
         {
@@ -38056,12 +38579,16 @@ public partial class alglib
             public double oobrmserror;
             public double oobavgerror;
             public double oobavgrelerror;
+            public int[] topvars;
+            public double[] varimportances;
             public dfreport()
             {
                 init();
             }
             public override void init()
             {
+                topvars = new int[0];
+                varimportances = new double[0];
             }
             public override alglib.apobject make_copy()
             {
@@ -38076,6 +38603,8 @@ public partial class alglib
                 _result.oobrmserror = oobrmserror;
                 _result.oobavgerror = oobavgerror;
                 _result.oobavgrelerror = oobavgrelerror;
+                _result.topvars = (int[])topvars.Clone();
+                _result.varimportances = (double[])varimportances.Clone();
                 return _result;
             }
         };
@@ -38140,7 +38669,12 @@ public partial class alglib
         public const int leafnodewidth = 2;
         public const int dfusestrongsplits = 1;
         public const int dfuseevs = 2;
-        public const int dffirstversion = 0;
+        public const int dfuncompressedv0 = 0;
+        public const int dfcompressedv0 = 1;
+        public const int needtrngini = 1;
+        public const int needoobgini = 2;
+        public const int needpermutation = 3;
+        public const int permutationimportancebatchsize = 512;
 
 
         /*************************************************************************
@@ -38181,7 +38715,7 @@ public partial class alglib
 
         /*************************************************************************
         This subroutine creates DecisionForestBuilder  object  which  is  used  to
-        train random forests.
+        train decision forests.
 
         By default, new builder stores empty dataset and some  reasonable  default
         settings. At the very least, you should specify dataset prior to  building
@@ -38190,8 +38724,8 @@ public partial class alglib
 
         Following actions are mandatory:
         * calling dfbuildersetdataset() to specify dataset
-        * calling dfbuilderbuildrandomforest() to build random forest using current
-          dataset and default settings
+        * calling dfbuilderbuildrandomforest()  to  build  decision  forest  using
+          current dataset and default settings
           
         Additionally, you may call:
         * dfbuildersetrndvars() or dfbuildersetrndvarsratio() to specify number of
@@ -38229,6 +38763,7 @@ public partial class alglib
             s.rdfvars = 0.0;
             s.rdfglobalseed = 0;
             s.rdfsplitstrength = 2;
+            s.rdfimportance = 0;
             
             //
             // Other fields
@@ -38330,8 +38865,8 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function sets number of variables (in [1,NVars] range) used by random
-        forest construction algorithm.
+        This function sets number  of  variables  (in  [1,NVars]  range)  used  by
+        decision forest construction algorithm.
 
         The default option is to use roughly sqrt(NVars) variables.
 
@@ -38355,7 +38890,7 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function sets number of variables used by random forest  construction
+        This function sets number of variables used by decision forest construction
         algorithm as a fraction of total variable count (0,1) range.
 
         The default option is to use roughly sqrt(NVars) variables.
@@ -38380,8 +38915,8 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function tells random forest builder to automatically  choose  number
-        of  variables  used  by  random  forest  construction  algorithm.  Roughly
+        This function tells decision forest builder to automatically choose number
+        of  variables  used  by  decision forest construction  algorithm.  Roughly
         sqrt(NVars) variables will be used.
 
         INPUT PARAMETERS:
@@ -38401,7 +38936,7 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function sets size of dataset subsample generated the  random  forest
+        This function sets size of dataset subsample generated the decision forest
         construction algorithm. Size is specified as a fraction of  total  dataset
         size.
 
@@ -38435,7 +38970,7 @@ public partial class alglib
         This function sets seed used by internal RNG for  random  subsampling  and
         random selection of variable subsets.
 
-        By default, random seed is used, i.e. every time you build random  forest,
+        By default random seed is used, i.e. every time you build decision forest,
         we seed generator with new value  obtained  from  system-wide  RNG.  Thus,
         decision forest builder returns non-deterministic results. You can  change
         such behavior by specyfing fixed positive seed value.
@@ -38445,11 +38980,11 @@ public partial class alglib
             SeedVal     -   seed value:
                             * positive values are used for seeding RNG with fixed
                               seed, i.e. subsequent runs on same data will return
-                              same random forests
+                              same decision forests
                             * non-positive seed means that random seed is used
                               for every run of builder, i.e. subsequent  runs  on
-                              same datasets will return slightly different random
-                              forests
+                              same  datasets  will  return   slightly   different
+                              decision forests
 
         OUTPUT PARAMETERS:
             S           -   decision forest builder, see
@@ -38468,7 +39003,7 @@ public partial class alglib
         /*************************************************************************
         This function sets random decision forest construction algorithm.
 
-        As for now, only one random forest construction algorithm is  supported  -
+        As for now, only one decision forest construction algorithm is supported -
         a dense "baseline" RDF algorithm.
 
         INPUT PARAMETERS:
@@ -38492,7 +39027,7 @@ public partial class alglib
 
 
         /*************************************************************************
-        This  function  sets  split  selection  algorithm  used  by random forests
+        This  function  sets  split  selection  algorithm used by decision  forest
         classifier. You may choose several algorithms, with  different  speed  and
         quality of the results.
 
@@ -38519,6 +39054,223 @@ public partial class alglib
 
 
         /*************************************************************************
+        This  function  tells  decision  forest  construction  algorithm  to   use
+        Gini impurity based variable importance estimation (also known as MDI).
+
+        This version of importance estimation algorithm analyzes mean decrease  in
+        impurity (MDI) on training sample during  splits.  The result  is  divided
+        by impurity at the root node in order to produce estimate in [0,1] range.
+
+        Such estimates are fast to calculate and beautifully  normalized  (sum  to
+        one) but have following downsides:
+        * They ALWAYS sum to 1.0, even if output is completely unpredictable. I.e.
+          MDI allows to order variables by importance, but does not  tell us about
+          "absolute" importances of variables
+        * there exist some bias towards continuous and high-cardinality categorical
+          variables
+          
+        NOTE: informally speaking, MDA (permutation importance) rating answers the
+              question  "what  part  of  the  model  predictive power is ruined by
+              permuting k-th variable?" while MDI tells us "what part of the model
+              predictive power was achieved due to usage of k-th variable".
+
+              Thus, MDA rates each variable independently at "0 to 1"  scale while
+              MDI (and OOB-MDI too) tends to divide "unit  amount  of  importance"
+              between several important variables.
+              
+              If  all  variables  are  equally  important,  they  will  have  same
+              MDI/OOB-MDI rating, equal (for OOB-MDI: roughly equal)  to  1/NVars.
+              However, roughly  same  picture  will  be  produced   for  the  "all
+              variables provide information no one is critical" situation  and for
+              the "all variables are critical, drop any one, everything is ruined"
+              situation.
+              
+              Contrary to that, MDA will rate critical variable as ~1.0 important,
+              and important but non-critical variable will  have  less  than  unit
+              rating.
+
+        NOTE: quite an often MDA and MDI return same results. It generally happens
+              on problems with low test set error (a few  percents  at  most)  and
+              large enough training set to avoid overfitting.
+              
+              The difference between MDA, MDI and OOB-MDI becomes  important  only
+              on "hard" tasks with high test set error and/or small training set.
+
+        INPUT PARAMETERS:
+            S           -   decision forest builder object
+
+        OUTPUT PARAMETERS:
+            S           -   decision forest builder object. Next call to the forest
+                            construction function will produce:
+                            * importance estimates in rep.varimportances field
+                            * variable ranks in rep.topvars field
+
+          -- ALGLIB --
+             Copyright 29.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void dfbuildersetimportancetrngini(decisionforestbuilder s,
+            alglib.xparams _params)
+        {
+            s.rdfimportance = needtrngini;
+        }
+
+
+        /*************************************************************************
+        This  function  tells  decision  forest  construction  algorithm  to   use
+        out-of-bag version of Gini variable importance estimation (also  known  as
+        OOB-MDI).
+
+        This version of importance estimation algorithm analyzes mean decrease  in
+        impurity (MDI) on out-of-bag sample during splits. The result  is  divided
+        by impurity at the root node in order to produce estimate in [0,1] range.
+
+        Such estimates are fast to calculate and resistant to  overfitting  issues
+        (thanks to the  out-of-bag  estimates  used). However, OOB Gini rating has
+        following downsides:
+        * there exist some bias towards continuous and high-cardinality categorical
+          variables
+        * Gini rating allows us to order variables by importance, but it  is  hard
+          to define importance of the variable by itself.
+          
+        NOTE: informally speaking, MDA (permutation importance) rating answers the
+              question  "what  part  of  the  model  predictive power is ruined by
+              permuting k-th variable?" while MDI tells us "what part of the model
+              predictive power was achieved due to usage of k-th variable".
+
+              Thus, MDA rates each variable independently at "0 to 1"  scale while
+              MDI (and OOB-MDI too) tends to divide "unit  amount  of  importance"
+              between several important variables.
+              
+              If  all  variables  are  equally  important,  they  will  have  same
+              MDI/OOB-MDI rating, equal (for OOB-MDI: roughly equal)  to  1/NVars.
+              However, roughly  same  picture  will  be  produced   for  the  "all
+              variables provide information no one is critical" situation  and for
+              the "all variables are critical, drop any one, everything is ruined"
+              situation.
+              
+              Contrary to that, MDA will rate critical variable as ~1.0 important,
+              and important but non-critical variable will  have  less  than  unit
+              rating.
+
+        NOTE: quite an often MDA and MDI return same results. It generally happens
+              on problems with low test set error (a few  percents  at  most)  and
+              large enough training set to avoid overfitting.
+              
+              The difference between MDA, MDI and OOB-MDI becomes  important  only
+              on "hard" tasks with high test set error and/or small training set.
+
+        INPUT PARAMETERS:
+            S           -   decision forest builder object
+
+        OUTPUT PARAMETERS:
+            S           -   decision forest builder object. Next call to the forest
+                            construction function will produce:
+                            * importance estimates in rep.varimportances field
+                            * variable ranks in rep.topvars field
+
+          -- ALGLIB --
+             Copyright 29.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void dfbuildersetimportanceoobgini(decisionforestbuilder s,
+            alglib.xparams _params)
+        {
+            s.rdfimportance = needoobgini;
+        }
+
+
+        /*************************************************************************
+        This  function  tells  decision  forest  construction  algorithm  to   use
+        permutation variable importance estimator (also known as MDA).
+
+        This version of importance estimation algorithm analyzes mean increase  in
+        out-of-bag sum of squared  residuals  after  random  permutation  of  J-th
+        variable. The result is divided by error computed with all variables being
+        perturbed in order to produce R-squared-like estimate in [0,1] range.
+
+        Such estimate  is  slower to calculate than Gini-based rating  because  it
+        needs multiple inference runs for each of variables being studied.
+
+        ALGLIB uses parallelized and highly  optimized  algorithm  which  analyzes
+        path through the decision tree and allows  to  handle  most  perturbations
+        in O(1) time; nevertheless, requesting MDA importances may increase forest
+        construction time from 10% to 200% (or more,  if  you  have  thousands  of
+        variables).
+
+        However, MDA rating has following benefits over Gini-based ones:
+        * no bias towards specific variable types
+        * ability to directly evaluate "absolute" importance of some  variable  at
+          "0 to 1" scale (contrary to Gini-based rating, which returns comparative
+          importances).
+          
+        NOTE: informally speaking, MDA (permutation importance) rating answers the
+              question  "what  part  of  the  model  predictive power is ruined by
+              permuting k-th variable?" while MDI tells us "what part of the model
+              predictive power was achieved due to usage of k-th variable".
+
+              Thus, MDA rates each variable independently at "0 to 1"  scale while
+              MDI (and OOB-MDI too) tends to divide "unit  amount  of  importance"
+              between several important variables.
+              
+              If  all  variables  are  equally  important,  they  will  have  same
+              MDI/OOB-MDI rating, equal (for OOB-MDI: roughly equal)  to  1/NVars.
+              However, roughly  same  picture  will  be  produced   for  the  "all
+              variables provide information no one is critical" situation  and for
+              the "all variables are critical, drop any one, everything is ruined"
+              situation.
+              
+              Contrary to that, MDA will rate critical variable as ~1.0 important,
+              and important but non-critical variable will  have  less  than  unit
+              rating.
+
+        NOTE: quite an often MDA and MDI return same results. It generally happens
+              on problems with low test set error (a few  percents  at  most)  and
+              large enough training set to avoid overfitting.
+              
+              The difference between MDA, MDI and OOB-MDI becomes  important  only
+              on "hard" tasks with high test set error and/or small training set.
+
+        INPUT PARAMETERS:
+            S           -   decision forest builder object
+
+        OUTPUT PARAMETERS:
+            S           -   decision forest builder object. Next call to the forest
+                            construction function will produce:
+                            * importance estimates in rep.varimportances field
+                            * variable ranks in rep.topvars field
+
+          -- ALGLIB --
+             Copyright 29.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void dfbuildersetimportancepermutation(decisionforestbuilder s,
+            alglib.xparams _params)
+        {
+            s.rdfimportance = needpermutation;
+        }
+
+
+        /*************************************************************************
+        This  function  tells  decision  forest  construction  algorithm  to  skip
+        variable importance estimation.
+
+        INPUT PARAMETERS:
+            S           -   decision forest builder object
+
+        OUTPUT PARAMETERS:
+            S           -   decision forest builder object. Next call to the forest
+                            construction function will result in forest being built
+                            without variable importance estimation.
+
+          -- ALGLIB --
+             Copyright 29.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void dfbuildersetimportancenone(decisionforestbuilder s,
+            alglib.xparams _params)
+        {
+            s.rdfimportance = 0;
+        }
+
+
+        /*************************************************************************
         This function is an alias for dfbuilderpeekprogress(), left in ALGLIB  for
         backward compatibility reasons.
 
@@ -38536,14 +39288,14 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function is used to peek into random forest construction process from
-        other thread and get current progress indicator. It returns value in [0,1].
+        This function is used to peek into  decision  forest  construction process
+        from some other thread and get current progress indicator.
 
-        You can "peek" into decision forest builder from another thread.
+        It returns value in [0,1].
 
         INPUT PARAMETERS:
-            S           -   decision forest builder object used  to  build  random
-                            forest in some other thread
+            S           -   decision forest builder object used  to  build  forest
+                            in some other thread
 
         RESULT:
             progress value, in [0,1]
@@ -38564,11 +39316,23 @@ public partial class alglib
 
 
         /*************************************************************************
-        This subroutine builds random forest according to current settings,  using
+        This subroutine builds decision forest according to current settings using
         dataset internally stored in the builder object. Dense algorithm is used.
 
         NOTE: this   function   uses   dense  algorithm  for  forest  construction
               independently from the dataset format (dense or sparse).
+          
+        NOTE: forest built with this function is  stored  in-memory  using  64-bit
+              data structures for offsets/indexes/split values. It is possible  to
+              convert  forest  into  more  memory-efficient   compressed    binary
+              representation.  Depending  on  the  problem  properties,  3.7x-5.7x
+              compression factors are possible.
+              
+              The downsides of compression are (a) slight reduction in  the  model
+              accuracy and (b) ~1.5x reduction in  the  inference  speed  (due  to
+              increased complexity of the storage format).
+              
+              See comments on dfbinarycompression() for more info.
 
         Default settings are used by the algorithm; you can tweak  them  with  the
         help of the following functions:
@@ -38593,8 +39357,35 @@ public partial class alglib
             NTrees      -   NTrees>=1, number of trees to train
 
         OUTPUT PARAMETERS:
-            DF          -   decision forest
-            Rep         -   report
+            DF          -   decision forest. You can compress this forest to  more
+                            compact 16-bit representation with dfbinarycompression()
+            Rep         -   report, see below for information on its fields.
+            
+        === report information produced by forest construction function ==========
+
+        Decision forest training report includes following information:
+        * training set errors
+        * out-of-bag estimates of errors
+        * variable importance ratings
+
+        Following fields are used to store information:
+        * training set errors are stored in rep.relclserror, rep.avgce, rep.rmserror,
+          rep.avgerror and rep.avgrelerror
+        * out-of-bag estimates of errors are stored in rep.oobrelclserror, rep.oobavgce,
+          rep.oobrmserror, rep.oobavgerror and rep.oobavgrelerror
+
+        Variable importance reports, if requested by dfbuildersetimportancegini(),
+        dfbuildersetimportancetrngini() or dfbuildersetimportancepermutation()
+        call, are stored in:
+        * rep.varimportances field stores importance ratings
+        * rep.topvars stores variable indexes ordered from the most important to
+          less important ones
+
+        You can find more information about report fields in:
+        * comments on dfreport structure
+        * comments on dfbuildersetimportancegini function
+        * comments on dfbuildersetimportancetrngini function
+        * comments on dfbuildersetimportancepermutation function
 
           -- ALGLIB --
              Copyright 21.05.2018 by Bochkanov Sergey
@@ -38606,17 +39397,19 @@ public partial class alglib
             alglib.xparams _params)
         {
             int i = 0;
+            int j = 0;
             int nvars = 0;
             int nclasses = 0;
             int npoints = 0;
             int trnsize = 0;
             int maxtreesize = 0;
+            int sessionseed = 0;
             dfworkbuf workbufseed = new dfworkbuf();
             dfvotebuf votebufseed = new dfvotebuf();
             dftreebuf treebufseed = new dftreebuf();
 
             alglib.ap.assert(ntrees>=1, "DFBuilderBuildRandomForest: ntrees<1");
-            cleanreport(rep, _params);
+            cleanreport(s, rep, _params);
             npoints = s.npoints;
             nvars = s.nvars;
             nclasses = s.nclasses;
@@ -38625,14 +39418,19 @@ public partial class alglib
             // Set up progress counter
             //
             s.rdfprogress = 0;
-            s.rdftotal = ntrees;
+            s.rdftotal = ntrees*npoints;
+            if( s.rdfimportance==needpermutation )
+            {
+                s.rdftotal = s.rdftotal+ntrees*npoints;
+            }
             
             //
             // Quick exit for empty dataset
             //
-            if( s.dstype==-1 )
+            if( s.dstype==-1 || npoints==0 )
             {
                 alglib.ap.assert(leafnodewidth==2, "DFBuilderBuildRandomForest: integrity check failed");
+                df.forestformat = dfuncompressedv0;
                 df.nvars = s.nvars;
                 df.nclasses = s.nclasses;
                 df.ntrees = 1;
@@ -38644,6 +39442,7 @@ public partial class alglib
                 dfcreatebuffer(df, df.buffer, _params);
                 return;
             }
+            alglib.ap.assert(npoints>0, "DFBuilderBuildRandomForest: integrity check failed");
             
             //
             // Analyze dataset statistics, perform preprocessing
@@ -38651,7 +39450,7 @@ public partial class alglib
             analyzeandpreprocessdataset(s, _params);
             
             //
-            // Prepare "work", "vote" and "tree" pools
+            // Prepare "work", "vote" and "tree" pools and other settings
             //
             trnsize = (int)Math.Round(npoints*s.rdfratio);
             trnsize = Math.Max(trnsize, 1);
@@ -38668,6 +39467,8 @@ public partial class alglib
             workbufseed.tmp3r = new double[npoints];
             workbufseed.trnlabelsi = new int[npoints];
             workbufseed.trnlabelsr = new double[npoints];
+            workbufseed.ooblabelsi = new int[npoints];
+            workbufseed.ooblabelsr = new double[npoints];
             workbufseed.curvals = new double[npoints];
             workbufseed.bestvals = new double[npoints];
             workbufseed.classpriors = new int[nclasses];
@@ -38691,10 +39492,46 @@ public partial class alglib
                 votebufseed.trncounts[i] = 0;
                 votebufseed.oobcounts[i] = 0;
             }
+            votebufseed.giniimportances = new double[nvars];
+            for(i=0; i<=nvars-1; i++)
+            {
+                votebufseed.giniimportances[i] = 0.0;
+            }
+            treebufseed.treeidx = -1;
             alglib.smp.ae_shared_pool_set_seed(s.workpool, workbufseed);
             alglib.smp.ae_shared_pool_set_seed(s.votepool, votebufseed);
             alglib.smp.ae_shared_pool_set_seed(s.treepool, treebufseed);
             alglib.smp.ae_shared_pool_set_seed(s.treefactory, treebufseed);
+            
+            //
+            // Select session seed (individual trees are constructed using
+            // combination of session and local seeds).
+            //
+            sessionseed = s.rdfglobalseed;
+            if( s.rdfglobalseed<=0 )
+            {
+                sessionseed = math.randominteger(30000);
+            }
+            
+            //
+            // Prepare In-and-Out-of-Bag matrix, if needed
+            //
+            s.neediobmatrix = s.rdfimportance==needpermutation;
+            if( s.neediobmatrix )
+            {
+                
+                //
+                // Prepare default state of In-and-Out-of-Bag matrix
+                //
+                apserv.bmatrixsetlengthatleast(ref s.iobmatrix, ntrees, npoints, _params);
+                for(i=0; i<=ntrees-1; i++)
+                {
+                    for(j=0; j<=npoints-1; j++)
+                    {
+                        s.iobmatrix[i,j] = false;
+                    }
+                }
+            }
             
             //
             // Build trees (in parallel, if possible)
@@ -38707,19 +39544,87 @@ public partial class alglib
             mergetrees(s, df, _params);
             
             //
-            // Process voting results and output training set and OOB errors
+            // Process voting results and output training set and OOB errors.
+            // Finalize tree construction.
             //
-            processvotingresults(s, votebufseed, rep, _params);
+            processvotingresults(s, ntrees, votebufseed, rep, _params);
+            dfcreatebuffer(df, df.buffer, _params);
+            
+            //
+            // Perform variable importance estimation
+            //
+            estimatevariableimportance(s, sessionseed, df, ntrees, rep, _params);
             
             //
             // Update progress counter
             //
             s.rdfprogress = s.rdftotal;
-            
-            //
-            // Prepare buffer
-            //
-            dfcreatebuffer(df, df.buffer, _params);
+        }
+
+
+        /*************************************************************************
+        This function performs binary compression of the decision forest.
+
+        Original decision forest produced by the  forest  builder  is stored using
+        64-bit representation for all numbers - offsets, variable  indexes,  split
+        points.
+
+        It is possible to significantly reduce model size by means of:
+        * using compressed  dynamic encoding for integers  (offsets  and  variable
+          indexes), which uses just 1 byte to store small ints  (less  than  128),
+          just 2 bytes for larger values (less than 128^2) and so on
+        * storing floating point numbers using 8-bit exponent and 16-bit mantissa
+
+        As  result,  model  needs  significantly  less  memory (compression factor
+        depends on  variable and class counts). In particular:
+        * NVars<128   and NClasses<128 result in 4.4x-5.7x model size reduction
+        * NVars<16384 and NClasses<128 result in 3.7x-4.5x model size reduction
+
+        Such storage format performs lossless compression  of  all  integers,  but
+        compression of floating point values (split values) is lossy, with roughly
+        0.01% relative error introduced during rounding. Thus, we recommend you to
+        re-evaluate model accuracy after compression.
+
+        Another downside  of  compression  is  ~1.5x reduction  in  the  inference
+        speed due to necessity of dynamic decompression of the compressed model.
+
+        INPUT PARAMETERS:
+            DF      -   decision forest built by forest builder
+
+        OUTPUT PARAMETERS:
+            DF      -   replaced by compressed forest
+
+        RESULT:
+            compression factor (in-RAM size of the compressed model vs than of the
+            uncompressed one), positive number larger than 1.0
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double dfbinarycompression(decisionforest df,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = binarycompression(df, false, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        This is a 8-bit version of dfbinarycompression.
+        Not recommended for external use because it is too lossy.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double dfbinarycompression8(decisionforest df,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = binarycompression(df, true, _params);
+            return result;
         }
 
 
@@ -38756,6 +39661,8 @@ public partial class alglib
             int offs = 0;
             int i = 0;
             double v = 0;
+            int treesize = 0;
+            bool processed = new bool();
             int i_ = 0;
 
             
@@ -38772,24 +39679,41 @@ public partial class alglib
             {
                 y = new double[df.nclasses];
             }
-            offs = 0;
             for(i=0; i<=df.nclasses-1; i++)
             {
                 y[i] = 0;
             }
-            for(i=0; i<=df.ntrees-1; i++)
+            processed = false;
+            if( df.forestformat==dfuncompressedv0 )
             {
                 
                 //
-                // Process basic tree
+                // Process trees stored in uncompressed format
                 //
-                dfprocessinternal(df, offs, x, ref y, _params);
+                offs = 0;
+                for(i=0; i<=df.ntrees-1; i++)
+                {
+                    dfprocessinternaluncompressed(df, offs, offs+1, x, ref y, _params);
+                    offs = offs+(int)Math.Round(df.trees[offs]);
+                }
+                processed = true;
+            }
+            if( df.forestformat==dfcompressedv0 )
+            {
                 
                 //
-                // Next tree
+                // Process trees stored in compressed format
                 //
-                offs = offs+(int)Math.Round(df.trees[offs]);
+                offs = 0;
+                for(i=0; i<=df.ntrees-1; i++)
+                {
+                    treesize = unstreamuint(df.trees8, ref offs, _params);
+                    dfprocessinternalcompressed(df, offs, x, ref y, _params);
+                    offs = offs+treesize;
+                }
+                processed = true;
             }
+            alglib.ap.assert(processed, "DFProcess: integrity check failed (unexpected format?)");
             v = (double)1/(double)df.ntrees;
             for(i_=0; i_<=df.nclasses-1;i_++)
             {
@@ -39324,18 +40248,42 @@ public partial class alglib
             decisionforest df2,
             alglib.xparams _params)
         {
+            int i = 0;
+            int bufsize = 0;
             int i_ = 0;
 
-            df2.nvars = df1.nvars;
-            df2.nclasses = df1.nclasses;
-            df2.ntrees = df1.ntrees;
-            df2.bufsize = df1.bufsize;
-            df2.trees = new double[df1.bufsize-1+1];
-            for(i_=0; i_<=df1.bufsize-1;i_++)
+            if( df1.forestformat==dfuncompressedv0 )
             {
-                df2.trees[i_] = df1.trees[i_];
+                df2.forestformat = df1.forestformat;
+                df2.nvars = df1.nvars;
+                df2.nclasses = df1.nclasses;
+                df2.ntrees = df1.ntrees;
+                df2.bufsize = df1.bufsize;
+                df2.trees = new double[df1.bufsize];
+                for(i_=0; i_<=df1.bufsize-1;i_++)
+                {
+                    df2.trees[i_] = df1.trees[i_];
+                }
+                dfcreatebuffer(df2, df2.buffer, _params);
+                return;
             }
-            dfcreatebuffer(df2, df2.buffer, _params);
+            if( df1.forestformat==dfcompressedv0 )
+            {
+                df2.forestformat = df1.forestformat;
+                df2.usemantissa8 = df1.usemantissa8;
+                df2.nvars = df1.nvars;
+                df2.nclasses = df1.nclasses;
+                df2.ntrees = df1.ntrees;
+                bufsize = alglib.ap.len(df1.trees8);
+                df2.trees8 = new byte[bufsize];
+                for(i=0; i<=bufsize-1; i++)
+                {
+                    df2.trees8[i] = unchecked((byte)(df1.trees8[i]));
+                }
+                dfcreatebuffer(df2, df2.buffer, _params);
+                return;
+            }
+            alglib.ap.assert(false, "DFCopy: unexpected forest format");
         }
 
 
@@ -39349,13 +40297,29 @@ public partial class alglib
             decisionforest forest,
             alglib.xparams _params)
         {
-            s.alloc_entry();
-            s.alloc_entry();
-            s.alloc_entry();
-            s.alloc_entry();
-            s.alloc_entry();
-            s.alloc_entry();
-            apserv.allocrealarray(s, forest.trees, forest.bufsize, _params);
+            if( forest.forestformat==dfuncompressedv0 )
+            {
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                apserv.allocrealarray(s, forest.trees, forest.bufsize, _params);
+                return;
+            }
+            if( forest.forestformat==dfcompressedv0 )
+            {
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_entry();
+                s.alloc_byte_array(forest.trees8);
+                return;
+            }
+            alglib.ap.assert(false, "DFAlloc: unexpected forest format");
         }
 
 
@@ -39369,13 +40333,29 @@ public partial class alglib
             decisionforest forest,
             alglib.xparams _params)
         {
-            s.serialize_int(scodes.getrdfserializationcode(_params));
-            s.serialize_int(dffirstversion);
-            s.serialize_int(forest.nvars);
-            s.serialize_int(forest.nclasses);
-            s.serialize_int(forest.ntrees);
-            s.serialize_int(forest.bufsize);
-            apserv.serializerealarray(s, forest.trees, forest.bufsize, _params);
+            if( forest.forestformat==dfuncompressedv0 )
+            {
+                s.serialize_int(scodes.getrdfserializationcode(_params));
+                s.serialize_int(dfuncompressedv0);
+                s.serialize_int(forest.nvars);
+                s.serialize_int(forest.nclasses);
+                s.serialize_int(forest.ntrees);
+                s.serialize_int(forest.bufsize);
+                apserv.serializerealarray(s, forest.trees, forest.bufsize, _params);
+                return;
+            }
+            if( forest.forestformat==dfcompressedv0 )
+            {
+                s.serialize_int(scodes.getrdfserializationcode(_params));
+                s.serialize_int(forest.forestformat);
+                s.serialize_bool(forest.usemantissa8);
+                s.serialize_int(forest.nvars);
+                s.serialize_int(forest.nclasses);
+                s.serialize_int(forest.ntrees);
+                s.serialize_byte_array(forest.trees8);
+                return;
+            }
+            alglib.ap.assert(false, "DFSerialize: unexpected forest format");
         }
 
 
@@ -39390,7 +40370,8 @@ public partial class alglib
             alglib.xparams _params)
         {
             int i0 = 0;
-            int i1 = 0;
+            int forestformat = 0;
+            bool processed = new bool();
 
             
             //
@@ -39398,17 +40379,41 @@ public partial class alglib
             //
             i0 = s.unserialize_int();
             alglib.ap.assert(i0==scodes.getrdfserializationcode(_params), "DFUnserialize: stream header corrupted");
-            i1 = s.unserialize_int();
-            alglib.ap.assert(i1==dffirstversion, "DFUnserialize: stream header corrupted");
             
             //
-            // Unserialize data
+            // Read forest
             //
-            forest.nvars = s.unserialize_int();
-            forest.nclasses = s.unserialize_int();
-            forest.ntrees = s.unserialize_int();
-            forest.bufsize = s.unserialize_int();
-            apserv.unserializerealarray(s, ref forest.trees, _params);
+            forestformat = s.unserialize_int();
+            processed = false;
+            if( forestformat==dfuncompressedv0 )
+            {
+                
+                //
+                // Unserialize data
+                //
+                forest.forestformat = forestformat;
+                forest.nvars = s.unserialize_int();
+                forest.nclasses = s.unserialize_int();
+                forest.ntrees = s.unserialize_int();
+                forest.bufsize = s.unserialize_int();
+                apserv.unserializerealarray(s, ref forest.trees, _params);
+                processed = true;
+            }
+            if( forestformat==dfcompressedv0 )
+            {
+                
+                //
+                // Unserialize data
+                //
+                forest.forestformat = forestformat;
+                forest.usemantissa8 = s.unserialize_bool();
+                forest.nvars = s.unserialize_int();
+                forest.nclasses = s.unserialize_int();
+                forest.ntrees = s.unserialize_int();
+                forest.trees8 = s.unserialize_byte_array();
+                processed = true;
+            }
+            alglib.ap.assert(processed, "DFUnserialize: unexpected forest format");
             
             //
             // Prepare buffer
@@ -39537,7 +40542,7 @@ public partial class alglib
 
 
         /*************************************************************************
-        Builds a range of random trees [TreeIdx0,TreeIdx1) using random forest
+        Builds a range of random trees [TreeIdx0,TreeIdx1) using decision forest
         algorithm. Tree index is used to seed per-tree RNG.
 
           -- ALGLIB --
@@ -39561,6 +40566,7 @@ public partial class alglib
             int treesize = 0;
             int varstoselect = 0;
             int workingsetsize = 0;
+            double meanloss = 0;
 
             
             //
@@ -39639,10 +40645,23 @@ public partial class alglib
                 {
                     workbuf.trnlabelsr[i] = s.dsrval[workbuf.tmp0i[i]];
                 }
+                if( s.neediobmatrix )
+                {
+                    s.iobmatrix[treeidx,workbuf.trnset[i]] = true;
+                }
             }
             for(i=0; i<=workbuf.oobsize-1; i++)
             {
-                workbuf.oobset[i] = workbuf.tmp0i[workbuf.trnsize+i];
+                j = workbuf.tmp0i[workbuf.trnsize+i];
+                workbuf.oobset[i] = j;
+                if( nclasses>1 )
+                {
+                    workbuf.ooblabelsi[i] = s.dsival[j];
+                }
+                else
+                {
+                    workbuf.ooblabelsr[i] = s.dsrval[j];
+                }
             }
             varstoselect = (int)Math.Round(Math.Sqrt(nvars));
             if( (double)(s.rdfvars)>(double)(0) )
@@ -39659,8 +40678,16 @@ public partial class alglib
             //
             // Perform recurrent construction
             //
+            if( s.rdfimportance==needtrngini )
+            {
+                meanloss = meannrms2(nclasses, workbuf.trnlabelsi, workbuf.trnlabelsr, 0, workbuf.trnsize, workbuf.trnlabelsi, workbuf.trnlabelsr, 0, workbuf.trnsize, ref workbuf.tmpnrms2, _params);
+            }
+            else
+            {
+                meanloss = meannrms2(nclasses, workbuf.trnlabelsi, workbuf.trnlabelsr, 0, workbuf.trnsize, workbuf.ooblabelsi, workbuf.ooblabelsr, 0, workbuf.oobsize, ref workbuf.tmpnrms2, _params);
+            }
             treesize = 1;
-            buildrandomtreerec(s, workbuf, workingsetsize, varstoselect, workbuf.treebuf, votebuf, rs, 0, workbuf.trnsize, 0, workbuf.oobsize, ref treesize, _params);
+            buildrandomtreerec(s, workbuf, workingsetsize, varstoselect, workbuf.treebuf, votebuf, rs, 0, workbuf.trnsize, 0, workbuf.oobsize, meanloss, meanloss, ref treesize, _params);
             workbuf.treebuf[0] = treesize;
             
             //
@@ -39672,6 +40699,7 @@ public partial class alglib
             {
                 treebuf.treebuf[i] = workbuf.treebuf[i];
             }
+            treebuf.treeidx = treeidx;
             alglib.smp.ae_shared_pool_recycle(s.treepool, ref treebuf);
             
             //
@@ -39683,7 +40711,7 @@ public partial class alglib
             //
             // Update progress indicator
             //
-            apserv.threadunsafeinc(ref s.rdfprogress, _params);
+            apserv.threadunsafeincby(ref s.rdfprogress, npoints, _params);
         }
 
 
@@ -39709,6 +40737,9 @@ public partial class alglib
         TreeSize on input must be 1 (header element of the tree), on output it
         contains size of the tree.
 
+        OOBLoss on input must contain value of MeanNRMS2(...) computed for entire
+        dataset.
+
         Variables from #0 to #WorkingSet-1 from WorkBuf.VarPool are used (for
         block algorithm: blocks, not vars)
 
@@ -39726,6 +40757,8 @@ public partial class alglib
             int idx1,
             int oobidx0,
             int oobidx1,
+            double meanloss,
+            double topmostmeanloss,
             ref int treesize,
             alglib.xparams _params)
         {
@@ -39743,6 +40776,8 @@ public partial class alglib
             int i2 = 0;
             int idxtrn = 0;
             int idxoob = 0;
+            double meanloss0 = 0;
+            double meanloss1 = 0;
 
             alglib.ap.assert(s.dstype==0, "not supported skbdgfsi!");
             alglib.ap.assert(idx0<idx1, "BuildRandomTreeRec: integrity check failed (3445)");
@@ -39817,7 +40852,6 @@ public partial class alglib
             // Good split WAS found, we can perform it:
             // * first, we split training set
             // * then, we similarly split OOB set
-            // * and only then we perform recursive call
             //
             alglib.ap.assert(s.dstype==0, "not supported 54bfdh");
             offs = npoints*varbest;
@@ -39890,6 +40924,18 @@ public partial class alglib
                     j = workbuf.oobset[i1];
                     workbuf.oobset[i1] = workbuf.oobset[i2];
                     workbuf.oobset[i2] = j;
+                    if( nclasses>1 )
+                    {
+                        j = workbuf.ooblabelsi[i1];
+                        workbuf.ooblabelsi[i1] = workbuf.ooblabelsi[i2];
+                        workbuf.ooblabelsi[i2] = j;
+                    }
+                    else
+                    {
+                        v = workbuf.ooblabelsr[i1];
+                        workbuf.ooblabelsr[i1] = workbuf.ooblabelsr[i2];
+                        workbuf.ooblabelsr[i2] = v;
+                    }
                     i1 = i1+1;
                     i2 = i2-1;
                 }
@@ -39900,13 +40946,525 @@ public partial class alglib
             {
                 idxoob = oobidx0;
             }
+            
+            //
+            // Compute estimates of NRMS2 loss over TRN or OOB subsets, update Gini importances
+            //
+            if( s.rdfimportance==needtrngini )
+            {
+                meanloss0 = meannrms2(nclasses, workbuf.trnlabelsi, workbuf.trnlabelsr, idx0, idxtrn, workbuf.trnlabelsi, workbuf.trnlabelsr, idx0, idxtrn, ref workbuf.tmpnrms2, _params);
+                meanloss1 = meannrms2(nclasses, workbuf.trnlabelsi, workbuf.trnlabelsr, idxtrn, idx1, workbuf.trnlabelsi, workbuf.trnlabelsr, idxtrn, idx1, ref workbuf.tmpnrms2, _params);
+            }
+            else
+            {
+                meanloss0 = meannrms2(nclasses, workbuf.trnlabelsi, workbuf.trnlabelsr, idx0, idxtrn, workbuf.ooblabelsi, workbuf.ooblabelsr, oobidx0, idxoob, ref workbuf.tmpnrms2, _params);
+                meanloss1 = meannrms2(nclasses, workbuf.trnlabelsi, workbuf.trnlabelsr, idxtrn, idx1, workbuf.ooblabelsi, workbuf.ooblabelsr, idxoob, oobidx1, ref workbuf.tmpnrms2, _params);
+            }
+            votebuf.giniimportances[varbest] = votebuf.giniimportances[varbest]+(meanloss-(meanloss0+meanloss1))/(topmostmeanloss+1.0e-20);
+            
+            //
+            // Generate tree node and subtrees (recursively)
+            //
             treebuf[treesize] = varbest;
             treebuf[treesize+1] = splitbest;
             i = treesize;
             treesize = treesize+innernodewidth;
-            buildrandomtreerec(s, workbuf, workingset, varstoselect, treebuf, votebuf, rs, idx0, idxtrn, oobidx0, idxoob, ref treesize, _params);
+            buildrandomtreerec(s, workbuf, workingset, varstoselect, treebuf, votebuf, rs, idx0, idxtrn, oobidx0, idxoob, meanloss0, topmostmeanloss, ref treesize, _params);
             treebuf[i+2] = treesize;
-            buildrandomtreerec(s, workbuf, workingset, varstoselect, treebuf, votebuf, rs, idxtrn, idx1, idxoob, oobidx1, ref treesize, _params);
+            buildrandomtreerec(s, workbuf, workingset, varstoselect, treebuf, votebuf, rs, idxtrn, idx1, idxoob, oobidx1, meanloss1, topmostmeanloss, ref treesize, _params);
+        }
+
+
+        /*************************************************************************
+        Estimates permutation variable importance ratings for a range of dataset
+        points.
+
+        Initial call to this function should span entire range of the dataset,
+        [Idx0,Idx1)=[0,NPoints), because function performs initialization of some
+        internal structures when called with these arguments.
+
+          -- ALGLIB --
+             Copyright 21.05.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void estimatevariableimportance(decisionforestbuilder s,
+            int sessionseed,
+            decisionforest df,
+            int ntrees,
+            dfreport rep,
+            alglib.xparams _params)
+        {
+            int npoints = 0;
+            int nvars = 0;
+            int nclasses = 0;
+            int nperm = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            dfvotebuf vote = null;
+            double[] tmpr0 = new double[0];
+            double[] tmpr1 = new double[0];
+            int[] tmpi0 = new int[0];
+            double[] losses = new double[0];
+            dfpermimpbuf permseed = new dfpermimpbuf();
+            dfpermimpbuf permresult = null;
+            alglib.smp.shared_pool permpool = new alglib.smp.shared_pool();
+            double nopermloss = 0;
+            double totalpermloss = 0;
+            hqrnd.hqrndstate varimprs = new hqrnd.hqrndstate();
+
+            npoints = s.npoints;
+            nvars = s.nvars;
+            nclasses = s.nclasses;
+            
+            //
+            // No importance rating
+            //
+            if( s.rdfimportance==0 )
+            {
+                return;
+            }
+            
+            //
+            // Gini importance
+            //
+            if( s.rdfimportance==needtrngini || s.rdfimportance==needoobgini )
+            {
+                
+                //
+                // Merge OOB Gini importances computed during tree generation
+                //
+                alglib.smp.ae_shared_pool_first_recycled(s.votepool, ref vote);
+                while( vote!=null )
+                {
+                    for(i=0; i<=nvars-1; i++)
+                    {
+                        rep.varimportances[i] = rep.varimportances[i]+vote.giniimportances[i]/ntrees;
+                    }
+                    alglib.smp.ae_shared_pool_next_recycled(s.votepool, ref vote);
+                }
+                for(i=0; i<=nvars-1; i++)
+                {
+                    rep.varimportances[i] = apserv.boundval(rep.varimportances[i], 0, 1, _params);
+                }
+                
+                //
+                // Compute topvars[] array
+                //
+                tmpr0 = new double[nvars];
+                for(j=0; j<=nvars-1; j++)
+                {
+                    tmpr0[j] = -rep.varimportances[j];
+                    rep.topvars[j] = j;
+                }
+                tsort.tagsortfasti(ref tmpr0, ref rep.topvars, ref tmpr1, ref tmpi0, nvars, _params);
+                return;
+            }
+            
+            //
+            // Permutation importance
+            //
+            if( s.rdfimportance==needpermutation )
+            {
+                alglib.ap.assert(df.forestformat==dfuncompressedv0, "EstimateVariableImportance: integrity check failed (ff)");
+                alglib.ap.assert(alglib.ap.rows(s.iobmatrix)>=ntrees && alglib.ap.cols(s.iobmatrix)>=npoints, "EstimateVariableImportance: integrity check failed (IOB)");
+                
+                //
+                // Generate packed representation of the shuffle which is applied to all variables
+                //
+                // Ideally we want to apply different permutations to different variables,
+                // i.e. we have to generate and store NPoints*NVars random numbers.
+                // However due to performance and memory restrictions we prefer to use compact
+                // representation:
+                // * we store one "reference" permutation P_ref in VarImpShuffle2[0:NPoints-1]
+                // * a permutation P_j applied to variable J is obtained by circularly shifting
+                //   elements in P_ref by VarImpShuffle2[NPoints+J]
+                //
+                hqrnd.hqrndseed(sessionseed, 1117, varimprs, _params);
+                apserv.ivectorsetlengthatleast(ref s.varimpshuffle2, npoints+nvars, _params);
+                for(i=0; i<=npoints-1; i++)
+                {
+                    s.varimpshuffle2[i] = i;
+                }
+                for(i=0; i<=npoints-2; i++)
+                {
+                    j = i+hqrnd.hqrnduniformi(varimprs, npoints-i, _params);
+                    k = s.varimpshuffle2[i];
+                    s.varimpshuffle2[i] = s.varimpshuffle2[j];
+                    s.varimpshuffle2[j] = k;
+                }
+                for(i=0; i<=nvars-1; i++)
+                {
+                    s.varimpshuffle2[npoints+i] = hqrnd.hqrnduniformi(varimprs, npoints, _params);
+                }
+                
+                //
+                // Prepare buffer object, seed pool
+                //
+                nperm = nvars+2;
+                permseed.losses = new double[nperm];
+                for(j=0; j<=nperm-1; j++)
+                {
+                    permseed.losses[j] = 0;
+                }
+                permseed.yv = new double[nperm*nclasses];
+                permseed.xraw = new double[nvars];
+                permseed.xdist = new double[nvars];
+                permseed.xcur = new double[nvars];
+                permseed.targety = new double[nclasses];
+                permseed.startnodes = new int[nvars];
+                permseed.y = new double[nclasses];
+                alglib.smp.ae_shared_pool_set_seed(permpool, permseed);
+                
+                //
+                // Recursively split subset and process (using parallel capabilities, if possible)
+                //
+                estimatepermutationimportances(s, df, ntrees, permpool, 0, npoints, _params);
+                
+                //
+                // Merge results
+                //
+                losses = new double[nperm];
+                for(j=0; j<=nperm-1; j++)
+                {
+                    losses[j] = 1.0e-20;
+                }
+                alglib.smp.ae_shared_pool_first_recycled(permpool, ref permresult);
+                while( permresult!=null )
+                {
+                    for(j=0; j<=nperm-1; j++)
+                    {
+                        losses[j] = losses[j]+permresult.losses[j];
+                    }
+                    alglib.smp.ae_shared_pool_next_recycled(permpool, ref permresult);
+                }
+                
+                //
+                // Compute importances
+                //
+                nopermloss = losses[nvars+1];
+                totalpermloss = losses[nvars];
+                for(i=0; i<=nvars-1; i++)
+                {
+                    rep.varimportances[i] = 1-nopermloss/totalpermloss-(1-losses[i]/totalpermloss);
+                    rep.varimportances[i] = apserv.boundval(rep.varimportances[i], 0, 1, _params);
+                }
+                
+                //
+                // Compute topvars[] array
+                //
+                tmpr0 = new double[nvars];
+                for(j=0; j<=nvars-1; j++)
+                {
+                    tmpr0[j] = -rep.varimportances[j];
+                    rep.topvars[j] = j;
+                }
+                tsort.tagsortfasti(ref tmpr0, ref rep.topvars, ref tmpr1, ref tmpi0, nvars, _params);
+                return;
+            }
+            alglib.ap.assert(false, "EstimateVariableImportance: unexpected importance type");
+        }
+
+
+        /*************************************************************************
+        Serial stub for GPL edition.
+        *************************************************************************/
+        public static bool _trypexec_estimatevariableimportance(decisionforestbuilder s,
+            int sessionseed,
+            decisionforest df,
+            int ntrees,
+            dfreport rep, alglib.xparams _params)
+        {
+            return false;
+        }
+
+
+        /*************************************************************************
+        Estimates permutation variable importance ratings for a range of dataset
+        points.
+
+        Initial call to this function should span entire range of the dataset,
+        [Idx0,Idx1)=[0,NPoints), because function performs initialization of some
+        internal structures when called with these arguments.
+
+          -- ALGLIB --
+             Copyright 21.05.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void estimatepermutationimportances(decisionforestbuilder s,
+            decisionforest df,
+            int ntrees,
+            alglib.smp.shared_pool permpool,
+            int idx0,
+            int idx1,
+            alglib.xparams _params)
+        {
+            int npoints = 0;
+            int nvars = 0;
+            int nclasses = 0;
+            int nperm = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            double v = 0;
+            int treeroot = 0;
+            int nodeoffs = 0;
+            double prediction = 0;
+            int varidx = 0;
+            int oobcounts = 0;
+            int srcidx = 0;
+            dfpermimpbuf permimpbuf = null;
+
+            npoints = s.npoints;
+            nvars = s.nvars;
+            nclasses = s.nclasses;
+            alglib.ap.assert(df.forestformat==dfuncompressedv0, "EstimateVariableImportance: integrity check failed (ff)");
+            alglib.ap.assert((idx0>=0 && idx0<=idx1) && idx1<=npoints, "EstimateVariableImportance: integrity check failed (idx)");
+            alglib.ap.assert(alglib.ap.rows(s.iobmatrix)>=ntrees && alglib.ap.cols(s.iobmatrix)>=npoints, "EstimateVariableImportance: integrity check failed (IOB)");
+            
+            //
+            // Perform parallelization if batch is too large
+            //
+            if( idx1-idx0>permutationimportancebatchsize )
+            {
+                if( _trypexec_estimatepermutationimportances(s,df,ntrees,permpool,idx0,idx1, _params) )
+                {
+                    return;
+                }
+                j = (idx1-idx0)/2;
+                estimatepermutationimportances(s, df, ntrees, permpool, idx0, idx0+j, _params);
+                estimatepermutationimportances(s, df, ntrees, permpool, idx0+j, idx1, _params);
+                return;
+            }
+            
+            //
+            // Retrieve buffer object from pool
+            //
+            alglib.smp.ae_shared_pool_retrieve(permpool, ref permimpbuf);
+            
+            //
+            // Process range of points [idx0,idx1)
+            //
+            nperm = nvars+2;
+            for(i=idx0; i<=idx1-1; i++)
+            {
+                alglib.ap.assert(s.dstype==0, "EstimateVariableImportance: unexpected dataset type");
+                for(j=0; j<=nvars-1; j++)
+                {
+                    permimpbuf.xraw[j] = s.dsdata[j*npoints+i];
+                    srcidx = s.varimpshuffle2[(i+s.varimpshuffle2[npoints+j])%npoints];
+                    permimpbuf.xdist[j] = s.dsdata[j*npoints+srcidx];
+                }
+                if( nclasses>1 )
+                {
+                    for(j=0; j<=nclasses-1; j++)
+                    {
+                        permimpbuf.targety[j] = 0;
+                    }
+                    permimpbuf.targety[s.dsival[i]] = 1;
+                }
+                else
+                {
+                    permimpbuf.targety[0] = s.dsrval[i];
+                }
+                
+                //
+                // Process all trees, for each tree compute NPerm losses corresponding
+                // to various permutations of variable values
+                //
+                for(j=0; j<=nperm*nclasses-1; j++)
+                {
+                    permimpbuf.yv[j] = 0;
+                }
+                oobcounts = 0;
+                treeroot = 0;
+                for(k=0; k<=ntrees-1; k++)
+                {
+                    if( !s.iobmatrix[k,i] )
+                    {
+                        
+                        //
+                        // Process original (unperturbed) point and analyze path from the
+                        // tree root to the final leaf. Output prediction to RawPrediction.
+                        //
+                        // Additionally, for each variable in [0,NVars-1] save offset of
+                        // the first split on this variable. It allows us to quickly compute
+                        // tree decision when perturbation does not change decision path.
+                        //
+                        alglib.ap.assert(df.forestformat==dfuncompressedv0, "EstimateVariableImportance: integrity check failed (ff)");
+                        nodeoffs = treeroot+1;
+                        for(j=0; j<=nvars-1; j++)
+                        {
+                            permimpbuf.startnodes[j] = -1;
+                        }
+                        prediction = 0;
+                        while( true )
+                        {
+                            if( (double)(df.trees[nodeoffs])==(double)(-1) )
+                            {
+                                prediction = df.trees[nodeoffs+1];
+                                break;
+                            }
+                            j = (int)Math.Round(df.trees[nodeoffs]);
+                            if( permimpbuf.startnodes[j]<0 )
+                            {
+                                permimpbuf.startnodes[j] = nodeoffs;
+                            }
+                            if( permimpbuf.xraw[j]<df.trees[nodeoffs+1] )
+                            {
+                                nodeoffs = nodeoffs+innernodewidth;
+                            }
+                            else
+                            {
+                                nodeoffs = treeroot+(int)Math.Round(df.trees[nodeoffs+2]);
+                            }
+                        }
+                        
+                        //
+                        // Save loss for unperturbed point
+                        //
+                        varidx = nvars+1;
+                        if( nclasses>1 )
+                        {
+                            j = (int)Math.Round(prediction);
+                            permimpbuf.yv[varidx*nclasses+j] = permimpbuf.yv[varidx*nclasses+j]+1;
+                        }
+                        else
+                        {
+                            permimpbuf.yv[varidx] = permimpbuf.yv[varidx]+prediction;
+                        }
+                        
+                        //
+                        // Save loss for all variables being perturbed (XDist).
+                        // This loss is used as a reference loss when we compute R-squared.
+                        //
+                        varidx = nvars;
+                        for(j=0; j<=nclasses-1; j++)
+                        {
+                            permimpbuf.y[j] = 0;
+                        }
+                        dfprocessinternaluncompressed(df, treeroot, treeroot+1, permimpbuf.xdist, ref permimpbuf.y, _params);
+                        for(j=0; j<=nclasses-1; j++)
+                        {
+                            permimpbuf.yv[varidx*nclasses+j] = permimpbuf.yv[varidx*nclasses+j]+permimpbuf.y[j];
+                        }
+                        
+                        //
+                        // Compute losses for variable #VarIdx being perturbed. Quite an often decision
+                        // process does not actually depend on the variable #VarIdx (path from the tree
+                        // root does not include splits on this variable). In such cases we perform
+                        // quick exit from the loop with precomputed value.
+                        //
+                        for(j=0; j<=nvars-1; j++)
+                        {
+                            permimpbuf.xcur[j] = permimpbuf.xraw[j];
+                        }
+                        for(varidx=0; varidx<=nvars-1; varidx++)
+                        {
+                            if( permimpbuf.startnodes[varidx]>=0 )
+                            {
+                                
+                                //
+                                // Path from tree root to the final leaf involves split on variable #VarIdx.
+                                // Restart computation from the position first split on #VarIdx.
+                                //
+                                alglib.ap.assert(df.forestformat==dfuncompressedv0, "EstimateVariableImportance: integrity check failed (ff)");
+                                permimpbuf.xcur[varidx] = permimpbuf.xdist[varidx];
+                                nodeoffs = permimpbuf.startnodes[varidx];
+                                while( true )
+                                {
+                                    if( (double)(df.trees[nodeoffs])==(double)(-1) )
+                                    {
+                                        if( nclasses>1 )
+                                        {
+                                            j = (int)Math.Round(df.trees[nodeoffs+1]);
+                                            permimpbuf.yv[varidx*nclasses+j] = permimpbuf.yv[varidx*nclasses+j]+1;
+                                        }
+                                        else
+                                        {
+                                            permimpbuf.yv[varidx] = permimpbuf.yv[varidx]+df.trees[nodeoffs+1];
+                                        }
+                                        break;
+                                    }
+                                    j = (int)Math.Round(df.trees[nodeoffs]);
+                                    if( permimpbuf.xcur[j]<df.trees[nodeoffs+1] )
+                                    {
+                                        nodeoffs = nodeoffs+innernodewidth;
+                                    }
+                                    else
+                                    {
+                                        nodeoffs = treeroot+(int)Math.Round(df.trees[nodeoffs+2]);
+                                    }
+                                }
+                                permimpbuf.xcur[varidx] = permimpbuf.xraw[varidx];
+                            }
+                            else
+                            {
+                                
+                                //
+                                // Path from tree root to the final leaf does NOT involve split on variable #VarIdx.
+                                // Permutation does not change tree output, reuse already computed value.
+                                //
+                                if( nclasses>1 )
+                                {
+                                    j = (int)Math.Round(prediction);
+                                    permimpbuf.yv[varidx*nclasses+j] = permimpbuf.yv[varidx*nclasses+j]+1;
+                                }
+                                else
+                                {
+                                    permimpbuf.yv[varidx] = permimpbuf.yv[varidx]+prediction;
+                                }
+                            }
+                        }
+                        
+                        //
+                        // update OOB counter
+                        //
+                        apserv.inc(ref oobcounts, _params);
+                    }
+                    treeroot = treeroot+(int)Math.Round(df.trees[treeroot]);
+                }
+                
+                //
+                // Now YV[] stores NPerm versions of the forest output for various permutations of variable values.
+                // Update losses.
+                //
+                for(j=0; j<=nperm-1; j++)
+                {
+                    for(k=0; k<=nclasses-1; k++)
+                    {
+                        permimpbuf.yv[j*nclasses+k] = permimpbuf.yv[j*nclasses+k]/apserv.coalesce(oobcounts, 1, _params);
+                    }
+                    v = 0;
+                    for(k=0; k<=nclasses-1; k++)
+                    {
+                        v = v+math.sqr(permimpbuf.yv[j*nclasses+k]-permimpbuf.targety[k]);
+                    }
+                    permimpbuf.losses[j] = permimpbuf.losses[j]+v;
+                }
+                
+                //
+                // Update progress indicator
+                //
+                apserv.threadunsafeincby(ref s.rdfprogress, ntrees, _params);
+            }
+            
+            //
+            // Recycle buffer object with updated Losses[] field
+            //
+            alglib.smp.ae_shared_pool_recycle(permpool, ref permimpbuf);
+        }
+
+
+        /*************************************************************************
+        Serial stub for GPL edition.
+        *************************************************************************/
+        public static bool _trypexec_estimatepermutationimportances(decisionforestbuilder s,
+            decisionforest df,
+            int ntrees,
+            alglib.smp.shared_pool permpool,
+            int idx0,
+            int idx1, alglib.xparams _params)
+        {
+            return false;
         }
 
 
@@ -39916,9 +41474,12 @@ public partial class alglib
           -- ALGLIB --
              Copyright 21.05.2018 by Bochkanov Sergey
         *************************************************************************/
-        private static void cleanreport(dfreport rep,
+        private static void cleanreport(decisionforestbuilder s,
+            dfreport rep,
             alglib.xparams _params)
         {
+            int i = 0;
+
             rep.relclserror = 0;
             rep.avgce = 0;
             rep.rmserror = 0;
@@ -39929,6 +41490,124 @@ public partial class alglib
             rep.oobrmserror = 0;
             rep.oobavgerror = 0;
             rep.oobavgrelerror = 0;
+            rep.topvars = new int[s.nvars];
+            rep.varimportances = new double[s.nvars];
+            for(i=0; i<=s.nvars-1; i++)
+            {
+                rep.topvars[i] = i;
+                rep.varimportances[i] = 0;
+            }
+        }
+
+
+        /*************************************************************************
+        This function returns NRMS2 loss (sum of squared residuals) for a constant-
+        output model:
+        * model output is a mean over TRN set being passed (for classification
+          problems - NClasses-dimensional vector of class probabilities)
+        * model is evaluated over TST set being passed, with L2 loss being returned
+
+        Input parameters:
+            NClasses            -   ">1" for classification, "=1" for regression
+            TrnLabelsI          -   training set labels, class indexes (for NClasses>1)
+            TrnLabelsR          -   training set output values (for NClasses=1)
+            TrnIdx0, TrnIdx1    -   a range [Idx0,Idx1) of elements in LabelsI/R is considered
+            TstLabelsI          -   training set labels, class indexes (for NClasses>1)
+            TstLabelsR          -   training set output values (for NClasses=1)
+            TstIdx0, TstIdx1    -   a range [Idx0,Idx1) of elements in LabelsI/R is considered
+            TmpI        -   temporary array, reallocated as needed
+            
+        Result:
+            sum of squared residuals;
+            for NClasses>=2 it coincides with Gini impurity times (Idx1-Idx0)
+
+        Following fields of WorkBuf are used as temporaries:
+        * TmpMeanNRMS2
+
+          -- ALGLIB --
+             Copyright 21.05.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static double meannrms2(int nclasses,
+            int[] trnlabelsi,
+            double[] trnlabelsr,
+            int trnidx0,
+            int trnidx1,
+            int[] tstlabelsi,
+            double[] tstlabelsr,
+            int tstidx0,
+            int tstidx1,
+            ref int[] tmpi,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int k = 0;
+            int ntrn = 0;
+            int ntst = 0;
+            double v = 0;
+            double vv = 0;
+            double invntrn = 0;
+            double pitrn = 0;
+            double nitst = 0;
+
+            alglib.ap.assert(trnidx0<=trnidx1, "MeanNRMS2: integrity check failed (8754)");
+            alglib.ap.assert(tstidx0<=tstidx1, "MeanNRMS2: integrity check failed (8754)");
+            result = 0;
+            ntrn = trnidx1-trnidx0;
+            ntst = tstidx1-tstidx0;
+            if( ntrn==0 || ntst==0 )
+            {
+                return result;
+            }
+            invntrn = 1.0/ntrn;
+            if( nclasses>1 )
+            {
+                
+                //
+                // Classification problem
+                //
+                apserv.ivectorsetlengthatleast(ref tmpi, 2*nclasses, _params);
+                for(i=0; i<=2*nclasses-1; i++)
+                {
+                    tmpi[i] = 0;
+                }
+                for(i=trnidx0; i<=trnidx1-1; i++)
+                {
+                    k = trnlabelsi[i];
+                    tmpi[k] = tmpi[k]+1;
+                }
+                for(i=tstidx0; i<=tstidx1-1; i++)
+                {
+                    k = tstlabelsi[i];
+                    tmpi[k+nclasses] = tmpi[k+nclasses]+1;
+                }
+                for(i=0; i<=nclasses-1; i++)
+                {
+                    pitrn = tmpi[i]*invntrn;
+                    nitst = tmpi[i+nclasses];
+                    result = result+nitst*(1-pitrn)*(1-pitrn);
+                    result = result+(ntst-nitst)*pitrn*pitrn;
+                }
+            }
+            else
+            {
+                
+                //
+                // regression-specific code
+                //
+                v = 0;
+                for(i=trnidx0; i<=trnidx1-1; i++)
+                {
+                    v = v+trnlabelsr[i];
+                }
+                v = v*invntrn;
+                for(i=tstidx0; i<=tstidx1-1; i++)
+                {
+                    vv = tstlabelsr[i]-v;
+                    result = result+vv*vv;
+                }
+            }
+            return result;
         }
 
 
@@ -40166,7 +41845,7 @@ public partial class alglib
                     for(j=0; j<=idx1-idx0-1; j++)
                     {
                         v = workbuf.trnlabelsr[idx0+j];
-                        if( v<split )
+                        if( workbuf.curvals[j]<split )
                         {
                             v = v-v1;
                         }
@@ -40921,29 +42600,75 @@ public partial class alglib
             int cursize = 0;
             int offs = 0;
             dftreebuf tree = null;
+            int[] treesizes = new int[0];
+            int[] treeoffsets = new int[0];
 
+            df.forestformat = dfuncompressedv0;
             df.nvars = s.nvars;
             df.nclasses = s.nclasses;
             df.bufsize = 0;
             df.ntrees = 0;
+            
+            //
+            // Determine trees count
+            //
             alglib.smp.ae_shared_pool_first_recycled(s.treepool, ref tree);
             while( tree!=null )
             {
-                df.bufsize = df.bufsize+(int)Math.Round(tree.treebuf[0]);
                 df.ntrees = df.ntrees+1;
                 alglib.smp.ae_shared_pool_next_recycled(s.treepool, ref tree);
             }
+            alglib.ap.assert(df.ntrees>0, "MergeTrees: integrity check failed, zero trees count");
+            
+            //
+            // Determine individual tree sizes and total buffer size
+            //
+            treesizes = new int[df.ntrees];
+            for(i=0; i<=df.ntrees-1; i++)
+            {
+                treesizes[i] = -1;
+            }
+            alglib.smp.ae_shared_pool_first_recycled(s.treepool, ref tree);
+            while( tree!=null )
+            {
+                alglib.ap.assert(tree.treeidx>=0 && tree.treeidx<df.ntrees, "MergeTrees: integrity check failed (wrong TreeIdx)");
+                alglib.ap.assert(treesizes[tree.treeidx]<0, "MergeTrees: integrity check failed (duplicate TreeIdx)");
+                df.bufsize = df.bufsize+(int)Math.Round(tree.treebuf[0]);
+                treesizes[tree.treeidx] = (int)Math.Round(tree.treebuf[0]);
+                alglib.smp.ae_shared_pool_next_recycled(s.treepool, ref tree);
+            }
+            for(i=0; i<=df.ntrees-1; i++)
+            {
+                alglib.ap.assert(treesizes[i]>0, "MergeTrees: integrity check failed (wrong TreeSize)");
+            }
+            
+            //
+            // Determine offsets for individual trees in output buffer
+            //
+            treeoffsets = new int[df.ntrees];
+            treeoffsets[0] = 0;
+            for(i=1; i<=df.ntrees-1; i++)
+            {
+                treeoffsets[i] = treeoffsets[i-1]+treesizes[i-1];
+            }
+            
+            //
+            // Output trees
+            //
+            // NOTE: since ALGLIB 3.16.0 trees are sorted by tree index prior to
+            //       output (necessary for variable importance estimation), that's
+            //       why we need array of tree offsets
+            //
             df.trees = new double[df.bufsize];
             alglib.smp.ae_shared_pool_first_recycled(s.treepool, ref tree);
-            offs = 0;
             while( tree!=null )
             {
                 cursize = (int)Math.Round(tree.treebuf[0]);
+                offs = treeoffsets[tree.treeidx];
                 for(i=0; i<=cursize-1; i++)
                 {
                     df.trees[offs+i] = tree.treebuf[i];
                 }
-                offs = offs+cursize;
                 alglib.smp.ae_shared_pool_next_recycled(s.treepool, ref tree);
             }
         }
@@ -40954,6 +42679,7 @@ public partial class alglib
 
         INPUT PARAMETERS:
             S           -   decision forest builder object
+            NTrees      -   number of trees in the forest
             Buf         -   possibly preallocated vote buffer, its contents is
                             overwritten by this function
 
@@ -40964,6 +42690,7 @@ public partial class alglib
              Copyright 21.05.2018 by Bochkanov Sergey
         *************************************************************************/
         private static void processvotingresults(decisionforestbuilder s,
+            int ntrees,
             dfvotebuf buf,
             dfreport rep,
             alglib.xparams _params)
@@ -41157,6 +42884,636 @@ public partial class alglib
 
 
         /*************************************************************************
+        This function performs binary compression of decision forest, using either
+        8-bit mantissa (a bit more compact representation) or 16-bit mantissa  for
+        splits and regression outputs.
+
+        Forest is compressed in-place.
+
+        Return value is a compression factor.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double binarycompression(decisionforest df,
+            bool usemantissa8,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int size8 = 0;
+            int size8i = 0;
+            int offssrc = 0;
+            int offsdst = 0;
+            int i = 0;
+            int[] dummyi = new int[0];
+            int maxrawtreesize = 0;
+            int[] compressedsizes = new int[0];
+
+            
+            //
+            // Quick exit if already compressed
+            //
+            if( df.forestformat==dfcompressedv0 )
+            {
+                result = 1;
+                return result;
+            }
+            
+            //
+            // Check that source format is supported
+            //
+            alglib.ap.assert(df.forestformat==dfuncompressedv0, "BinaryCompression: unexpected forest format");
+            
+            //
+            // Compute sizes of uncompressed and compressed trees.
+            //
+            size8 = 0;
+            offssrc = 0;
+            maxrawtreesize = 0;
+            for(i=0; i<=df.ntrees-1; i++)
+            {
+                size8i = computecompressedsizerec(df, usemantissa8, offssrc, offssrc+1, dummyi, false, _params);
+                size8 = size8+computecompresseduintsize(size8i, _params)+size8i;
+                maxrawtreesize = Math.Max(maxrawtreesize, (int)Math.Round(df.trees[offssrc]));
+                offssrc = offssrc+(int)Math.Round(df.trees[offssrc]);
+            }
+            result = (double)(8*alglib.ap.len(df.trees))/(double)(size8+1);
+            
+            //
+            // Allocate memory and perform compression
+            //
+            df.trees8 = new byte[size8];
+            compressedsizes = new int[maxrawtreesize];
+            offssrc = 0;
+            offsdst = 0;
+            for(i=0; i<=df.ntrees-1; i++)
+            {
+                
+                //
+                // Call compressed size evaluator one more time, now saving subtree sizes into temporary array
+                //
+                size8i = computecompressedsizerec(df, usemantissa8, offssrc, offssrc+1, compressedsizes, true, _params);
+                
+                //
+                // Output tree header (length in bytes)
+                //
+                streamuint(df.trees8, ref offsdst, size8i, _params);
+                
+                //
+                // Compress recursively
+                //
+                compressrec(df, usemantissa8, offssrc, offssrc+1, compressedsizes, df.trees8, ref offsdst, _params);
+                
+                //
+                // Next tree
+                //
+                offssrc = offssrc+(int)Math.Round(df.trees[offssrc]);
+            }
+            alglib.ap.assert(offsdst==size8, "BinaryCompression: integrity check failed (stream length)");
+            
+            //
+            // Finalize forest conversion, clear previously allocated memory
+            //
+            df.forestformat = dfcompressedv0;
+            df.usemantissa8 = usemantissa8;
+            df.trees = new double[0];
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function returns exact number of bytes required to  store  compressed
+        version of the tree starting at location TreeBase.
+
+        PARAMETERS:
+            DF              -   decision forest
+            UseMantissa8    -   whether 8-bit or 16-bit mantissas are used to store
+                                floating point numbers
+            TreeRoot        -   root of the specific tree being stored (offset in DF.Trees)
+            TreePos         -   position within tree (first location in the tree
+                                is TreeRoot+1)
+            CompressedSizes -   not referenced if SaveCompressedSizes is False;
+                                otherwise, values computed by this function for
+                                specific values of TreePos are stored to
+                                CompressedSizes[TreePos-TreeRoot] (other elements
+                                of the array are not referenced).
+                                This array must be preallocated by caller.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static int computecompressedsizerec(decisionforest df,
+            bool usemantissa8,
+            int treeroot,
+            int treepos,
+            int[] compressedsizes,
+            bool savecompressedsizes,
+            alglib.xparams _params)
+        {
+            int result = 0;
+            int jmponbranch = 0;
+            int child0size = 0;
+            int child1size = 0;
+            int fpwidth = 0;
+
+            if( usemantissa8 )
+            {
+                fpwidth = 2;
+            }
+            else
+            {
+                fpwidth = 3;
+            }
+            
+            //
+            // Leaf or split?
+            //
+            if( (double)(df.trees[treepos])==(double)(-1) )
+            {
+                
+                //
+                // Leaf
+                //
+                result = computecompresseduintsize(2*df.nvars, _params);
+                if( df.nclasses==1 )
+                {
+                    result = result+fpwidth;
+                }
+                else
+                {
+                    result = result+computecompresseduintsize((int)Math.Round(df.trees[treepos+1]), _params);
+                }
+            }
+            else
+            {
+                
+                //
+                // Split
+                //
+                jmponbranch = (int)Math.Round(df.trees[treepos+2]);
+                child0size = computecompressedsizerec(df, usemantissa8, treeroot, treepos+innernodewidth, compressedsizes, savecompressedsizes, _params);
+                child1size = computecompressedsizerec(df, usemantissa8, treeroot, treeroot+jmponbranch, compressedsizes, savecompressedsizes, _params);
+                if( child0size<=child1size )
+                {
+                    
+                    //
+                    // Child #0 comes first because it is shorter
+                    //
+                    result = computecompresseduintsize((int)Math.Round(df.trees[treepos]), _params);
+                    result = result+fpwidth;
+                    result = result+computecompresseduintsize(child0size, _params);
+                }
+                else
+                {
+                    
+                    //
+                    // Child #1 comes first because it is shorter
+                    //
+                    result = computecompresseduintsize((int)Math.Round(df.trees[treepos])+df.nvars, _params);
+                    result = result+fpwidth;
+                    result = result+computecompresseduintsize(child1size, _params);
+                }
+                result = result+child0size+child1size;
+            }
+            
+            //
+            // Do we have to save compressed sizes?
+            //
+            if( savecompressedsizes )
+            {
+                alglib.ap.assert(treepos-treeroot<alglib.ap.len(compressedsizes), "ComputeCompressedSizeRec: integrity check failed");
+                compressedsizes[treepos-treeroot] = result;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function returns exact number of bytes required to  store  compressed
+        version of the tree starting at location TreeBase.
+
+        PARAMETERS:
+            DF              -   decision forest
+            UseMantissa8    -   whether 8-bit or 16-bit mantissas are used to store
+                                floating point numbers
+            TreeRoot        -   root of the specific tree being stored (offset in DF.Trees)
+            TreePos         -   position within tree (first location in the tree
+                                is TreeRoot+1)
+            CompressedSizes -   not referenced if SaveCompressedSizes is False;
+                                otherwise, values computed by this function for
+                                specific values of TreePos are stored to
+                                CompressedSizes[TreePos-TreeRoot] (other elements
+                                of the array are not referenced).
+                                This array must be preallocated by caller.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void compressrec(decisionforest df,
+            bool usemantissa8,
+            int treeroot,
+            int treepos,
+            int[] compressedsizes,
+            byte[] buf,
+            ref int dstoffs,
+            alglib.xparams _params)
+        {
+            int jmponbranch = 0;
+            int child0size = 0;
+            int child1size = 0;
+            int varidx = 0;
+            double leafval = 0;
+            double splitval = 0;
+            int fpwidth = 0;
+            int dstoffsold = 0;
+
+            dstoffsold = dstoffs;
+            if( usemantissa8 )
+            {
+                fpwidth = 2;
+            }
+            else
+            {
+                fpwidth = 3;
+            }
+            
+            //
+            // Leaf or split?
+            //
+            varidx = (int)Math.Round(df.trees[treepos]);
+            if( varidx==-1 )
+            {
+                
+                //
+                // Leaf node:
+                // * stream special value which denotes leaf (2*NVars)
+                // * then, stream scalar value (floating point) or class number (unsigned integer)
+                //
+                leafval = df.trees[treepos+1];
+                streamuint(buf, ref dstoffs, 2*df.nvars, _params);
+                if( df.nclasses==1 )
+                {
+                    streamfloat(buf, usemantissa8, ref dstoffs, leafval, _params);
+                }
+                else
+                {
+                    streamuint(buf, ref dstoffs, (int)Math.Round(leafval), _params);
+                }
+            }
+            else
+            {
+                
+                //
+                // Split node:
+                // * fetch compressed sizes of child nodes, decide which child goes first
+                //
+                jmponbranch = (int)Math.Round(df.trees[treepos+2]);
+                splitval = df.trees[treepos+1];
+                child0size = compressedsizes[treepos+innernodewidth-treeroot];
+                child1size = compressedsizes[treeroot+jmponbranch-treeroot];
+                if( child0size<=child1size )
+                {
+                    
+                    //
+                    // Child #0 comes first because it is shorter:
+                    // * stream variable index used for splitting;
+                    //   value in [0,NVars) range indicates that split is
+                    //   "if VAR<VAL then BRANCH0 else BRANCH1"
+                    // * stream value used for splitting
+                    // * stream children #0 and #1
+                    //
+                    streamuint(buf, ref dstoffs, varidx, _params);
+                    streamfloat(buf, usemantissa8, ref dstoffs, splitval, _params);
+                    streamuint(buf, ref dstoffs, child0size, _params);
+                    compressrec(df, usemantissa8, treeroot, treepos+innernodewidth, compressedsizes, buf, ref dstoffs, _params);
+                    compressrec(df, usemantissa8, treeroot, treeroot+jmponbranch, compressedsizes, buf, ref dstoffs, _params);
+                }
+                else
+                {
+                    
+                    //
+                    // Child #1 comes first because it is shorter:
+                    // * stream variable index used for splitting + NVars;
+                    //   value in [NVars,2*NVars) range indicates that split is
+                    //   "if VAR>=VAL then BRANCH0 else BRANCH1"
+                    // * stream value used for splitting
+                    // * stream children #0 and #1
+                    //
+                    streamuint(buf, ref dstoffs, varidx+df.nvars, _params);
+                    streamfloat(buf, usemantissa8, ref dstoffs, splitval, _params);
+                    streamuint(buf, ref dstoffs, child1size, _params);
+                    compressrec(df, usemantissa8, treeroot, treeroot+jmponbranch, compressedsizes, buf, ref dstoffs, _params);
+                    compressrec(df, usemantissa8, treeroot, treepos+innernodewidth, compressedsizes, buf, ref dstoffs, _params);
+                }
+            }
+            
+            //
+            // Integrity check at the end
+            //
+            alglib.ap.assert(dstoffs-dstoffsold==compressedsizes[treepos-treeroot], "CompressRec: integrity check failed (compressed size at leaf)");
+        }
+
+
+        /*************************************************************************
+        This function returns exact number of bytes required to  store  compressed
+        unsigned integer number (negative  arguments  result  in  assertion  being
+        generated).
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static int computecompresseduintsize(int v,
+            alglib.xparams _params)
+        {
+            int result = 0;
+
+            alglib.ap.assert(v>=0);
+            result = 1;
+            while( v>=128 )
+            {
+                v = v/128;
+                result = result+1;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function stores compressed unsigned integer number (negative arguments
+        result in assertion being generated) to byte array at  location  Offs  and
+        increments Offs by number of bytes being stored.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void streamuint(byte[] buf,
+            ref int offs,
+            int v,
+            alglib.xparams _params)
+        {
+            int v0 = 0;
+
+            alglib.ap.assert(v>=0);
+            while( true )
+            {
+                
+                //
+                // Save 7 least significant bits of V, use 8th bit as a flag which
+                // tells us whether subsequent 7-bit packages will be sent.
+                //
+                v0 = v%128;
+                if( v>=128 )
+                {
+                    v0 = v0+128;
+                }
+                buf[offs] = unchecked((byte)(v0));
+                offs = offs+1;
+                v = v/128;
+                if( v==0 )
+                {
+                    break;
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function reads compressed unsigned integer number from byte array
+        starting at location Offs and increments Offs by number of bytes being
+        read.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static int unstreamuint(byte[] buf,
+            ref int offs,
+            alglib.xparams _params)
+        {
+            int result = 0;
+            int v0 = 0;
+            int p = 0;
+
+            result = 0;
+            p = 1;
+            while( true )
+            {
+                
+                //
+                // Rad 7 bits of V, use 8th bit as a flag which tells us whether
+                // subsequent 7-bit packages will be received.
+                //
+                v0 = buf[offs];
+                offs = offs+1;
+                result = result+v0%128*p;
+                if( v0<128 )
+                {
+                    break;
+                }
+                p = p*128;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function stores compressed floating point number  to  byte  array  at
+        location  Offs and increments Offs by number of bytes being stored.
+
+        Either 8-bit mantissa or 16-bit mantissa is used. The exponent  is  always
+        7 bits of exponent + sign. Values which do not fit into exponent range are
+        truncated to fit.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void streamfloat(byte[] buf,
+            bool usemantissa8,
+            ref int offs,
+            double v,
+            alglib.xparams _params)
+        {
+            int signbit = 0;
+            int e = 0;
+            int m = 0;
+            double twopow30 = 0;
+            double twopowm30 = 0;
+            double twopow10 = 0;
+            double twopowm10 = 0;
+
+            alglib.ap.assert(math.isfinite(v), "StreamFloat: V is not finite number");
+            
+            //
+            // Special case: zero
+            //
+            if( v==0.0 )
+            {
+                if( usemantissa8 )
+                {
+                    buf[offs+0] = unchecked((byte)(0));
+                    buf[offs+1] = unchecked((byte)(0));
+                    offs = offs+2;
+                }
+                else
+                {
+                    buf[offs+0] = unchecked((byte)(0));
+                    buf[offs+1] = unchecked((byte)(0));
+                    buf[offs+2] = unchecked((byte)(0));
+                    offs = offs+3;
+                }
+                return;
+            }
+            
+            //
+            // Handle sign
+            //
+            signbit = 0;
+            if( v<0.0 )
+            {
+                v = -v;
+                signbit = 128;
+            }
+            
+            //
+            // Compute exponent
+            //
+            twopow30 = 1073741824;
+            twopow10 = 1024;
+            twopowm30 = 1.0/twopow30;
+            twopowm10 = 1.0/twopow10;
+            e = 0;
+            while( v>=twopow30 )
+            {
+                v = v*twopowm30;
+                e = e+30;
+            }
+            while( v>=twopow10 )
+            {
+                v = v*twopowm10;
+                e = e+10;
+            }
+            while( v>=1.0 )
+            {
+                v = v*0.5;
+                e = e+1;
+            }
+            while( v<twopowm30 )
+            {
+                v = v*twopow30;
+                e = e-30;
+            }
+            while( v<twopowm10 )
+            {
+                v = v*twopow10;
+                e = e-10;
+            }
+            while( v<0.5 )
+            {
+                v = v*2;
+                e = e-1;
+            }
+            alglib.ap.assert(v>=0.5 && v<1.0, "StreamFloat: integrity check failed");
+            
+            //
+            // Handle exponent underflow/overflow
+            //
+            if( e<-63 )
+            {
+                signbit = 0;
+                e = 0;
+                v = 0;
+            }
+            if( e>63 )
+            {
+                e = 63;
+                v = 1.0;
+            }
+            
+            //
+            // Save to stream
+            //
+            if( usemantissa8 )
+            {
+                m = (int)Math.Round(v*256);
+                if( m==256 )
+                {
+                    m = m/2;
+                    e = Math.Min(e+1, 63);
+                }
+                buf[offs+0] = unchecked((byte)(e+64+signbit));
+                buf[offs+1] = unchecked((byte)(m));
+                offs = offs+2;
+            }
+            else
+            {
+                m = (int)Math.Round(v*65536);
+                if( m==65536 )
+                {
+                    m = m/2;
+                    e = Math.Min(e+1, 63);
+                }
+                buf[offs+0] = unchecked((byte)(e+64+signbit));
+                buf[offs+1] = unchecked((byte)(m%256));
+                buf[offs+2] = unchecked((byte)(m/256));
+                offs = offs+3;
+            }
+        }
+
+
+        /*************************************************************************
+        This function reads compressed floating point number from the byte array
+        starting from location Offs and increments Offs by number of bytes being
+        read.
+
+        Either 8-bit mantissa or 16-bit mantissa is used. The exponent  is  always
+        7 bits of exponent + sign. Values which do not fit into exponent range are
+        truncated to fit.
+
+          -- ALGLIB --
+             Copyright 22.07.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double unstreamfloat(byte[] buf,
+            bool usemantissa8,
+            ref int offs,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int e = 0;
+            double v = 0;
+            double inv256 = 0;
+
+            
+            //
+            // Read from stream
+            //
+            inv256 = 1.0/256.0;
+            if( usemantissa8 )
+            {
+                e = buf[offs+0];
+                v = buf[offs+1]*inv256;
+                offs = offs+2;
+            }
+            else
+            {
+                e = buf[offs+0];
+                v = (buf[offs+1]*inv256+buf[offs+2])*inv256;
+                offs = offs+3;
+            }
+            
+            //
+            // Decode
+            //
+            if( e>128 )
+            {
+                v = -v;
+                e = e-128;
+            }
+            e = e-64;
+            result = xfastpow(2, e, _params)*v;
+            return result;
+        }
+
+
+        /*************************************************************************
         Classification error
         *************************************************************************/
         private static int dfclserror(decisionforest df,
@@ -41207,50 +43564,176 @@ public partial class alglib
 
 
         /*************************************************************************
-        Internal subroutine for processing one decision tree starting at Offs
+        Internal subroutine for processing one decision tree stored in uncompressed
+        format starting at SubtreeRoot (this index points to the header of the tree,
+        not its first node). First node being processed is located at NodeOffs.
         *************************************************************************/
-        private static void dfprocessinternal(decisionforest df,
-            int offs,
+        private static void dfprocessinternaluncompressed(decisionforest df,
+            int subtreeroot,
+            int nodeoffs,
             double[] x,
             ref double[] y,
             alglib.xparams _params)
         {
-            int k = 0;
             int idx = 0;
 
-            
-            //
-            // Set pointer to the root
-            //
-            k = offs+1;
+            alglib.ap.assert(df.forestformat==dfuncompressedv0, "DFProcessInternal: unexpected forest format");
             
             //
             // Navigate through the tree
             //
             while( true )
             {
-                if( (double)(df.trees[k])==(double)(-1) )
+                if( (double)(df.trees[nodeoffs])==(double)(-1) )
                 {
                     if( df.nclasses==1 )
                     {
-                        y[0] = y[0]+df.trees[k+1];
+                        y[0] = y[0]+df.trees[nodeoffs+1];
                     }
                     else
                     {
-                        idx = (int)Math.Round(df.trees[k+1]);
+                        idx = (int)Math.Round(df.trees[nodeoffs+1]);
                         y[idx] = y[idx]+1;
                     }
                     break;
                 }
-                if( x[(int)Math.Round(df.trees[k])]<df.trees[k+1] )
+                if( x[(int)Math.Round(df.trees[nodeoffs])]<df.trees[nodeoffs+1] )
                 {
-                    k = k+innernodewidth;
+                    nodeoffs = nodeoffs+innernodewidth;
                 }
                 else
                 {
-                    k = offs+(int)Math.Round(df.trees[k+2]);
+                    nodeoffs = subtreeroot+(int)Math.Round(df.trees[nodeoffs+2]);
                 }
             }
+        }
+
+
+        /*************************************************************************
+        Internal subroutine for processing one decision tree stored in compressed
+        format starting at Offs (this index points to the first node of the tree,
+        right past the header field).
+        *************************************************************************/
+        private static void dfprocessinternalcompressed(decisionforest df,
+            int offs,
+            double[] x,
+            ref double[] y,
+            alglib.xparams _params)
+        {
+            int leafindicator = 0;
+            int varidx = 0;
+            double splitval = 0;
+            int jmplen = 0;
+            double leafval = 0;
+            int leafcls = 0;
+
+            alglib.ap.assert(df.forestformat==dfcompressedv0, "DFProcessInternal: unexpected forest format");
+            
+            //
+            // Navigate through the tree
+            //
+            leafindicator = 2*df.nvars;
+            while( true )
+            {
+                
+                //
+                // Read variable idx
+                //
+                varidx = unstreamuint(df.trees8, ref offs, _params);
+                
+                //
+                // Is it leaf?
+                //
+                if( varidx==leafindicator )
+                {
+                    if( df.nclasses==1 )
+                    {
+                        
+                        //
+                        // Regression forest
+                        //
+                        leafval = unstreamfloat(df.trees8, df.usemantissa8, ref offs, _params);
+                        y[0] = y[0]+leafval;
+                    }
+                    else
+                    {
+                        
+                        //
+                        // Classification forest
+                        //
+                        leafcls = unstreamuint(df.trees8, ref offs, _params);
+                        y[leafcls] = y[leafcls]+1;
+                    }
+                    break;
+                }
+                
+                //
+                // Process node
+                //
+                splitval = unstreamfloat(df.trees8, df.usemantissa8, ref offs, _params);
+                jmplen = unstreamuint(df.trees8, ref offs, _params);
+                if( varidx<df.nvars )
+                {
+                    
+                    //
+                    // The split rule is "if VAR<VAL then BRANCH0 else BRANCH1"
+                    //
+                    if( x[varidx]>=splitval )
+                    {
+                        offs = offs+jmplen;
+                    }
+                }
+                else
+                {
+                    
+                    //
+                    // The split rule is "if VAR>=VAL then BRANCH0 else BRANCH1"
+                    //
+                    varidx = varidx-df.nvars;
+                    if( x[varidx]<splitval )
+                    {
+                        offs = offs+jmplen;
+                    }
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Fast Pow
+
+          -- ALGLIB --
+             Copyright 24.08.2009 by Bochkanov Sergey
+        *************************************************************************/
+        private static double xfastpow(double r,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = 0;
+            if( n>0 )
+            {
+                if( n%2==0 )
+                {
+                    result = xfastpow(r, n/2, _params);
+                    result = result*result;
+                }
+                else
+                {
+                    result = r*xfastpow(r, n-1, _params);
+                }
+                return result;
+            }
+            if( n==0 )
+            {
+                result = 1;
+            }
+            if( n<0 )
+            {
+                result = xfastpow(1/r, -n, _params);
+            }
+            return result;
         }
 
 
