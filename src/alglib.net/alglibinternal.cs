@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.16.0 (source code generated 2019-12-19)
+ALGLIB 3.17.0 (source code generated 2020-12-27)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -4107,6 +4107,107 @@ public partial class alglib
 
 
         /*************************************************************************
+        Sorting function optimized for integer keys and real labels, can be used
+        to sort middle of the array
+
+        A is sorted, and same permutations are applied to B.
+
+        NOTES:
+            this function assumes that A[] is finite; it doesn't checks that
+            condition. All other conditions (size of input arrays, etc.) are not
+            checked too.
+
+          -- ALGLIB --
+             Copyright 11.12.2008 by Bochkanov Sergey
+        *************************************************************************/
+        public static void tagsortmiddlei(ref int[] a,
+            int offset,
+            int n,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int k = 0;
+            int t = 0;
+            int tmp = 0;
+            int p0 = 0;
+            int p1 = 0;
+            int at = 0;
+            int ak = 0;
+            int ak1 = 0;
+
+            
+            //
+            // Special cases
+            //
+            if( n<=1 )
+            {
+                return;
+            }
+            
+            //
+            // General case, N>1: sort, update B
+            //
+            for(i=2; i<=n; i++)
+            {
+                t = i;
+                while( t!=1 )
+                {
+                    k = t/2;
+                    p0 = offset+k-1;
+                    p1 = offset+t-1;
+                    ak = a[p0];
+                    at = a[p1];
+                    if( ak>=at )
+                    {
+                        break;
+                    }
+                    a[p0] = at;
+                    a[p1] = ak;
+                    t = k;
+                }
+            }
+            for(i=n-1; i>=1; i--)
+            {
+                p0 = offset+0;
+                p1 = offset+i;
+                tmp = a[p1];
+                a[p1] = a[p0];
+                a[p0] = tmp;
+                at = tmp;
+                t = 0;
+                while( true )
+                {
+                    k = 2*t+1;
+                    if( k+1>i )
+                    {
+                        break;
+                    }
+                    p0 = offset+t;
+                    p1 = offset+k;
+                    ak = a[p1];
+                    if( k+1<i )
+                    {
+                        ak1 = a[p1+1];
+                        if( ak1>ak )
+                        {
+                            ak = ak1;
+                            p1 = p1+1;
+                            k = k+1;
+                        }
+                    }
+                    if( at>=ak )
+                    {
+                        break;
+                    }
+                    a[p1] = at;
+                    a[p0] = ak;
+                    t = k;
+                }
+            }
+        }
+
+
+        /*************************************************************************
         Sorting function optimized for integer values (only keys, no labels),  can
         be used to sort middle of the array
 
@@ -5076,857 +5177,1411 @@ public partial class alglib
 
 
     }
-    public class ablasmkl
-    {
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             12.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixgermkl(int m,
-            int n,
-            double[,] a,
-            int ia,
-            int ja,
-            double alpha,
-            double[] u,
-            int iu,
-            double[] v,
-            int iv,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             12.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool cmatrixrank1mkl(int m,
-            int n,
-            ref complex[,] a,
-            int ia,
-            int ja,
-            ref complex[] u,
-            int iu,
-            ref complex[] v,
-            int iv,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             12.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixrank1mkl(int m,
-            int n,
-            double[,] a,
-            int ia,
-            int ja,
-            double[] u,
-            int iu,
-            double[] v,
-            int iv,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             12.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool cmatrixmvmkl(int m,
-            int n,
-            complex[,] a,
-            int ia,
-            int ja,
-            int opa,
-            complex[] x,
-            int ix,
-            ref complex[] y,
-            int iy,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             12.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixmvmkl(int m,
-            int n,
-            double[,] a,
-            int ia,
-            int ja,
-            int opa,
-            double[] x,
-            int ix,
-            double[] y,
-            int iy,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             12.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixgemvmkl(int m,
-            int n,
-            double alpha,
-            double[,] a,
-            int ia,
-            int ja,
-            int opa,
-            double[] x,
-            int ix,
-            double beta,
-            double[] y,
-            int iy,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             12.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixtrsvmkl(int n,
-            double[,] a,
-            int ia,
-            int ja,
-            bool isupper,
-            bool isunit,
-            int optype,
-            double[] x,
-            int ix,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             01.10.2013
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixsyrkmkl(int n,
-            int k,
-            double alpha,
-            double[,] a,
-            int ia,
-            int ja,
-            int optypea,
-            double beta,
-            double[,] c,
-            int ic,
-            int jc,
-            bool isupper,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             01.10.2013
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool cmatrixherkmkl(int n,
-            int k,
-            double alpha,
-            complex[,] a,
-            int ia,
-            int ja,
-            int optypea,
-            double beta,
-            complex[,] c,
-            int ic,
-            int jc,
-            bool isupper,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             01.10.2013
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixgemmmkl(int m,
-            int n,
-            int k,
-            double alpha,
-            double[,] a,
-            int ia,
-            int ja,
-            int optypea,
-            double[,] b,
-            int ib,
-            int jb,
-            int optypeb,
-            double beta,
-            double[,] c,
-            int ic,
-            int jc,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             01.10.2017
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixsymvmkl(int n,
-            double alpha,
-            double[,] a,
-            int ia,
-            int ja,
-            bool isupper,
-            double[] x,
-            int ix,
-            double beta,
-            double[] y,
-            int iy,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             16.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool cmatrixgemmmkl(int m,
-            int n,
-            int k,
-            complex alpha,
-            complex[,] a,
-            int ia,
-            int ja,
-            int optypea,
-            complex[,] b,
-            int ib,
-            int jb,
-            int optypeb,
-            complex beta,
-            complex[,] c,
-            int ic,
-            int jc,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             16.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool cmatrixlefttrsmmkl(int m,
-            int n,
-            complex[,] a,
-            int i1,
-            int j1,
-            bool isupper,
-            bool isunit,
-            int optype,
-            complex[,] x,
-            int i2,
-            int j2,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             16.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool cmatrixrighttrsmmkl(int m,
-            int n,
-            complex[,] a,
-            int i1,
-            int j1,
-            bool isupper,
-            bool isunit,
-            int optype,
-            complex[,] x,
-            int i2,
-            int j2,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             16.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixlefttrsmmkl(int m,
-            int n,
-            double[,] a,
-            int i1,
-            int j1,
-            bool isupper,
-            bool isunit,
-            int optype,
-            double[,] x,
-            int i2,
-            int j2,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel
-
-          -- ALGLIB routine --
-             16.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixrighttrsmmkl(int m,
-            int n,
-            double[,] a,
-            int i1,
-            int j1,
-            bool isupper,
-            bool isunit,
-            int optype,
-            double[,] x,
-            int i2,
-            int j2,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE:
-
-        if function returned False, CholResult is NOT modified. Not ever referenced!
-        if function returned True, CholResult is set to status of Cholesky decomposition
-        (True on succeess).
-
-          -- ALGLIB routine --
-             16.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool spdmatrixcholeskymkl(double[,] a,
-            int offs,
-            int n,
-            bool isupper,
-            ref bool cholresult,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixplumkl(ref double[,] a,
-            int offs,
-            int m,
-            int n,
-            ref int[] pivots,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE: this function needs preallocated output/temporary arrays.
-              D and E must be at least max(M,N)-wide.
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixbdmkl(double[,] a,
-            int m,
-            int n,
-            double[] d,
-            double[] e,
-            double[] tauq,
-            double[] taup,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        If ByQ is True,  TauP is not used (can be empty array).
-        If ByQ is False, TauQ is not used (can be empty array).
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixbdmultiplybymkl(double[,] qp,
-            int m,
-            int n,
-            double[] tauq,
-            double[] taup,
-            double[,] z,
-            int zrows,
-            int zcolumns,
-            bool byq,
-            bool fromtheright,
-            bool dotranspose,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE: Tau must be preallocated array with at least N-1 elements.
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixhessenbergmkl(double[,] a,
-            int n,
-            double[] tau,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE: Q must be preallocated N*N array
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixhessenbergunpackqmkl(double[,] a,
-            int n,
-            double[] tau,
-            double[,] q,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE: Tau, D, E must be preallocated arrays;
-              length(E)=length(Tau)=N-1 (or larger)
-              length(D)=N (or larger)
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool smatrixtdmkl(double[,] a,
-            int n,
-            bool isupper,
-            double[] tau,
-            double[] d,
-            double[] e,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE: Q must be preallocated N*N array
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool smatrixtdunpackqmkl(double[,] a,
-            int n,
-            bool isupper,
-            double[] tau,
-            double[,] q,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE: Tau, D, E must be preallocated arrays;
-              length(E)=length(Tau)=N-1 (or larger)
-              length(D)=N (or larger)
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool hmatrixtdmkl(complex[,] a,
-            int n,
-            bool isupper,
-            complex[] tau,
-            double[] d,
-            double[] e,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        NOTE: Q must be preallocated N*N array
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool hmatrixtdunpackqmkl(complex[,] a,
-            int n,
-            bool isupper,
-            complex[] tau,
-            complex[,] q,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        Returns True if MKL was present and handled request (MKL  completion  code
-        is returned as separate output parameter).
-
-        D and E are pre-allocated arrays with length N (both of them!). On output,
-        D constraints singular values, and E is destroyed.
-
-        SVDResult is modified if and only if MKL is present.
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixbdsvdmkl(double[] d,
-            double[] e,
-            int n,
-            bool isupper,
-            double[,] u,
-            int nru,
-            double[,] c,
-            int ncc,
-            double[,] vt,
-            int ncvt,
-            ref bool svdresult,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based DHSEQR kernel.
-
-        Returns True if MKL was present and handled request.
-
-        WR and WI are pre-allocated arrays with length N.
-        Z is pre-allocated array[N,N].
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixinternalschurdecompositionmkl(double[,] h,
-            int n,
-            int tneeded,
-            int zneeded,
-            double[] wr,
-            double[] wi,
-            double[,] z,
-            ref int info,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based DTREVC kernel.
-
-        Returns True if MKL was present and handled request.
-
-        NOTE: this function does NOT support HOWMNY=3!!!!
-
-        VL and VR are pre-allocated arrays with length N*N, if required. If particalar
-        variables is not required, it can be dummy (empty) array.
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool rmatrixinternaltrevcmkl(double[,] t,
-            int n,
-            int side,
-            int howmny,
-            double[,] vl,
-            double[,] vr,
-            ref int m,
-            ref int info,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        Returns True if MKL was present and handled request (MKL  completion  code
-        is returned as separate output parameter).
-
-        D and E are pre-allocated arrays with length N (both of them!). On output,
-        D constraints eigenvalues, and E is destroyed.
-
-        Z is preallocated array[N,N] for ZNeeded<>0; ignored for ZNeeded=0.
-
-        EVDResult is modified if and only if MKL is present.
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool smatrixtdevdmkl(double[] d,
-            double[] e,
-            int n,
-            int zneeded,
-            double[,] z,
-            ref bool evdresult,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-        /*************************************************************************
-        MKL-based kernel.
-
-        Returns True if MKL was present and handled request (MKL  completion  code
-        is returned as separate output parameter).
-
-        D and E are pre-allocated arrays with length N (both of them!). On output,
-        D constraints eigenvalues, and E is destroyed.
-
-        Z is preallocated array[N,N] for ZNeeded<>0; ignored for ZNeeded=0.
-
-        EVDResult is modified if and only if MKL is present.
-
-          -- ALGLIB routine --
-             20.10.2014
-             Bochkanov Sergey
-        *************************************************************************/
-        public static bool sparsegemvcrsmkl(int opa,
-            int arows,
-            int acols,
-            double alpha,
-            double[] vals,
-            int[] cidx,
-            int[] ridx,
-            double[] x,
-            int ix,
-            double beta,
-            double[] y,
-            int iy,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-
-            result = false;
-            return result;
-        }
-
-
-    }
     public class ablasf
     {
+        /*************************************************************************
+        Computes dot product (X,Y) for elements [0,N) of X[] and Y[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], vector to process
+            Y       -   array[N], vector to process
+
+        RESULT:
+            (X,Y)
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static double rdotv(int n,
+            double[] x,
+            double[] y,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+
+            result = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                result = result+x[i]*y[i];
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes dot product (X,A[i]) for elements [0,N) of vector X[] and row A[i,*]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], vector to process
+            A       -   array[?,N], matrix to process
+            I       -   row index
+
+        RESULT:
+            (X,Ai)
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static double rdotvr(int n,
+            double[] x,
+            double[,] a,
+            int i,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int j = 0;
+
+            result = 0;
+            for(j=0; j<=n-1; j++)
+            {
+                result = result+x[j]*a[i,j];
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes dot product (X,A[i]) for rows A[ia,*] and B[ib,*]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], vector to process
+            A       -   array[?,N], matrix to process
+            I       -   row index
+
+        RESULT:
+            (X,Ai)
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static double rdotrr(int n,
+            double[,] a,
+            int ia,
+            double[,] b,
+            int ib,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int j = 0;
+
+            result = 0;
+            for(j=0; j<=n-1; j++)
+            {
+                result = result+a[ia,j]*b[ib,j];
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes dot product (X,X) for elements [0,N) of X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], vector to process
+
+        RESULT:
+            (X,X)
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static double rdotv2(int n,
+            double[] x,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            double v = 0;
+
+            result = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = x[i];
+                result = result+v*v;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Performs inplace addition of Y[] to X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            Alpha   -   multiplier
+            Y       -   array[N], vector to process
+            X       -   array[N], vector to process
+
+        RESULT:
+            X := X + alpha*Y
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void raddv(int n,
+            double alpha,
+            double[] y,
+            double[] x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[i] = x[i]+alpha*y[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Performs inplace addition of Y[] to X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            Alpha   -   multiplier
+            Y       -   source vector
+            OffsY   -   source offset
+            X       -   destination vector
+            OffsX   -   destination offset
+
+        RESULT:
+            X := X + alpha*Y
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void raddvx(int n,
+            double alpha,
+            double[] y,
+            int offsy,
+            double[] x,
+            int offsx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[offsx+i] = x[offsx+i]+alpha*y[offsy+i];
+            }
+        }
+
+
+        /*************************************************************************
+        Performs inplace addition of vector Y[] to column X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            Alpha   -   multiplier
+            Y       -   vector to add
+            X       -   target column ColIdx
+
+        RESULT:
+            X := X + alpha*Y
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void raddvc(int n,
+            double alpha,
+            double[] y,
+            double[,] x,
+            int colidx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[i,colidx] = x[i,colidx]+alpha*y[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Performs inplace addition of vector Y[] to row X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            Alpha   -   multiplier
+            Y       -   vector to add
+            X       -   target row RowIdx
+
+        RESULT:
+            X := X + alpha*Y
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void raddvr(int n,
+            double alpha,
+            double[] y,
+            double[,] x,
+            int rowidx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[rowidx,i] = x[rowidx,i]+alpha*y[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Performs componentwise multiplication of row X[] by vector Y[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            Y       -   vector to multiply by
+            X       -   target row RowIdx
+
+        RESULT:
+            X := componentwise(X*Y)
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rmergemulvr(int n,
+            double[] y,
+            double[,] x,
+            int rowidx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[rowidx,i] = x[rowidx,i]*y[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Performs componentwise max of row X[I] and vector Y[] 
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   matrix, I-th row is source
+            X       -   target row RowIdx
+
+        RESULT:
+            X := componentwise(X*Y)
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rmergemaxrv(int n,
+            double[,] x,
+            int rowidx,
+            double[] y,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                y[i] = Math.Max(y[i], x[rowidx,i]);
+            }
+        }
+
+
+        /*************************************************************************
+        Performs inplace addition of Y[RIdx,...] to X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            Alpha   -   multiplier
+            Y       -   array[?,N], matrix whose RIdx-th row is added
+            RIdx    -   row index
+            X       -   array[N], vector to process
+
+        RESULT:
+            X := X + alpha*Y
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void raddrv(int n,
+            double alpha,
+            double[,] y,
+            int ridx,
+            double[] x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[i] = x[i]+alpha*y[ridx,i];
+            }
+        }
+
+
+        /*************************************************************************
+        Performs inplace multiplication of X[] by V
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], vector to process
+            V       -   multiplier
+
+        OUTPUT PARAMETERS:
+            X       -   elements 0...N-1 multiplied by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rmulv(int n,
+            double v,
+            double[] x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[i] = x[i]*v;
+            }
+        }
+
+
+        /*************************************************************************
+        Performs inplace multiplication of X[] by V
+
+        INPUT PARAMETERS:
+            N       -   row length
+            X       -   array[?,N], row to process
+            V       -   multiplier
+
+        OUTPUT PARAMETERS:
+            X       -   elements 0...N-1 of row RowIdx are multiplied by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rmulr(int n,
+            double v,
+            double[,] x,
+            int rowidx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[rowidx,i] = x[rowidx,i]*v;
+            }
+        }
+
+
+        /*************************************************************************
+        Performs inplace multiplication of X[OffsX:OffsX+N-1] by V
+
+        INPUT PARAMETERS:
+            N       -   subvector length
+            X       -   vector to process
+            V       -   multiplier
+
+        OUTPUT PARAMETERS:
+            X       -   elements OffsX:OffsX+N-1 multiplied by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rmulvx(int n,
+            double v,
+            double[] x,
+            int offsx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[offsx+i] = x[offsx+i]*v;
+            }
+        }
+
+
+        /*************************************************************************
+        Returns maximum |X|
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], vector to process
+
+        OUTPUT PARAMETERS:
+            max(|X[i]|)
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static double rmaxabsv(int n,
+            double[] x,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            double v = 0;
+
+            result = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = Math.Abs(x[i]);
+                if( (double)(v)>(double)(result) )
+                {
+                    result = v;
+                }
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Sets vector X[] to V
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            X       -   array[N]
+
+        OUTPUT PARAMETERS:
+            X       -   leading N elements are replaced by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rsetv(int n,
+            double v,
+            double[] x,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                x[j] = v;
+            }
+        }
+
+
+        /*************************************************************************
+        Sets X[OffsX:OffsX+N-1] to V
+
+        INPUT PARAMETERS:
+            N       -   subvector length
+            V       -   value to set
+            X       -   array[N]
+
+        OUTPUT PARAMETERS:
+            X       -   X[OffsX:OffsX+N-1] is replaced by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rsetvx(int n,
+            double v,
+            double[] x,
+            int offsx,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                x[offsx+j] = v;
+            }
+        }
+
+
+        /*************************************************************************
+        Sets vector X[] to V
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            X       -   array[N]
+
+        OUTPUT PARAMETERS:
+            X       -   leading N elements are replaced by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void isetv(int n,
+            int v,
+            int[] x,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                x[j] = v;
+            }
+        }
+
+
+        /*************************************************************************
+        Sets vector X[] to V
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            X       -   array[N]
+
+        OUTPUT PARAMETERS:
+            X       -   leading N elements are replaced by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void bsetv(int n,
+            bool v,
+            bool[] x,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                x[j] = v;
+            }
+        }
+
+
+        /*************************************************************************
+        Sets matrix A[] to V
+
+        INPUT PARAMETERS:
+            M, N    -   rows/cols count
+            V       -   value to set
+            A       -   array[M,N]
+
+        OUTPUT PARAMETERS:
+            A       -   leading M rows, N cols are replaced by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rsetm(int m,
+            int n,
+            double v,
+            double[,] a,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+
+            for(i=0; i<=m-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    a[i,j] = v;
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Sets vector X[] to V, reallocating X[] if too small
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            X       -   possibly preallocated array
+
+        OUTPUT PARAMETERS:
+            X       -   leading N elements are replaced by V; array is reallocated
+                        if its length is less than N.
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rsetallocv(int n,
+            double v,
+            ref double[] x,
+            alglib.xparams _params)
+        {
+            if( alglib.ap.len(x)<n )
+            {
+                x = new double[n];
+            }
+            rsetv(n, v, x, _params);
+        }
+
+
+        /*************************************************************************
+        Sets vector A[] to V, reallocating A[] if too small.
+
+        INPUT PARAMETERS:
+            M       -   rows count
+            N       -   cols count
+            V       -   value to set
+            A       -   possibly preallocated matrix
+
+        OUTPUT PARAMETERS:
+            A       -   leading M rows, N cols are replaced by V; the matrix is
+                        reallocated if its rows/cols count is less than M/N.
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rsetallocm(int m,
+            int n,
+            double v,
+            ref double[,] a,
+            alglib.xparams _params)
+        {
+            if( alglib.ap.rows(a)<m || alglib.ap.cols(a)<n )
+            {
+                a = new double[m, n];
+            }
+            rsetm(m, n, v, a, _params);
+        }
+
+
+        /*************************************************************************
+        Reallocates X[] if its length is less than required value. Does not change
+        its length and contents if it is large enough.
+
+        INPUT PARAMETERS:
+            N       -   desired vector length
+            X       -   possibly preallocated array
+
+        OUTPUT PARAMETERS:
+            X       -   length(X)>=N
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rallocv(int n,
+            ref double[] x,
+            alglib.xparams _params)
+        {
+            if( alglib.ap.len(x)<n )
+            {
+                x = new double[n];
+            }
+        }
+
+
+        /*************************************************************************
+        Reallocates X[] if its length is less than required value. Does not change
+        its length and contents if it is large enough.
+
+        INPUT PARAMETERS:
+            N       -   desired vector length
+            X       -   possibly preallocated array
+
+        OUTPUT PARAMETERS:
+            X       -   length(X)>=N
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void ballocv(int n,
+            ref bool[] x,
+            alglib.xparams _params)
+        {
+            if( alglib.ap.len(x)<n )
+            {
+                x = new bool[n];
+            }
+        }
+
+
+        /*************************************************************************
+        Reallocates matrix if its rows or cols count is less than  required.  Does
+        not change its size if it is exactly that size or larger.
+
+        INPUT PARAMETERS:
+            M       -   rows count
+            N       -   cols count
+            A       -   possibly preallocated matrix
+
+        OUTPUT PARAMETERS:
+            A       -   size is at least M*N
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rallocm(int m,
+            int n,
+            ref double[,] a,
+            alglib.xparams _params)
+        {
+            if( alglib.ap.rows(a)<m || alglib.ap.cols(a)<n )
+            {
+                a = new double[m, n];
+            }
+        }
+
+
+        /*************************************************************************
+        Sets vector X[] to V, reallocating X[] if too small
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            X       -   possibly preallocated array
+
+        OUTPUT PARAMETERS:
+            X       -   leading N elements are replaced by V; array is reallocated
+                        if its length is less than N.
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void isetallocv(int n,
+            int v,
+            ref int[] x,
+            alglib.xparams _params)
+        {
+            if( alglib.ap.len(x)<n )
+            {
+                x = new int[n];
+            }
+            isetv(n, v, x, _params);
+        }
+
+
+        /*************************************************************************
+        Sets vector X[] to V, reallocating X[] if too small
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            X       -   possibly preallocated array
+
+        OUTPUT PARAMETERS:
+            X       -   leading N elements are replaced by V; array is reallocated
+                        if its length is less than N.
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void bsetallocv(int n,
+            bool v,
+            ref bool[] x,
+            alglib.xparams _params)
+        {
+            if( alglib.ap.len(x)<n )
+            {
+                x = new bool[n];
+            }
+            bsetv(n, v, x, _params);
+        }
+
+
+        /*************************************************************************
+        Sets row I of A[,] to V
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            A       -   array[N,N] or larger
+            I       -   row index
+
+        OUTPUT PARAMETERS:
+            A       -   leading N elements of I-th row are replaced by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rsetr(int n,
+            double v,
+            double[,] a,
+            int i,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                a[i,j] = v;
+            }
+        }
+
+
+        /*************************************************************************
+        Sets col J of A[,] to V
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   value to set
+            A       -   array[N,N] or larger
+            J       -   col index
+
+        OUTPUT PARAMETERS:
+            A       -   leading N elements of I-th col are replaced by V
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rsetc(int n,
+            double v,
+            double[,] a,
+            int j,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                a[i,j] = v;
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], source
+            Y       -   preallocated array[N]
+
+        OUTPUT PARAMETERS:
+            Y       -   leading N elements are replaced by X
+
+            
+        NOTE: destination and source should NOT overlap
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyv(int n,
+            double[] x,
+            double[] y,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                y[j] = x[j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], source
+            Y       -   preallocated array[N]
+
+        OUTPUT PARAMETERS:
+            Y       -   leading N elements are replaced by X
+
+            
+        NOTE: destination and source should NOT overlap
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void bcopyv(int n,
+            bool[] x,
+            bool[] y,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                y[j] = x[j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[], extended version
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   source array
+            OffsX   -   source offset
+            Y       -   preallocated array[N]
+            OffsY   -   destination offset
+
+        OUTPUT PARAMETERS:
+            Y       -   N elements starting from OffsY are replaced by X[OffsX:OffsX+N-1]
+            
+        NOTE: destination and source should NOT overlap
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyvx(int n,
+            double[] x,
+            int offsx,
+            double[] y,
+            int offsy,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                y[offsy+j] = x[offsx+j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[], resizing Y[] if needed.
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], source
+            Y       -   possibly preallocated array[N] (resized if needed)
+
+        OUTPUT PARAMETERS:
+            Y       -   leading N elements are replaced by X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyallocv(int n,
+            double[] x,
+            ref double[] y,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            if( alglib.ap.len(y)<n )
+            {
+                y = new double[n];
+            }
+            for(j=0; j<=n-1; j++)
+            {
+                y[j] = x[j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies matrix X[] to Y[], resizing Y[] if needed. On resize, dimensions of
+        Y[] are increased - but not decreased.
+
+        INPUT PARAMETERS:
+            M       -   rows count
+            N       -   cols count
+            X       -   array[M,N], source
+            Y       -   possibly preallocated array[M,N] (resized if needed)
+
+        OUTPUT PARAMETERS:
+            Y       -   leading [M,N] elements are replaced by X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyallocm(int m,
+            int n,
+            double[,] x,
+            ref double[,] y,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+
+            if( m==0 || n==0 )
+            {
+                return;
+            }
+            if( alglib.ap.rows(y)<m || alglib.ap.cols(y)<n )
+            {
+                y = new double[Math.Max(m, alglib.ap.rows(y)), Math.Max(n, alglib.ap.cols(y))];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    y[i,j] = x[i,j];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[], resizing Y[] if needed.
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], source
+            Y       -   possibly preallocated array[N] (resized if needed)
+
+        OUTPUT PARAMETERS:
+            Y       -   leading N elements are replaced by X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void icopyallocv(int n,
+            int[] x,
+            ref int[] y,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            if( alglib.ap.len(y)<n )
+            {
+                y = new int[n];
+            }
+            for(j=0; j<=n-1; j++)
+            {
+                y[j] = x[j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[], resizing Y[] if needed.
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], source
+            Y       -   possibly preallocated array[N] (resized if needed)
+
+        OUTPUT PARAMETERS:
+            Y       -   leading N elements are replaced by X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void bcopyallocv(int n,
+            bool[] x,
+            ref bool[] y,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            if( alglib.ap.len(y)<n )
+            {
+                y = new bool[n];
+            }
+            for(j=0; j<=n-1; j++)
+            {
+                y[j] = x[j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   source array
+            Y       -   preallocated array[N]
+
+        OUTPUT PARAMETERS:
+            Y       -   X copied to Y
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void icopyv(int n,
+            int[] x,
+            int[] y,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                y[j] = x[j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to Y[], extended version
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   source array
+            OffsX   -   source offset
+            Y       -   preallocated array[N]
+            OffsY   -   destination offset
+
+        OUTPUT PARAMETERS:
+            Y       -   N elements starting from OffsY are replaced by X[OffsX:OffsX+N-1]
+            
+        NOTE: destination and source should NOT overlap
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void icopyvx(int n,
+            int[] x,
+            int offsx,
+            int[] y,
+            int offsy,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                y[offsy+j] = x[offsx+j];
+            }
+        }
+
+
+        /*************************************************************************
+        Grows X, i.e. changes its size in such a way that:
+        a) contents is preserved
+        b) new size is at least N
+        c) actual size can be larger than N, so subsequent grow() calls can return
+           without reallocation
+
+          -- ALGLIB --
+             Copyright 20.03.2009 by Bochkanov Sergey
+        *************************************************************************/
+        public static void igrowv(int newn,
+            ref int[] x,
+            alglib.xparams _params)
+        {
+            int[] oldx = new int[0];
+            int oldn = 0;
+
+            if( alglib.ap.len(x)>=newn )
+            {
+                return;
+            }
+            oldn = alglib.ap.len(x);
+            newn = Math.Max(newn, (int)Math.Round(1.8*oldn+1));
+            alglib.ap.swap(ref x, ref oldx);
+            x = new int[newn];
+            icopyv(oldn, oldx, x, _params);
+        }
+
+
+        /*************************************************************************
+        Performs copying with multiplication of V*X[] to Y[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   multiplier
+            X       -   array[N], source
+            Y       -   preallocated array[N]
+
+        OUTPUT PARAMETERS:
+            Y       -   array[N], Y = V*X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopymulv(int n,
+            double v,
+            double[] x,
+            double[] y,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                y[i] = v*x[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Performs copying with multiplication of V*X[] to Y[I,*]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            V       -   multiplier
+            X       -   array[N], source
+            Y       -   preallocated array[?,N]
+            RIdx    -   destination row index
+
+        OUTPUT PARAMETERS:
+            Y       -   Y[RIdx,...] = V*X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopymulvr(int n,
+            double v,
+            double[] x,
+            double[,] y,
+            int ridx,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                y[ridx,i] = v*x[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to row I of A[,]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], source
+            A       -   preallocated 2D array large enough to store result
+            I       -   destination row index
+
+        OUTPUT PARAMETERS:
+            A       -   leading N elements of I-th row are replaced by X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyvr(int n,
+            double[] x,
+            double[,] a,
+            int i,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                a[i,j] = x[j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies row I of A[,] to vector X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            A       -   2D array, source
+            I       -   source row index
+            X       -   preallocated destination
+
+        OUTPUT PARAMETERS:
+            X       -   array[N], destination
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyrv(int n,
+            double[,] a,
+            int i,
+            double[] x,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                x[j] = a[i,j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies row I of A[,] to row K of B[,].
+
+        A[i,...] and B[k,...] may overlap.
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            A       -   2D array, source
+            I       -   source row index
+            B       -   preallocated destination
+            K       -   destination row index
+
+        OUTPUT PARAMETERS:
+            B       -   row K overwritten
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyrr(int n,
+            double[,] a,
+            int i,
+            double[,] b,
+            int k,
+            alglib.xparams _params)
+        {
+            int j = 0;
+
+            for(j=0; j<=n-1; j++)
+            {
+                b[k,j] = a[i,j];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies vector X[] to column J of A[,]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            X       -   array[N], source
+            A       -   preallocated 2D array large enough to store result
+            J       -   destination col index
+
+        OUTPUT PARAMETERS:
+            A       -   leading N elements of J-th column are replaced by X
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopyvc(int n,
+            double[] x,
+            double[,] a,
+            int j,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                a[i,j] = x[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies column J of A[,] to vector X[]
+
+        INPUT PARAMETERS:
+            N       -   vector length
+            A       -   source 2D array
+            J       -   source col index
+
+        OUTPUT PARAMETERS:
+            X       -   preallocated array[N], destination
+
+          -- ALGLIB --
+             Copyright 20.01.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void rcopycv(int n,
+            double[,] a,
+            int j,
+            double[] x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                x[i] = a[i,j];
+            }
+        }
+
+
         /*************************************************************************
         Fast kernel
 
@@ -7865,6 +8520,855 @@ public partial class alglib
                 }
                 i = i+4;
             }
+        }
+
+
+    }
+    public class ablasmkl
+    {
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             12.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixgermkl(int m,
+            int n,
+            double[,] a,
+            int ia,
+            int ja,
+            double alpha,
+            double[] u,
+            int iu,
+            double[] v,
+            int iv,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             12.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool cmatrixrank1mkl(int m,
+            int n,
+            ref complex[,] a,
+            int ia,
+            int ja,
+            ref complex[] u,
+            int iu,
+            ref complex[] v,
+            int iv,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             12.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixrank1mkl(int m,
+            int n,
+            double[,] a,
+            int ia,
+            int ja,
+            double[] u,
+            int iu,
+            double[] v,
+            int iv,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             12.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool cmatrixmvmkl(int m,
+            int n,
+            complex[,] a,
+            int ia,
+            int ja,
+            int opa,
+            complex[] x,
+            int ix,
+            ref complex[] y,
+            int iy,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             12.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixmvmkl(int m,
+            int n,
+            double[,] a,
+            int ia,
+            int ja,
+            int opa,
+            double[] x,
+            int ix,
+            double[] y,
+            int iy,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             12.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixgemvmkl(int m,
+            int n,
+            double alpha,
+            double[,] a,
+            int ia,
+            int ja,
+            int opa,
+            double[] x,
+            int ix,
+            double beta,
+            double[] y,
+            int iy,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             12.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixtrsvmkl(int n,
+            double[,] a,
+            int ia,
+            int ja,
+            bool isupper,
+            bool isunit,
+            int optype,
+            double[] x,
+            int ix,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             01.10.2013
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixsyrkmkl(int n,
+            int k,
+            double alpha,
+            double[,] a,
+            int ia,
+            int ja,
+            int optypea,
+            double beta,
+            double[,] c,
+            int ic,
+            int jc,
+            bool isupper,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             01.10.2013
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool cmatrixherkmkl(int n,
+            int k,
+            double alpha,
+            complex[,] a,
+            int ia,
+            int ja,
+            int optypea,
+            double beta,
+            complex[,] c,
+            int ic,
+            int jc,
+            bool isupper,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             01.10.2013
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixgemmmkl(int m,
+            int n,
+            int k,
+            double alpha,
+            double[,] a,
+            int ia,
+            int ja,
+            int optypea,
+            double[,] b,
+            int ib,
+            int jb,
+            int optypeb,
+            double beta,
+            double[,] c,
+            int ic,
+            int jc,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             01.10.2017
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixsymvmkl(int n,
+            double alpha,
+            double[,] a,
+            int ia,
+            int ja,
+            bool isupper,
+            double[] x,
+            int ix,
+            double beta,
+            double[] y,
+            int iy,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             16.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool cmatrixgemmmkl(int m,
+            int n,
+            int k,
+            complex alpha,
+            complex[,] a,
+            int ia,
+            int ja,
+            int optypea,
+            complex[,] b,
+            int ib,
+            int jb,
+            int optypeb,
+            complex beta,
+            complex[,] c,
+            int ic,
+            int jc,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             16.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool cmatrixlefttrsmmkl(int m,
+            int n,
+            complex[,] a,
+            int i1,
+            int j1,
+            bool isupper,
+            bool isunit,
+            int optype,
+            complex[,] x,
+            int i2,
+            int j2,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             16.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool cmatrixrighttrsmmkl(int m,
+            int n,
+            complex[,] a,
+            int i1,
+            int j1,
+            bool isupper,
+            bool isunit,
+            int optype,
+            complex[,] x,
+            int i2,
+            int j2,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             16.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixlefttrsmmkl(int m,
+            int n,
+            double[,] a,
+            int i1,
+            int j1,
+            bool isupper,
+            bool isunit,
+            int optype,
+            double[,] x,
+            int i2,
+            int j2,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel
+
+          -- ALGLIB routine --
+             16.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixrighttrsmmkl(int m,
+            int n,
+            double[,] a,
+            int i1,
+            int j1,
+            bool isupper,
+            bool isunit,
+            int optype,
+            double[,] x,
+            int i2,
+            int j2,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE:
+
+        if function returned False, CholResult is NOT modified. Not ever referenced!
+        if function returned True, CholResult is set to status of Cholesky decomposition
+        (True on succeess).
+
+          -- ALGLIB routine --
+             16.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool spdmatrixcholeskymkl(double[,] a,
+            int offs,
+            int n,
+            bool isupper,
+            ref bool cholresult,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixplumkl(ref double[,] a,
+            int offs,
+            int m,
+            int n,
+            ref int[] pivots,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE: this function needs preallocated output/temporary arrays.
+              D and E must be at least max(M,N)-wide.
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixbdmkl(double[,] a,
+            int m,
+            int n,
+            double[] d,
+            double[] e,
+            double[] tauq,
+            double[] taup,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        If ByQ is True,  TauP is not used (can be empty array).
+        If ByQ is False, TauQ is not used (can be empty array).
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixbdmultiplybymkl(double[,] qp,
+            int m,
+            int n,
+            double[] tauq,
+            double[] taup,
+            double[,] z,
+            int zrows,
+            int zcolumns,
+            bool byq,
+            bool fromtheright,
+            bool dotranspose,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE: Tau must be preallocated array with at least N-1 elements.
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixhessenbergmkl(double[,] a,
+            int n,
+            double[] tau,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE: Q must be preallocated N*N array
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixhessenbergunpackqmkl(double[,] a,
+            int n,
+            double[] tau,
+            double[,] q,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE: Tau, D, E must be preallocated arrays;
+              length(E)=length(Tau)=N-1 (or larger)
+              length(D)=N (or larger)
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool smatrixtdmkl(double[,] a,
+            int n,
+            bool isupper,
+            double[] tau,
+            double[] d,
+            double[] e,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE: Q must be preallocated N*N array
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool smatrixtdunpackqmkl(double[,] a,
+            int n,
+            bool isupper,
+            double[] tau,
+            double[,] q,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE: Tau, D, E must be preallocated arrays;
+              length(E)=length(Tau)=N-1 (or larger)
+              length(D)=N (or larger)
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool hmatrixtdmkl(complex[,] a,
+            int n,
+            bool isupper,
+            complex[] tau,
+            double[] d,
+            double[] e,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        NOTE: Q must be preallocated N*N array
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool hmatrixtdunpackqmkl(complex[,] a,
+            int n,
+            bool isupper,
+            complex[] tau,
+            complex[,] q,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        Returns True if MKL was present and handled request (MKL  completion  code
+        is returned as separate output parameter).
+
+        D and E are pre-allocated arrays with length N (both of them!). On output,
+        D constraints singular values, and E is destroyed.
+
+        SVDResult is modified if and only if MKL is present.
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixbdsvdmkl(double[] d,
+            double[] e,
+            int n,
+            bool isupper,
+            double[,] u,
+            int nru,
+            double[,] c,
+            int ncc,
+            double[,] vt,
+            int ncvt,
+            ref bool svdresult,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based DHSEQR kernel.
+
+        Returns True if MKL was present and handled request.
+
+        WR and WI are pre-allocated arrays with length N.
+        Z is pre-allocated array[N,N].
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixinternalschurdecompositionmkl(double[,] h,
+            int n,
+            int tneeded,
+            int zneeded,
+            double[] wr,
+            double[] wi,
+            double[,] z,
+            ref int info,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based DTREVC kernel.
+
+        Returns True if MKL was present and handled request.
+
+        NOTE: this function does NOT support HOWMNY=3!!!!
+
+        VL and VR are pre-allocated arrays with length N*N, if required. If particalar
+        variables is not required, it can be dummy (empty) array.
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool rmatrixinternaltrevcmkl(double[,] t,
+            int n,
+            int side,
+            int howmny,
+            double[,] vl,
+            double[,] vr,
+            ref int m,
+            ref int info,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        Returns True if MKL was present and handled request (MKL  completion  code
+        is returned as separate output parameter).
+
+        D and E are pre-allocated arrays with length N (both of them!). On output,
+        D constraints eigenvalues, and E is destroyed.
+
+        Z is preallocated array[N,N] for ZNeeded<>0; ignored for ZNeeded=0.
+
+        EVDResult is modified if and only if MKL is present.
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool smatrixtdevdmkl(double[] d,
+            double[] e,
+            int n,
+            int zneeded,
+            double[,] z,
+            ref bool evdresult,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
+        }
+
+
+        /*************************************************************************
+        MKL-based kernel.
+
+        Returns True if MKL was present and handled request (MKL  completion  code
+        is returned as separate output parameter).
+
+        D and E are pre-allocated arrays with length N (both of them!). On output,
+        D constraints eigenvalues, and E is destroyed.
+
+        Z is preallocated array[N,N] for ZNeeded<>0; ignored for ZNeeded=0.
+
+        EVDResult is modified if and only if MKL is present.
+
+          -- ALGLIB routine --
+             20.10.2014
+             Bochkanov Sergey
+        *************************************************************************/
+        public static bool sparsegemvcrsmkl(int opa,
+            int arows,
+            int acols,
+            double alpha,
+            double[] vals,
+            int[] cidx,
+            int[] ridx,
+            double[] x,
+            int ix,
+            double beta,
+            double[] y,
+            int iy,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+
+            result = false;
+            return result;
         }
 
 

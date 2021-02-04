@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.16.0 (source code generated 2019-12-19)
+ALGLIB 3.17.0 (source code generated 2020-12-27)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -43124,18 +43124,9 @@ public partial class alglib
             int varidx = 0;
             double leafval = 0;
             double splitval = 0;
-            int fpwidth = 0;
             int dstoffsold = 0;
 
             dstoffsold = dstoffs;
-            if( usemantissa8 )
-            {
-                fpwidth = 2;
-            }
-            else
-            {
-                fpwidth = 3;
-            }
             
             //
             // Leaf or split?

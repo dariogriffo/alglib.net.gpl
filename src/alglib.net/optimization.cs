@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.16.0 (source code generated 2019-12-19)
+ALGLIB 3.17.0 (source code generated 2020-12-27)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -438,24 +438,6 @@ public partial class alglib
             _innerobj = obj;
         }
     }
-
-
-}
-public partial class alglib
-{
-
-
-
-}
-public partial class alglib
-{
-
-
-
-}
-public partial class alglib
-{
-
 
 
 }
@@ -1640,6 +1622,24 @@ public partial class alglib
     
         minlbfgs.minlbfgsrequesttermination(state.innerobj, _params);
     }
+
+}
+public partial class alglib
+{
+
+
+
+}
+public partial class alglib
+{
+
+
+
+}
+public partial class alglib
+{
+
+
 
 }
 public partial class alglib
@@ -2995,7 +2995,10 @@ public partial class alglib
     * -3    inconsistent constraints (or, maybe, feasible point is
             too hard to find). If you are sure that constraints are feasible,
             try to restart optimizer with better initial approximation.
-    * -1    solver error
+    * -2    IPM solver has difficulty finding primal/dual feasible point.
+            It is likely that the problem is either infeasible or unbounded,
+            but it is difficult to determine exact reason for termination.
+            X contains best point found so far.
     *  1..4 successful completion
     *  5    MaxIts steps was taken
     *  7    stopping conditions are too stringent,
@@ -3028,11 +3031,20 @@ public partial class alglib
     On failure (or when optimizer does not support Lagrange multipliers) these
     arrays are zero-filled.
 
+    It is expected that at solution the dual feasibility condition holds:
+
+        C+H*(Xs-X0) + SUM(Ei*LagBC[i],i=0..n-1) + SUM(Ai*LagLC[i],i=0..m-1) ~ 0
+
+    where
+    * C is a linear term
+    * H is a quadratic term
+    * Xs is a solution, and X0 is an origin term (zero by default)
+    * Ei is a vector with 1.0 at position I and 0 in other positions
+    * Ai is an I-th row of linear constraint matrix
+
     NOTE: methods  from  IPM  family  may  also  return  meaningful   Lagrange
-          multipliers on completion with codes -3 (infeasibility detected) and
-          -4  (unboundedness  detected).   It   is   possible   that   seeming
-          infeasibility/unboundedness of the problem is due to rounding errors
-          In this case last values of Lagrange multipliers are returned.
+          multipliers  on  completion   with   code   -2   (infeasibility   or
+          unboundedness  detected).
     *************************************************************************/
     public class minqpreport : alglibobject
     {
@@ -3616,11 +3628,11 @@ public partial class alglib
 
     ALGORITHM OUTLINE:
 
-    * this  algorithm  is  an  implementation  of  interior  point  method  as
+    * this  algorithm  is  our implementation  of  interior  point  method  as
       formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
       (damped Newton directions are extensively used)
     * like all interior point methods, this algorithm  tends  to  converge  in
-      roughly same number of iterations (between 15 and 30) independently from
+      roughly same number of iterations (between 15 and 50) independently from
       the problem dimensionality
 
     ALGORITHM LIMITATIONS:
@@ -3670,7 +3682,7 @@ public partial class alglib
 
     You may specify multiple symbols by separating them with commas:
     >
-    > alglib::trace_file("IPM.DETAILED,PREC.F6", "path/to/trace.log")
+    > alglib::trace_file("IPM,PREC.F6", "path/to/trace.log")
     >
 
       -- ALGLIB --
@@ -3727,11 +3739,11 @@ public partial class alglib
 
     ALGORITHM OUTLINE:
 
-    * this  algorithm  is  an  implementation  of  interior  point  method  as
+    * this  algorithm  is  our implementation  of  interior  point  method  as
       formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
       (damped Newton directions are extensively used)
     * like all interior point methods, this algorithm  tends  to  converge  in
-      roughly same number of iterations (between 15 and 30) independently from
+      roughly same number of iterations (between 15 and 50) independently from
       the problem dimensionality
 
     ALGORITHM LIMITATIONS:
@@ -3749,6 +3761,31 @@ public partial class alglib
     BECAUSE ITS CONVERGENCE PROPERTIES AND STOPPING CRITERIA ARE SCALE-DEPENDENT!
 
     NOTE: Passing EpsX=0 will lead to automatic selection of small epsilon.
+
+    ===== TRACING IPM SOLVER =================================================
+
+    IPM solver supports advanced tracing capabilities. You can trace algorithm
+    output by specifying following trace symbols (case-insensitive)  by  means
+    of trace_file() call:
+    * 'IPM'         - for basic trace of algorithm  steps and decisions.  Only
+                      short scalars (function values and deltas) are  printed.
+                      N-dimensional quantities like search directions are  NOT
+                      printed.
+    * 'IPM.DETAILED'- for output of points being visited and search directions
+                      This  symbol  also  implicitly  defines  'IPM'. You  can
+                      control output format by additionally specifying:
+                      * nothing     to output in  6-digit exponential format
+                      * 'PREC.E15'  to output in 15-digit exponential format
+                      * 'PREC.F6'   to output in  6-digit fixed-point format
+
+    By default trace is disabled and adds  no  overhead  to  the  optimization
+    process. However, specifying any of the symbols adds some  formatting  and
+    output-related overhead.
+
+    You may specify multiple symbols by separating them with commas:
+    >
+    > alglib::trace_file("IPM,PREC.F6", "path/to/trace.log")
+    >
 
       -- ALGLIB --
          Copyright 01.11.2019 by Bochkanov Sergey
@@ -4151,7 +4188,7 @@ public partial class alglib
 
     This function may be useful if constraint matrix includes large number  of
     both types of rows - dense and sparse. If you have just a few sparse rows,
-    you  may  represent  them  in  dense  format  without loosing performance.
+    you  may  represent  them  in  dense  format  without losing  performance.
     Similarly, if you have just a few dense rows, you may store them in sparse
     format with almost same performance.
 
@@ -4346,7 +4383,7 @@ public partial class alglib
 
     This function may be useful if constraint matrix includes large number  of
     both types of rows - dense and sparse. If you have just a few sparse rows,
-    you  may  represent  them  in  dense  format  without loosing performance.
+    you  may  represent  them  in  dense  format  without losing  performance.
     Similarly, if you have just a few dense rows, you may store them in sparse
     format with almost same performance.
 
@@ -4500,15 +4537,33 @@ public partial class alglib
         State   -   algorithm state
 
     OUTPUT PARAMETERS:
-        X       -   array[0..N-1], solution.
-                    This array is allocated and initialized only when
-                    Rep.TerminationType parameter is positive (success).
+        X       -   array[0..N-1], solution (on failure - the best point found
+                    so far).
         Rep     -   optimization report, contains:
                     * completion code in Rep.TerminationType (positive  values
                       denote some kind of success, negative - failures)
-                    * Lagrange multipliers - for QP solvers which support then
+                    * Lagrange multipliers - for QP solvers which support them
                     * other statistics
                     See comments on minqpreport structure for more information
+
+    Following completion codes are returned in Rep.TerminationType:
+    * -9    failure of the automatic scale evaluation:  one  of  the  diagonal
+            elements of the quadratic term is non-positive.  Specify  variable
+            scales manually!
+    * -5    inappropriate solver was used:
+            * QuickQP solver for problem with general linear constraints
+    * -4    the function is unbounded from below even under constraints,
+            no meaningful minimum can be found.
+    * -3    inconsistent constraints (or, maybe, feasible point is too hard to
+            find).
+    * -2    IPM solver has difficulty finding primal/dual feasible point.
+            It is likely that the problem is either infeasible or unbounded,
+            but it is difficult to determine exact reason for termination.
+            X contains best point found so far.
+    *  >0   success
+    *  7    stopping conditions are too stringent,
+            further improvement is impossible,
+            X contains best point found so far.
 
       -- ALGLIB --
          Copyright 11.01.2011 by Bochkanov Sergey
@@ -4561,6 +4616,12 @@ public partial class alglib
 {
 
 
+
+}
+public partial class alglib
+{
+
+
     /*************************************************************************
     This object stores linear solver state.
     You should use functions provided by MinLP subpackage to work with this
@@ -4598,9 +4659,13 @@ public partial class alglib
     /*************************************************************************
     This structure stores optimization report:
     * f                         target function value
+    * lagbc                     Lagrange coefficients for box constraints
+    * laglc                     Lagrange coefficients for linear constraints
     * y                         dual variables
     * stats                     array[N+M], statuses of box (N) and linear (M)
-                                constraints:
+                                constraints. This array is filled only by  DSS
+                                algorithm because IPM always stops at INTERIOR
+                                point:
                                 * stats[i]>0  =>  constraint at upper bound
                                                   (also used for free non-basic
                                                   variables set to zero)
@@ -4609,8 +4674,11 @@ public partial class alglib
                                                   variable
     * primalerror               primal feasibility error
     * dualerror                 dual feasibility error
+    * slackerror                complementary slackness error
     * iterationscount           iteration count
     * terminationtype           completion code (see below)
+
+    COMPLETION CODES
 
     Completion codes:
     * -4    LP problem is primal unbounded (dual infeasible)
@@ -4620,6 +4688,19 @@ public partial class alglib
     *  7    stopping conditions are too stringent,
             further improvement is impossible,
             X contains best point found so far.
+
+    LAGRANGE COEFFICIENTS
+
+    Positive Lagrange coefficient means that constraint is at its upper bound.
+    Negative coefficient means that constraint is at its lower  bound.  It  is
+    expected that at solution the dual feasibility condition holds:
+
+        C + SUM(Ei*LagBC[i],i=0..n-1) + SUM(Ai*LagLC[i],i=0..m-1) ~ 0
+
+    where
+    * C is a cost vector (linear term)
+    * Ei is a vector with 1.0 at position I and 0 in other positions
+    * Ai is an I-th row of linear constraint matrix
     *************************************************************************/
     public class minlpreport : alglibobject
     {
@@ -4627,10 +4708,13 @@ public partial class alglib
         // Public declarations
         //
         public double f { get { return _innerobj.f; } set { _innerobj.f = value; } }
+        public double[] lagbc { get { return _innerobj.lagbc; } set { _innerobj.lagbc = value; } }
+        public double[] laglc { get { return _innerobj.laglc; } set { _innerobj.laglc = value; } }
         public double[] y { get { return _innerobj.y; } set { _innerobj.y = value; } }
         public int[] stats { get { return _innerobj.stats; } set { _innerobj.stats = value; } }
         public double primalerror { get { return _innerobj.primalerror; } set { _innerobj.primalerror = value; } }
         public double dualerror { get { return _innerobj.dualerror; } set { _innerobj.dualerror = value; } }
+        public double slackerror { get { return _innerobj.slackerror; } set { _innerobj.slackerror = value; } }
         public int iterationscount { get { return _innerobj.iterationscount; } set { _innerobj.iterationscount = value; } }
         public int terminationtype { get { return _innerobj.terminationtype; } set { _innerobj.terminationtype = value; } }
     
@@ -4675,12 +4759,16 @@ public partial class alglib
     * call minlpoptimize() to run the solver and  minlpresults()  to  get  the
       solution vector and additional information.
 
-    Presently  this  optimizer  supports  only  revised  simplex   method   as
-    underlying solver. DSE pricing and bounds flipping ratio  test  (aka  long
-    dual step) are supported. Large-scale sparse LU solver with  Forest-Tomlin
-    is used internally as linear algebra driver.
+    By  default,  LP  solver uses best algorithm available. As of ALGLIB 3.17,
+    sparse interior point (barrier) solver is used. Future releases of  ALGLIB
+    may introduce other solvers.
 
-    Future releases of ALGLIB may introduce other solvers.
+    User may choose specific LP algorithm by calling:
+    * minlpsetalgodss() for revised dual simplex method with DSE  pricing  and
+      bounds flipping ratio test (aka long dual step).  Large-scale  sparse LU
+      solverwith  Forest-Tomlin update is used internally  as  linear  algebra
+      driver.
+    * minlpsetalgoipm() for sparse interior point method
 
     INPUT PARAMETERS:
         N       -   problem size
@@ -4701,6 +4789,146 @@ public partial class alglib
     {
         state = new minlpstate();
         minlp.minlpcreate(n, state.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    This function sets LP algorithm to revised dual simplex method.
+
+    ALGLIB implementation of dual simplex method supports advanced performance
+    and stability improvements like DSE pricing , bounds flipping  ratio  test
+    (aka long dual step), Forest-Tomlin update, shifting.
+
+    INPUT PARAMETERS:
+        State   -   optimizer
+        Eps     -   stopping condition, Eps>=0:
+                    * should be small number about 1E-6 or 1E-7.
+                    * zero value means that solver automatically selects good
+                      value (can be different in different ALGLIB versions)
+                    * default value is zero
+                    Algorithm stops when relative error is less than Eps.
+
+    ===== TRACING DSS SOLVER =================================================
+
+    DSS solver supports advanced tracing capabilities. You can trace algorithm
+    output by specifying following trace symbols (case-insensitive)  by  means
+    of trace_file() call:
+    * 'DSS'         - for basic trace of algorithm  steps and decisions.  Only
+                      short scalars (function values and deltas) are  printed.
+                      N-dimensional quantities like search directions are  NOT
+                      printed.
+    * 'DSS.DETAILED'- for output of points being visited and search directions
+                      This  symbol  also  implicitly  defines  'DSS'. You  can
+                      control output format by additionally specifying:
+                      * nothing     to output in  6-digit exponential format
+                      * 'PREC.E15'  to output in 15-digit exponential format
+                      * 'PREC.F6'   to output in  6-digit fixed-point format
+
+    By default trace is disabled and adds  no  overhead  to  the  optimization
+    process. However, specifying any of the symbols adds some  formatting  and
+    output-related overhead.
+
+    You may specify multiple symbols by separating them with commas:
+    >
+    > alglib::trace_file("DSS,PREC.F6", "path/to/trace.log")
+    >
+
+      -- ALGLIB --
+         Copyright 08.11.2020 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minlpsetalgodss(minlpstate state, double eps)
+    {
+    
+        minlp.minlpsetalgodss(state.innerobj, eps, null);
+    }
+    
+    public static void minlpsetalgodss(minlpstate state, double eps, alglib.xparams _params)
+    {
+    
+        minlp.minlpsetalgodss(state.innerobj, eps, _params);
+    }
+    
+    /*************************************************************************
+    This function sets LP algorithm to sparse interior point method.
+
+    ALGORITHM INFORMATION:
+
+    * this  algorithm  is  our implementation  of  interior  point  method  as
+      formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
+      (damped Newton directions are extensively used)
+    * like all interior point methods, this algorithm  tends  to  converge  in
+      roughly same number of iterations (between 15 and 50) independently from
+      the problem dimensionality
+
+    INPUT PARAMETERS:
+        State   -   optimizer
+        Eps     -   stopping condition, Eps>=0:
+                    * should be small number about 1E-7 or 1E-8.
+                    * zero value means that solver automatically selects good
+                      value (can be different in different ALGLIB versions)
+                    * default value is zero
+                    Algorithm  stops  when  primal  error  AND  dual error AND
+                    duality gap are less than Eps.
+
+    ===== TRACING IPM SOLVER =================================================
+
+    IPM solver supports advanced tracing capabilities. You can trace algorithm
+    output by specifying following trace symbols (case-insensitive)  by  means
+    of trace_file() call:
+    * 'IPM'         - for basic trace of algorithm  steps and decisions.  Only
+                      short scalars (function values and deltas) are  printed.
+                      N-dimensional quantities like search directions are  NOT
+                      printed.
+    * 'IPM.DETAILED'- for output of points being visited and search directions
+                      This  symbol  also  implicitly  defines  'IPM'. You  can
+                      control output format by additionally specifying:
+                      * nothing     to output in  6-digit exponential format
+                      * 'PREC.E15'  to output in 15-digit exponential format
+                      * 'PREC.F6'   to output in  6-digit fixed-point format
+
+    By default trace is disabled and adds  no  overhead  to  the  optimization
+    process. However, specifying any of the symbols adds some  formatting  and
+    output-related overhead.
+
+    You may specify multiple symbols by separating them with commas:
+    >
+    > alglib::trace_file("IPM,PREC.F6", "path/to/trace.log")
+    >
+
+      -- ALGLIB --
+         Copyright 08.11.2020 by Bochkanov Sergey
+    *************************************************************************/
+    public static void minlpsetalgoipm(minlpstate state, double eps)
+    {
+    
+        minlp.minlpsetalgoipm(state.innerobj, eps, null);
+    }
+    
+    public static void minlpsetalgoipm(minlpstate state, double eps, alglib.xparams _params)
+    {
+    
+        minlp.minlpsetalgoipm(state.innerobj, eps, _params);
+    }
+            
+    public static void minlpsetalgoipm(minlpstate state)
+    {
+        double eps;
+    
+    
+        eps = 0;
+        minlp.minlpsetalgoipm(state.innerobj, eps, null);
+    
+        return;
+    }
+            
+    public static void minlpsetalgoipm(minlpstate state, alglib.xparams _params)
+    {
+        double eps;
+    
+    
+        eps = 0;
+        minlp.minlpsetalgoipm(state.innerobj, eps, _params);
+    
+        return;
     }
     
     /*************************************************************************
@@ -5188,7 +5416,7 @@ public partial class alglib
         State   -   algorithm state
 
     OUTPUT PARAMETERS:
-        X       -   array[N], solution. Filled by zeros on failure.
+        X       -   array[N], solution (on failure: last trial point)
         Rep     -   optimization report. You should check Rep.TerminationType,
                     which contains completion code, and you may check  another
                     fields which contain another information  about  algorithm
@@ -5197,6 +5425,8 @@ public partial class alglib
                     Failure codes returned by algorithm are:
                     * -4    LP problem is primal unbounded (dual infeasible)
                     * -3    LP problem is primal infeasible (dual unbounded)
+                    * -2    IPM solver detected that problem is either
+                            infeasible or unbounded
 
                     Success codes:
                     *  1..4 successful completion
@@ -6462,7 +6692,10 @@ public partial class alglib
                       before line search  in  order  to  build  human-readable
                       chart of the raw  Lagrangian  (~40  additional  function
                       evaluations is performed for  each  line  search).  This
-                      symbol also implicitly defines 'SQP'.
+                      symbol  also  implicitly  defines  'SQP'  and  activates
+                      OptGuard integrity checker which detects continuity  and
+                      smoothness violations. An OptGuard log is printed at the
+                      end of the file.
 
     By default trace is disabled and adds  no  overhead  to  the  optimization
     process. However, specifying any of the symbols adds some  formatting  and
@@ -14821,6 +15054,7 @@ public partial class alglib
             public int n;
             public int k;
             public bool checksmoothness;
+            public double[] s;
             public double[] dcur;
             public int enqueuedcnt;
             public double[] enqueuedstp;
@@ -14890,6 +15124,7 @@ public partial class alglib
             }
             public override void init()
             {
+                s = new double[0];
                 dcur = new double[0];
                 enqueuedstp = new double[0];
                 enqueuedx = new double[0];
@@ -14941,6 +15176,7 @@ public partial class alglib
                 _result.n = n;
                 _result.k = k;
                 _result.checksmoothness = checksmoothness;
+                _result.s = (double[])s.Clone();
                 _result.dcur = (double[])dcur.Clone();
                 _result.enqueuedcnt = enqueuedcnt;
                 _result.enqueuedstp = (double[])enqueuedstp.Clone();
@@ -17288,7 +17524,7 @@ public partial class alglib
 
         /*************************************************************************
         This subroutine initializes smoothness monitor at  the  beginning  of  the
-        optimization session.
+        optimization session. It requires variable scales to be passed.
 
         It is possible to perform "dummy" initialization with N=K=0.
 
@@ -17296,11 +17532,14 @@ public partial class alglib
              Copyright 19.11.2018 by Bochkanov Sergey
         *************************************************************************/
         public static void smoothnessmonitorinit(smoothnessmonitor monitor,
+            double[] s,
             int n,
             int k,
             bool checksmoothness,
             alglib.xparams _params)
         {
+            int i = 0;
+
             monitor.n = n;
             monitor.k = k;
             monitor.checksmoothness = checksmoothness;
@@ -17308,6 +17547,11 @@ public partial class alglib
             monitor.linesearchstarted = false;
             monitor.enqueuedcnt = 0;
             monitor.sortedcnt = 0;
+            apserv.rvectorsetlengthatleast(ref monitor.s, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                monitor.s[i] = s[i];
+            }
             monitor.nonc0currentrating = 0.0;
             monitor.nonc1currentrating = 0.0;
             optguardapi.optguardinitinternal(monitor.rep, n, k, _params);
@@ -17916,7 +18160,8 @@ public partial class alglib
             monitor.probingstepmax = stpmax;
             monitor.probingstepscale = stepscale;
             apserv.rvectorsetlengthatleast(ref monitor.probingf, nvalues, _params);
-            monitor.probingrcomm.ia = new int[1+1];
+            monitor.probingrcomm.ia = new int[2+1];
+            monitor.probingrcomm.ra = new double[3+1];
             monitor.probingrcomm.stage = -1;
         }
 
@@ -17927,6 +18172,9 @@ public partial class alglib
         After each call it returns step to evaluate  in  Monitor.ProbingStp.  Load
         values being probed into Monitor.ProbingF and continue iteration.
 
+        Monitor.ProbingF[0] is a special value which is used to guide probing process
+        towards discontinuities and nonsmooth points.
+
           -- ALGLIB --
              Copyright 10.10.2019 by Bochkanov Sergey
         *************************************************************************/
@@ -17936,6 +18184,11 @@ public partial class alglib
             bool result = new bool();
             int i = 0;
             int j = 0;
+            int idx = 0;
+            double vlargest = 0;
+            double v = 0;
+            double v0 = 0;
+            double v1 = 0;
 
             
             //
@@ -17952,11 +18205,21 @@ public partial class alglib
             {
                 i = monitor.probingrcomm.ia[0];
                 j = monitor.probingrcomm.ia[1];
+                idx = monitor.probingrcomm.ia[2];
+                vlargest = monitor.probingrcomm.ra[0];
+                v = monitor.probingrcomm.ra[1];
+                v0 = monitor.probingrcomm.ra[2];
+                v1 = monitor.probingrcomm.ra[3];
             }
             else
             {
                 i = 359;
                 j = -58;
+                idx = -919;
+                vlargest = -909;
+                v = 81;
+                v0 = 255;
+                v1 = 74;
             }
             if( monitor.probingrcomm.stage==0 )
             {
@@ -17972,18 +18235,88 @@ public partial class alglib
             {
                 goto lbl_3;
             }
+            
+            //
+            // Increase storage size
+            //
             apserv.rvectorgrowto(ref monitor.probingsteps, monitor.probingnstepsstored+1, _params);
             apserv.rmatrixgrowrowsto(ref monitor.probingvalues, monitor.probingnstepsstored+1, monitor.probingnvalues, _params);
             apserv.rmatrixgrowrowsto(ref monitor.probingslopes, monitor.probingnstepsstored+1, monitor.probingnvalues, _params);
-            if( i<=20 )
+            
+            //
+            // Determine probing step length, save step to the end of the storage
+            //
+            if( i<=10 )
             {
-                monitor.probingstp = Math.Pow(0.66, i)*monitor.probingstepmax;
+                
+                //
+                // First 11 steps are performed over equidistant grid
+                //
+                monitor.probingstp = (double)i/(double)10*monitor.probingstepmax;
             }
             else
             {
-                monitor.probingstp = Math.Pow(0.95, i-20)*monitor.probingstepmax;
+                
+                //
+                // Subsequent steps target either points with maximum change in F[0]
+                // (search for discontinuity) or maximum change in slope of F[0] (search
+                // for nonsmoothness)
+                //
+                alglib.ap.assert(monitor.probingnstepsstored>=3, "SMonitor: critical integrity check failed");
+                if( i%2==0 )
+                {
+                    
+                    //
+                    // Target interval with maximum change in F[0]
+                    //
+                    idx = -1;
+                    vlargest = 0;
+                    for(j=0; j<=monitor.probingnstepsstored-2; j++)
+                    {
+                        v = Math.Abs(monitor.probingvalues[j+1,0]-monitor.probingvalues[j,0]);
+                        if( idx<0 || (double)(v)>(double)(vlargest) )
+                        {
+                            idx = j;
+                            vlargest = v;
+                        }
+                    }
+                    monitor.probingstp = 0.5*(monitor.probingsteps[idx]+monitor.probingsteps[idx+1]);
+                }
+                else
+                {
+                    
+                    //
+                    // Target interval [J,J+2] with maximum change in slope of F[0], select
+                    // subinterval [J,J+1] or [J+1,J+2] with maximum length.
+                    //
+                    idx = -1;
+                    vlargest = 0;
+                    for(j=0; j<=monitor.probingnstepsstored-3; j++)
+                    {
+                        v0 = (monitor.probingvalues[j+1,0]-monitor.probingvalues[j+0,0])/(monitor.probingsteps[j+1]-monitor.probingsteps[j+0]+math.machineepsilon);
+                        v1 = (monitor.probingvalues[j+2,0]-monitor.probingvalues[j+1,0])/(monitor.probingsteps[j+2]-monitor.probingsteps[j+1]+math.machineepsilon);
+                        v = Math.Abs(v0-v1);
+                        if( idx<0 || (double)(v)>(double)(vlargest) )
+                        {
+                            idx = j;
+                            vlargest = v;
+                        }
+                    }
+                    if( (double)(monitor.probingsteps[idx+2]-monitor.probingsteps[idx+1])>(double)(monitor.probingsteps[idx+1]-monitor.probingsteps[idx+0]) )
+                    {
+                        monitor.probingstp = 0.5*(monitor.probingsteps[idx+2]+monitor.probingsteps[idx+1]);
+                    }
+                    else
+                    {
+                        monitor.probingstp = 0.5*(monitor.probingsteps[idx+1]+monitor.probingsteps[idx+0]);
+                    }
+                }
             }
             monitor.probingsteps[monitor.probingnstepsstored] = monitor.probingstp;
+            
+            //
+            // Retrieve user values
+            //
             monitor.probingrcomm.stage = 0;
             goto lbl_rcomm;
         lbl_0:
@@ -17993,6 +18326,19 @@ public partial class alglib
                 monitor.probingslopes[monitor.probingnstepsstored,j] = 0;
             }
             apserv.inc(ref monitor.probingnstepsstored, _params);
+            
+            //
+            // Resort
+            //
+            for(j=monitor.probingnstepsstored-1; j>=1; j--)
+            {
+                if( (double)(monitor.probingsteps[j-1])<=(double)(monitor.probingsteps[j]) )
+                {
+                    break;
+                }
+                apserv.swapelements(monitor.probingsteps, j-1, j, _params);
+                apserv.swaprows(monitor.probingvalues, j-1, j, monitor.probingnvalues, _params);
+            }
             i = i+1;
             goto lbl_1;
         lbl_3:
@@ -18006,6 +18352,11 @@ public partial class alglib
             result = true;
             monitor.probingrcomm.ia[0] = i;
             monitor.probingrcomm.ia[1] = j;
+            monitor.probingrcomm.ia[2] = idx;
+            monitor.probingrcomm.ra[0] = vlargest;
+            monitor.probingrcomm.ra[1] = v;
+            monitor.probingrcomm.ra[2] = v0;
+            monitor.probingrcomm.ra[3] = v1;
             return result;
         }
 
@@ -18029,26 +18380,12 @@ public partial class alglib
         {
             int i = 0;
             int j = 0;
-            int k = 0;
             double steplen = 0;
 
             
             //
-            // First, sort elements by their step
+            // Compute slopes
             //
-            for(i=0; i<=monitor.probingnstepsstored-1; i++)
-            {
-                k = i;
-                for(j=i; j<=monitor.probingnstepsstored-1; j++)
-                {
-                    if( (double)(monitor.probingsteps[j])<(double)(monitor.probingsteps[k]) )
-                    {
-                        k = j;
-                    }
-                }
-                apserv.swapelements(monitor.probingsteps, i, k, _params);
-                apserv.swaprows(monitor.probingvalues, i, k, monitor.probingnvalues, _params);
-            }
             for(i=0; i<=monitor.probingnstepsstored-2; i++)
             {
                 for(j=0; j<=monitor.probingnvalues-1; j++)
@@ -18192,11 +18529,19 @@ public partial class alglib
                 alglib.ap.trace("*** ------------------------------------------------------|\n");
                 if( needxdreport )
                 {
+                    alglib.ap.trace("*** > printing raw variables\n");
                     alglib.ap.trace("*** XK = ");
-                    apserv.tracevectore6(monitor.nonc0lngrep.x0, 0, monitor.n, _params);
+                    apserv.tracevectorunscaledunshiftedautoprec(monitor.nonc0lngrep.x0, monitor.n, monitor.s, true, monitor.s, false, _params);
                     alglib.ap.trace("\n");
                     alglib.ap.trace("*** D  = ");
-                    apserv.tracevectore6(monitor.nonc0lngrep.d, 0, monitor.n, _params);
+                    apserv.tracevectorunscaledunshiftedautoprec(monitor.nonc0lngrep.d, monitor.n, monitor.s, true, monitor.s, false, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** > printing scaled variables (values are divided by user-specified scales)\n");
+                    alglib.ap.trace("*** XK = ");
+                    apserv.tracevectorautoprec(monitor.nonc0lngrep.x0, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** D  = ");
+                    apserv.tracevectorautoprec(monitor.nonc0lngrep.d, 0, monitor.n, _params);
                     alglib.ap.trace("\n");
                 }
             }
@@ -18241,11 +18586,19 @@ public partial class alglib
                 alglib.ap.trace("*** ------------------------------------------------------|\n");
                 if( needxdreport )
                 {
+                    alglib.ap.trace("*** > printing raw variables\n");
                     alglib.ap.trace("*** XK = ");
-                    apserv.tracevectore6(monitor.nonc1test0lngrep.x0, 0, monitor.n, _params);
+                    apserv.tracevectorunscaledunshiftedautoprec(monitor.nonc1test0lngrep.x0, monitor.n, monitor.s, true, monitor.s, false, _params);
                     alglib.ap.trace("\n");
                     alglib.ap.trace("*** D  = ");
-                    apserv.tracevectore6(monitor.nonc1test0lngrep.d, 0, monitor.n, _params);
+                    apserv.tracevectorunscaledunshiftedautoprec(monitor.nonc1test0lngrep.d, monitor.n, monitor.s, true, monitor.s, false, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** > printing scaled variables (values are divided by user-specified scales)\n");
+                    alglib.ap.trace("*** XK = ");
+                    apserv.tracevectorautoprec(monitor.nonc1test0lngrep.x0, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** D  = ");
+                    apserv.tracevectorautoprec(monitor.nonc1test0lngrep.d, 0, monitor.n, _params);
                     alglib.ap.trace("\n");
                 }
             }
@@ -18291,11 +18644,19 @@ public partial class alglib
                 alglib.ap.trace("*** ------------------------------------------------------|\n");
                 if( needxdreport )
                 {
+                    alglib.ap.trace("*** > printing raw variables\n");
                     alglib.ap.trace("*** XK = ");
-                    apserv.tracevectore6(monitor.nonc1test1lngrep.x0, 0, monitor.n, _params);
+                    apserv.tracevectorunscaledunshiftedautoprec(monitor.nonc1test1lngrep.x0, monitor.n, monitor.s, true, monitor.s, false, _params);
                     alglib.ap.trace("\n");
                     alglib.ap.trace("*** D  = ");
-                    apserv.tracevectore6(monitor.nonc1test1lngrep.d, 0, monitor.n, _params);
+                    apserv.tracevectorunscaledunshiftedautoprec(monitor.nonc1test1lngrep.d, monitor.n, monitor.s, true, monitor.s, false, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** > printing scaled variables (values are divided by user-specified scales)\n");
+                    alglib.ap.trace("*** XK = ");
+                    apserv.tracevectorautoprec(monitor.nonc1test1lngrep.x0, 0, monitor.n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("*** D  = ");
+                    apserv.tracevectorautoprec(monitor.nonc1test1lngrep.d, 0, monitor.n, _params);
                     alglib.ap.trace("\n");
                 }
             }
@@ -18390,15 +18751,15 @@ public partial class alglib
             }
             else
             {
-                n = -919;
-                k = -909;
-                i = 81;
-                j = 255;
-                varidx = 74;
-                v = -788;
-                vp = 809;
-                vm = 205;
-                vc = -838;
+                n = -788;
+                k = 809;
+                i = 205;
+                j = -838;
+                varidx = 939;
+                v = -526;
+                vp = 763;
+                vm = -541;
+                vc = -698;
             }
             if( monitor.rstateg0.stage==0 )
             {
@@ -25274,7036 +25635,6 @@ public partial class alglib
 
 
     }
-    public class lpqpserv
-    {
-        /*************************************************************************
-        This function generates scaled (by S) and shifted (by XC) reformulation of
-        the box constraints.
-
-        INPUT PARAMETERS:
-            S               -   scale vector, array[N]:
-                                * I-th element contains scale of I-th variable,
-                                * SC[I]>0
-            XOrigin         -   origin term, array[N]. Can be zero.
-            BndL            -     raw lower bounds, array[N]
-            BndU            -   raw upper bounds, array[N]
-            N               -   number of variables.
-
-        OUTPUT PARAMETERS:
-            BndL            -   replaced by scaled/shifted lower bounds, array[N]
-            BndU            -   replaced by scaled/shifted upper bounds, array[N]
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void scaleshiftbcinplace(double[] s,
-            double[] xorigin,
-            double[] bndl,
-            double[] bndu,
-            int n,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            bool hasbndl = new bool();
-            bool hasbndu = new bool();
-
-            for(i=0; i<=n-1; i++)
-            {
-                alglib.ap.assert(math.isfinite(s[i]) && s[i]>0.0, "ScaleShiftBC: S[i] is nonpositive");
-                alglib.ap.assert(math.isfinite(bndl[i]) || Double.IsNegativeInfinity(bndl[i]), "ScaleShiftBC: BndL[i] is +INF or NAN");
-                alglib.ap.assert(math.isfinite(bndu[i]) || Double.IsPositiveInfinity(bndu[i]), "ScaleShiftBC: BndU[i] is -INF or NAN");
-                hasbndl = math.isfinite(bndl[i]);
-                hasbndu = math.isfinite(bndu[i]);
-                if( (hasbndl && hasbndu) && (double)(bndl[i])==(double)(bndu[i]) )
-                {
-                    
-                    //
-                    // Make sure that BndL[I]=BndU[I] bit-to-bit
-                    // even with CRAZY optimizing compiler.
-                    //
-                    bndu[i] = (bndu[i]-xorigin[i])/s[i];
-                    bndl[i] = bndu[i];
-                    continue;
-                }
-                if( hasbndl )
-                {
-                    bndl[i] = (bndl[i]-xorigin[i])/s[i];
-                }
-                if( hasbndu )
-                {
-                    bndu[i] = (bndu[i]-xorigin[i])/s[i];
-                }
-            }
-        }
-
-
-        /*************************************************************************
-        This function generates scaled (by S) and shifted (by XC) reformulation of
-        two-sided "lower-bound/range" constraints stored in dense format.
-
-        INPUT PARAMETERS:
-            S               -   scale vector, array[N]:
-                                * I-th element contains scale of I-th variable,
-                                * SC[I]>0
-            XOrigin         -   origin term, array[N]. Can be zero.
-            N               -   number of variables.
-            DenseA          -   array[M,N], constraint matrix
-            AB              -   lower bounds for constraints, always present and
-                                finite, array[M]
-            AR              -   ranges for constraints, can be zero (equality
-                                constraint), positive (range constraint) or +INF
-                                (lower bound constraint), array[M]
-            M               -   constraint count, M>=0
-
-        OUTPUT PARAMETERS:
-            DenseA          -   replaced by scaled/shifted constraints, array[M,N]
-            AB              -   replaced by scaled/shifted lower bounds, array[M]
-            AR              -   replaced by scaled/shifted ranges, array[M]
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void scaleshiftdensebrlcinplace(double[] s,
-            double[] xorigin,
-            int n,
-            double[,] densea,
-            double[] ab,
-            double[] ar,
-            int m,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            double v = 0;
-            double vv = 0;
-
-            for(i=0; i<=m-1; i++)
-            {
-                
-                //
-                // Scale/shift constraint; shift its lower bound
-                //
-                // NOTE: range is NOT scaled or shifted
-                //
-                v = 0.0;
-                for(j=0; j<=n-1; j++)
-                {
-                    vv = densea[i,j];
-                    v = v+vv*xorigin[j];
-                    densea[i,j] = vv*s[j];
-                }
-                ab[i] = ab[i]-v;
-            }
-        }
-
-
-        /*************************************************************************
-        This function generates scaled (by S) and shifted (by XC) reformulation of
-        two-sided "lower-bound/range" constraints stored in dense format.
-
-        INPUT PARAMETERS:
-            S               -   scale vector, array[N]:
-                                * I-th element contains scale of I-th variable,
-                                * SC[I]>0
-            XOrigin         -   origin term, array[N]. Can be zero.
-            N               -   number of variables.
-            SparseA         -   sparse MSparse*N constraint matrix in CRS format;
-                                ignored if MSparse=0.
-            MSparse         -   dense constraint count, MSparse>=0
-            DenseA          -   array[MDense,N], constraint matrix;
-                                ignored if MDense=0.
-            MDense          -   dense constraint count, MDense>=0
-            AB              -   lower bounds for constraints, always present and
-                                finite, array[MSparse+MDense]
-            AR              -   ranges for constraints, can be zero (equality
-                                constraint), positive (range constraint) or +INF
-                                (lower bound constraint), array[MSparse+MDense]
-
-        OUTPUT PARAMETERS:
-            DenseA          -   replaced by scaled/shifted constraints, array[MDense,N]
-            SparseA         -   replaced by scaled/shifted constraints, array[MSparse,N]
-            AB              -   replaced by scaled/shifted lower bounds, array[MDense+MSparse]
-            AR              -   replaced by scaled/shifted ranges, array[MDense+MSparse]
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void scaleshiftmixedbrlcinplace(double[] s,
-            double[] xorigin,
-            int n,
-            sparse.sparsematrix sparsea,
-            int msparse,
-            double[,] densea,
-            int mdense,
-            double[] ab,
-            double[] ar,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            int k0 = 0;
-            int k1 = 0;
-            double v = 0;
-            double vv = 0;
-
-            alglib.ap.assert(msparse==0 || ((sparsea.matrixtype==1 && sparsea.m==msparse) && sparsea.n==n), "ScaleShiftMixedBRLCInplace: non-CRS sparse constraint matrix!");
-            for(i=0; i<=msparse-1; i++)
-            {
-                
-                //
-                // Scale/shift constraint; shift its lower bound
-                //
-                // NOTE: range is NOT scaled or shifted
-                //
-                v = 0.0;
-                k0 = sparsea.ridx[i];
-                k1 = sparsea.ridx[i+1]-1;
-                for(k=k0; k<=k1; k++)
-                {
-                    j = sparsea.idx[k];
-                    vv = sparsea.vals[k];
-                    v = v+vv*xorigin[j];
-                    sparsea.vals[k] = vv*s[j];
-                }
-                ab[i] = ab[i]-v;
-            }
-            for(i=0; i<=mdense-1; i++)
-            {
-                
-                //
-                // Scale/shift constraint; shift its lower bound
-                //
-                // NOTE: range is NOT scaled or shifted
-                //
-                v = 0.0;
-                for(j=0; j<=n-1; j++)
-                {
-                    vv = densea[i,j];
-                    v = v+vv*xorigin[j];
-                    densea[i,j] = vv*s[j];
-                }
-                ab[msparse+i] = ab[msparse+i]-v;
-            }
-        }
-
-
-        /*************************************************************************
-        This function generates scaled (by S) reformulation of dense quadratic and
-        linear terms in QP problem.
-
-        INPUT PARAMETERS:
-            N               -   number of variables.
-            DenseA          -   array[NMain,NMain], quadratic term
-            IsUpper         -   whether upper or lower triangle is present
-            NMain           -   number of nonslack vars, 1<=NMain<=NTotal
-            DenseB          -   array[NTotal], linear term
-            NTotal          -   total number of variables, NTotal>=1
-            S               -   scale vector, array[NTotal]:
-                                * I-th element contains scale of I-th variable,
-                                * SC[I]>0
-
-        OUTPUT PARAMETERS:
-            DenseA          -   replaced by scaled term, array[N,N]
-            DenseB          -   replaced by scaled term, array[N]
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void scaledenseqpinplace(double[,] densea,
-            bool isupper,
-            int nmain,
-            double[] denseb,
-            int ntotal,
-            double[] s,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            int j0 = 0;
-            int j1 = 0;
-            double si = 0;
-
-            for(i=0; i<=nmain-1; i++)
-            {
-                si = s[i];
-                if( isupper )
-                {
-                    j0 = i;
-                    j1 = nmain-1;
-                }
-                else
-                {
-                    j0 = 0;
-                    j1 = i;
-                }
-                for(j=j0; j<=j1; j++)
-                {
-                    densea[i,j] = densea[i,j]*si*s[j];
-                }
-            }
-            for(i=0; i<=ntotal-1; i++)
-            {
-                denseb[i] = denseb[i]*s[i];
-            }
-        }
-
-
-        /*************************************************************************
-        This function generates scaled (by S) reformulation of sparse quadratic and
-        linear terms in QP problem.
-
-        INPUT PARAMETERS:
-            S               -   scale vector, array[N]:
-                                * I-th element contains scale of I-th variable,
-                                * SC[I]>0
-            N               -   number of variables.
-            SparseA         -   NxN SparseMatrix in CRS format (any triangle can
-                                be present, we will scale everything)
-            DenseB          -   array[N], linear term
-
-        OUTPUT PARAMETERS:
-            SparseA         -   replaced by scaled term
-            DenseB          -   replaced by scaled term
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void scalesparseqpinplace(double[] s,
-            int n,
-            sparse.sparsematrix sparsea,
-            double[] denseb,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int k0 = 0;
-            int k1 = 0;
-            int k = 0;
-            double si = 0;
-
-            alglib.ap.assert((sparsea.matrixtype==1 && sparsea.m==n) && sparsea.n==n, "ScaleSparseQPInplace: SparseA in unexpected format");
-            for(i=0; i<=n-1; i++)
-            {
-                si = s[i];
-                k0 = sparsea.ridx[i];
-                k1 = sparsea.ridx[i+1]-1;
-                for(k=k0; k<=k1; k++)
-                {
-                    sparsea.vals[k] = sparsea.vals[k]*si*s[sparsea.idx[k]];
-                }
-                denseb[i] = denseb[i]*si;
-            }
-        }
-
-
-        /*************************************************************************
-        This function normalizes two-sided "lower-bound/range" constraints  stored
-        in dense format in such a way that L2 norms of rows (right hand  side  NOT
-        included) become equal to 1.0. Exactly zero rows are handled correctly.
-
-        INPUT PARAMETERS:
-            DenseA          -   array[M,N], constraint matrix
-            AB              -   lower bounds for constraints, always present and
-                                finite, array[M]
-            AR              -   ranges for constraints, can be zero (equality
-                                constraint), positive (range constraint) or +INF
-                                (lower bound constraint), array[M]
-            N               -   number of variables, N>=1.
-            M               -   constraint count, M>=0
-            NeedNorms       -   whether we need row norms or not
-
-        OUTPUT PARAMETERS:
-            DenseA          -   replaced by normalized constraints, array[M,N]
-            AB              -   replaced by normalized lower bounds, array[M]
-            AR              -   replaced by normalized ranges, array[M]
-            RowNorms        -   if NeedNorms is true, leading M elements (resized
-                                if length is less than M) are filled by row norms
-                                before normalization was performed.
-            
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void normalizedensebrlcinplace(double[,] densea,
-            double[] ab,
-            double[] ar,
-            int n,
-            int m,
-            ref double[] rownorms,
-            bool neednorms,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            double v = 0;
-            double vv = 0;
-
-            if( neednorms )
-            {
-                apserv.rvectorsetlengthatleast(ref rownorms, m, _params);
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                vv = 0.0;
-                for(j=0; j<=n-1; j++)
-                {
-                    v = densea[i,j];
-                    vv = vv+v*v;
-                }
-                vv = Math.Sqrt(vv);
-                if( neednorms )
-                {
-                    rownorms[i] = vv;
-                }
-                if( (double)(vv)>(double)(0) )
-                {
-                    vv = 1/vv;
-                    for(j=0; j<=n-1; j++)
-                    {
-                        densea[i,j] = densea[i,j]*vv;
-                    }
-                    ab[i] = ab[i]*vv;
-                    if( math.isfinite(ar[i]) )
-                    {
-                        ar[i] = ar[i]*vv;
-                    }
-                }
-            }
-        }
-
-
-        /*************************************************************************
-        This function normalizes two-sided "lower-bound/range" constraints  stored
-        in dense format in such a way that L2 norms of rows (right hand  side  NOT
-        included) become equal to 1.0. Exactly zero rows are handled correctly.
-
-        INPUT PARAMETERS:
-            SparseA         -   sparse MSparse*N constraint matrix in CRS format;
-                                ignored if MSparse=0.
-            MSparse         -   dense constraint count, MSparse>=0
-            DenseA          -   array[MDense,N], constraint matrix;
-                                ignored if MDense=0.
-            MDense          -   dense constraint count, MDense>=0
-            AB              -   lower bounds for constraints, always present and
-                                finite, array[MSparse+MDense]
-            AR              -   ranges for constraints, can be zero (equality
-                                constraint), positive (range constraint) or +INF
-                                (lower bound constraint), array[MSparse+MDense]
-            N               -   number of variables, N>=1.
-            NeedNorms       -   whether we need row norms or not
-
-        OUTPUT PARAMETERS:
-            DenseA          -   replaced by normalized constraints, array[M,N]
-            AB              -   replaced by normalized lower bounds, array[M]
-            AR              -   replaced by normalized ranges, array[M]
-            RowNorms        -   if NeedNorms is true, leading M elements (resized
-                                if length is less than M) are filled by row norms
-                                before normalization was performed.
-            
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void normalizemixedbrlcinplace(sparse.sparsematrix sparsea,
-            int msparse,
-            double[,] densea,
-            int mdense,
-            double[] ab,
-            double[] ar,
-            int n,
-            ref double[] rownorms,
-            bool neednorms,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            int k0 = 0;
-            int k1 = 0;
-            double v = 0;
-            double vv = 0;
-
-            alglib.ap.assert(msparse==0 || ((sparsea.matrixtype==1 && sparsea.m==msparse) && sparsea.n==n), "ScaleShiftMixedBRLCInplace: non-CRS sparse constraint matrix!");
-            if( neednorms )
-            {
-                apserv.rvectorsetlengthatleast(ref rownorms, mdense+msparse, _params);
-            }
-            for(i=0; i<=msparse-1; i++)
-            {
-                vv = 0.0;
-                k0 = sparsea.ridx[i];
-                k1 = sparsea.ridx[i+1]-1;
-                for(k=k0; k<=k1; k++)
-                {
-                    v = sparsea.vals[k];
-                    vv = vv+v*v;
-                }
-                vv = Math.Sqrt(vv);
-                if( neednorms )
-                {
-                    rownorms[i] = vv;
-                }
-                if( (double)(vv)>(double)(0) )
-                {
-                    vv = 1/vv;
-                    for(k=k0; k<=k1; k++)
-                    {
-                        sparsea.vals[k] = sparsea.vals[k]*vv;
-                    }
-                    ab[i] = ab[i]*vv;
-                    if( math.isfinite(ar[i]) )
-                    {
-                        ar[i] = ar[i]*vv;
-                    }
-                }
-            }
-            for(i=0; i<=mdense-1; i++)
-            {
-                vv = 0.0;
-                for(j=0; j<=n-1; j++)
-                {
-                    v = densea[i,j];
-                    vv = vv+v*v;
-                }
-                vv = Math.Sqrt(vv);
-                if( neednorms )
-                {
-                    rownorms[msparse+i] = vv;
-                }
-                if( (double)(vv)>(double)(0) )
-                {
-                    vv = 1/vv;
-                    for(j=0; j<=n-1; j++)
-                    {
-                        densea[i,j] = densea[i,j]*vv;
-                    }
-                    ab[msparse+i] = ab[msparse+i]*vv;
-                    if( math.isfinite(ar[msparse+i]) )
-                    {
-                        ar[msparse+i] = ar[msparse+i]*vv;
-                    }
-                }
-            }
-        }
-
-
-        /*************************************************************************
-        This function normalizes dense QP problem in such a way that maximum  over
-        its linear/quadratic coefficients max(max(A),max(B)) becomes equal to 1.0.
-
-        NOTE: completely zero A and B are handled correctly.
-
-        INPUT PARAMETERS:
-            DenseA          -   array[NMain,NMain], quadratic term
-            IsUpper         -   whether upper or lower triangle is present
-            NMain           -   number of nonslack vars, 1<=NMain<=NTotal
-            DenseB          -   array[NTotal], linear term
-            NTotal          -   total number of variables.
-
-        OUTPUT PARAMETERS:
-            DenseA          -   replaced by normalized term
-            DenseB          -   replaced by normalized term
-            
-        RESULT:
-            max(max(A),max(B)) is returned
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static double normalizedenseqpinplace(double[,] densea,
-            bool isupper,
-            int nmain,
-            double[] denseb,
-            int ntotal,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            int i = 0;
-            int j = 0;
-            int j0 = 0;
-            int j1 = 0;
-            double mx = 0;
-            double v = 0;
-
-            mx = 0;
-            for(i=0; i<=nmain-1; i++)
-            {
-                if( isupper )
-                {
-                    j0 = i;
-                    j1 = nmain-1;
-                }
-                else
-                {
-                    j0 = 0;
-                    j1 = i;
-                }
-                for(j=j0; j<=j1; j++)
-                {
-                    mx = Math.Max(mx, Math.Abs(densea[i,j]));
-                }
-            }
-            for(i=0; i<=ntotal-1; i++)
-            {
-                mx = Math.Max(mx, Math.Abs(denseb[i]));
-            }
-            result = mx;
-            if( (double)(mx)==(double)(0) )
-            {
-                return result;
-            }
-            v = 1/mx;
-            for(i=0; i<=nmain-1; i++)
-            {
-                if( isupper )
-                {
-                    j0 = i;
-                    j1 = nmain-1;
-                }
-                else
-                {
-                    j0 = 0;
-                    j1 = i;
-                }
-                for(j=j0; j<=j1; j++)
-                {
-                    densea[i,j] = densea[i,j]*v;
-                }
-            }
-            for(i=0; i<=ntotal-1; i++)
-            {
-                denseb[i] = denseb[i]*v;
-            }
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function normalizes sparse QP problem in such a way that maximum over
-        its linear/quadratic coefficients max(max(A),max(B)) becomes equal to 1.0.
-
-        NOTE: completely zero A and B are handled correctly.
-
-        INPUT PARAMETERS:
-            SparseA         -   Sparse NxN matrix, either upper or lower triangle,
-                                diagonal MUST be present
-            IsUpper         -   which triangle is present (other one is ignored)
-            DenseB          -   array[N], linear term
-            N               -   number of variables.
-
-        OUTPUT PARAMETERS:
-            DenseA          -   replaced by normalized term, array[N,N]
-            DenseB          -   replaced by normalized term, array[N]
-            
-        RESULT:
-            max(max(A),max(B)) is returned
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static double normalizesparseqpinplace(sparse.sparsematrix sparsea,
-            bool isupper,
-            double[] denseb,
-            int n,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            int i = 0;
-            int k = 0;
-            int k0 = 0;
-            int k1 = 0;
-            double mx = 0;
-            double v = 0;
-
-            alglib.ap.assert((sparsea.matrixtype==1 && sparsea.m==n) && sparsea.n==n, "ScaleSparseQPInplace: SparseA in unexpected format");
-            mx = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                alglib.ap.assert(sparsea.didx[i]+1==sparsea.uidx[i], "NormalizeSparseQPInplace: critical integrity check failed, sparse diagonal not found");
-                if( isupper )
-                {
-                    k0 = sparsea.didx[i];
-                    k1 = sparsea.ridx[i+1]-1;
-                }
-                else
-                {
-                    k0 = sparsea.ridx[i];
-                    k1 = sparsea.didx[i];
-                }
-                for(k=k0; k<=k1; k++)
-                {
-                    mx = Math.Max(mx, Math.Abs(sparsea.vals[k]));
-                }
-                mx = Math.Max(mx, Math.Abs(denseb[i]));
-            }
-            result = mx;
-            if( (double)(mx)==(double)(0) )
-            {
-                return result;
-            }
-            v = 1/mx;
-            for(i=0; i<=n-1; i++)
-            {
-                k0 = sparsea.ridx[i];
-                k1 = sparsea.ridx[i+1]-1;
-                for(k=k0; k<=k1; k++)
-                {
-                    sparsea.vals[k] = sparsea.vals[k]*v;
-                }
-                denseb[i] = denseb[i]*v;
-            }
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function performs transformation of X from scaled/shifted coordinates
-        to unscaled/unshifted ones, paying special attention to box constraints:
-        * points which were exactly at the boundary before scaling will be  mapped
-          to corresponding boundary after scaling
-        * in any case, unscaled box constraints will be satisfied
-
-          -- ALGLIB --
-             Copyright 02.06.2015 by Bochkanov Sergey
-        *************************************************************************/
-        public static void unscaleunshiftpointbc(double[] s,
-            double[] xorigin,
-            double[] rawbndl,
-            double[] rawbndu,
-            double[] sclsftbndl,
-            double[] sclsftbndu,
-            bool[] hasbndl,
-            bool[] hasbndu,
-            double[] x,
-            int n,
-            alglib.xparams _params)
-        {
-            int i = 0;
-
-            for(i=0; i<=n-1; i++)
-            {
-                if( hasbndl[i] && (double)(x[i])<=(double)(sclsftbndl[i]) )
-                {
-                    x[i] = rawbndl[i];
-                    continue;
-                }
-                if( hasbndu[i] && (double)(x[i])>=(double)(sclsftbndu[i]) )
-                {
-                    x[i] = rawbndu[i];
-                    continue;
-                }
-                x[i] = x[i]*s[i]+xorigin[i];
-                if( hasbndl[i] && (double)(x[i])<=(double)(rawbndl[i]) )
-                {
-                    x[i] = rawbndl[i];
-                }
-                if( hasbndu[i] && (double)(x[i])>=(double)(rawbndu[i]) )
-                {
-                    x[i] = rawbndu[i];
-                }
-            }
-        }
-
-
-    }
-    public class vipmsolver
-    {
-        /*************************************************************************
-        Variables of Vanderbei IPM method (primal and dual, slacks)
-        *************************************************************************/
-        public class vipmvars : apobject
-        {
-            public int n;
-            public int m;
-            public double[] x;
-            public double[] g;
-            public double[] w;
-            public double[] t;
-            public double[] p;
-            public double[] y;
-            public double[] z;
-            public double[] v;
-            public double[] s;
-            public double[] q;
-            public vipmvars()
-            {
-                init();
-            }
-            public override void init()
-            {
-                x = new double[0];
-                g = new double[0];
-                w = new double[0];
-                t = new double[0];
-                p = new double[0];
-                y = new double[0];
-                z = new double[0];
-                v = new double[0];
-                s = new double[0];
-                q = new double[0];
-            }
-            public override alglib.apobject make_copy()
-            {
-                vipmvars _result = new vipmvars();
-                _result.n = n;
-                _result.m = m;
-                _result.x = (double[])x.Clone();
-                _result.g = (double[])g.Clone();
-                _result.w = (double[])w.Clone();
-                _result.t = (double[])t.Clone();
-                _result.p = (double[])p.Clone();
-                _result.y = (double[])y.Clone();
-                _result.z = (double[])z.Clone();
-                _result.v = (double[])v.Clone();
-                _result.s = (double[])s.Clone();
-                _result.q = (double[])q.Clone();
-                return _result;
-            }
-        };
-
-
-        /*************************************************************************
-        Vanderbei IPM state
-        *************************************************************************/
-        public class vipmstate : apobject
-        {
-            public int n;
-            public int nmain;
-            public double regeps;
-            public double epsp;
-            public double epsd;
-            public double epsgap;
-            public bool islinear;
-            public double[] scl;
-            public double[] invscl;
-            public double[] xorigin;
-            public double targetscale;
-            public double[] c;
-            public double[,] denseh;
-            public sparse.sparsematrix sparseh;
-            public int hkind;
-            public double[] bndl;
-            public double[] bndu;
-            public double[] rawbndl;
-            public double[] rawbndu;
-            public bool[] hasbndl;
-            public bool[] hasbndu;
-            public double[,] denseafull;
-            public double[,] denseamain;
-            public sparse.sparsematrix sparseafull;
-            public sparse.sparsematrix sparseamain;
-            public sparse.sparsematrix combinedaslack;
-            public double[] ascales;
-            public double[] b;
-            public double[] r;
-            public bool[] hasr;
-            public int mdense;
-            public int msparse;
-            public vipmvars current;
-            public vipmvars trial;
-            public vipmvars deltaaff;
-            public vipmvars deltacorr;
-            public double errp2;
-            public double errd2;
-            public double errpinf;
-            public double errdinf;
-            public int repiterationscount;
-            public int repncholesky;
-            public int factorizationtype;
-            public bool factorizationpoweredup;
-            public bool factorizationpresent;
-            public double[] diagginvz;
-            public double[] diagzinvg;
-            public double[] diagtinvs;
-            public double[] diagsinvt;
-            public double[] diagvinvw;
-            public double[] diagpinvq;
-            public double[] diagqinvp;
-            public double[] diagd;
-            public double[] diage;
-            public double[,] factdensehaug;
-            public double[] factdh;
-            public double[] factdz;
-            public double[] factinvdz;
-            public double[] facteffectivee;
-            public sparse.sparsematrix factsparsekkttmpl;
-            public sparse.sparsematrix factsparsekkt;
-            public int[] factsparsekktpivp;
-            public int[] factsparsekktpivq;
-            public double[] rhsrho;
-            public double[] rhsnu;
-            public double[] rhstau;
-            public double[] rhsalpha;
-            public double[] rhssigma;
-            public double[] rhsbeta;
-            public double[] rhsgammaz;
-            public double[] rhsgammas;
-            public double[] rhsgammaw;
-            public double[] rhsgammaq;
-            public double[] rhsalphacap;
-            public double[] rhsbetacap;
-            public double[] rhsnucap;
-            public double[] rhstaucap;
-            public double[] deltaxy;
-            public double[] tmphx;
-            public double[] tmpax;
-            public double[] tmpaty;
-            public double[] dummyr;
-            public double[] tmp0;
-            public double[] tmp1;
-            public double[] tmp2;
-            public double[,] tmpr2;
-            public double[] evalprogressg;
-            public int[] tmpi;
-            public sparse.sparsematrix tmpsparse0;
-            public sparse.sparsematrix tmpsparse1;
-            public vipmstate()
-            {
-                init();
-            }
-            public override void init()
-            {
-                scl = new double[0];
-                invscl = new double[0];
-                xorigin = new double[0];
-                c = new double[0];
-                denseh = new double[0,0];
-                sparseh = new sparse.sparsematrix();
-                bndl = new double[0];
-                bndu = new double[0];
-                rawbndl = new double[0];
-                rawbndu = new double[0];
-                hasbndl = new bool[0];
-                hasbndu = new bool[0];
-                denseafull = new double[0,0];
-                denseamain = new double[0,0];
-                sparseafull = new sparse.sparsematrix();
-                sparseamain = new sparse.sparsematrix();
-                combinedaslack = new sparse.sparsematrix();
-                ascales = new double[0];
-                b = new double[0];
-                r = new double[0];
-                hasr = new bool[0];
-                current = new vipmvars();
-                trial = new vipmvars();
-                deltaaff = new vipmvars();
-                deltacorr = new vipmvars();
-                diagginvz = new double[0];
-                diagzinvg = new double[0];
-                diagtinvs = new double[0];
-                diagsinvt = new double[0];
-                diagvinvw = new double[0];
-                diagpinvq = new double[0];
-                diagqinvp = new double[0];
-                diagd = new double[0];
-                diage = new double[0];
-                factdensehaug = new double[0,0];
-                factdh = new double[0];
-                factdz = new double[0];
-                factinvdz = new double[0];
-                facteffectivee = new double[0];
-                factsparsekkttmpl = new sparse.sparsematrix();
-                factsparsekkt = new sparse.sparsematrix();
-                factsparsekktpivp = new int[0];
-                factsparsekktpivq = new int[0];
-                rhsrho = new double[0];
-                rhsnu = new double[0];
-                rhstau = new double[0];
-                rhsalpha = new double[0];
-                rhssigma = new double[0];
-                rhsbeta = new double[0];
-                rhsgammaz = new double[0];
-                rhsgammas = new double[0];
-                rhsgammaw = new double[0];
-                rhsgammaq = new double[0];
-                rhsalphacap = new double[0];
-                rhsbetacap = new double[0];
-                rhsnucap = new double[0];
-                rhstaucap = new double[0];
-                deltaxy = new double[0];
-                tmphx = new double[0];
-                tmpax = new double[0];
-                tmpaty = new double[0];
-                dummyr = new double[0];
-                tmp0 = new double[0];
-                tmp1 = new double[0];
-                tmp2 = new double[0];
-                tmpr2 = new double[0,0];
-                evalprogressg = new double[0];
-                tmpi = new int[0];
-                tmpsparse0 = new sparse.sparsematrix();
-                tmpsparse1 = new sparse.sparsematrix();
-            }
-            public override alglib.apobject make_copy()
-            {
-                vipmstate _result = new vipmstate();
-                _result.n = n;
-                _result.nmain = nmain;
-                _result.regeps = regeps;
-                _result.epsp = epsp;
-                _result.epsd = epsd;
-                _result.epsgap = epsgap;
-                _result.islinear = islinear;
-                _result.scl = (double[])scl.Clone();
-                _result.invscl = (double[])invscl.Clone();
-                _result.xorigin = (double[])xorigin.Clone();
-                _result.targetscale = targetscale;
-                _result.c = (double[])c.Clone();
-                _result.denseh = (double[,])denseh.Clone();
-                _result.sparseh = (sparse.sparsematrix)sparseh.make_copy();
-                _result.hkind = hkind;
-                _result.bndl = (double[])bndl.Clone();
-                _result.bndu = (double[])bndu.Clone();
-                _result.rawbndl = (double[])rawbndl.Clone();
-                _result.rawbndu = (double[])rawbndu.Clone();
-                _result.hasbndl = (bool[])hasbndl.Clone();
-                _result.hasbndu = (bool[])hasbndu.Clone();
-                _result.denseafull = (double[,])denseafull.Clone();
-                _result.denseamain = (double[,])denseamain.Clone();
-                _result.sparseafull = (sparse.sparsematrix)sparseafull.make_copy();
-                _result.sparseamain = (sparse.sparsematrix)sparseamain.make_copy();
-                _result.combinedaslack = (sparse.sparsematrix)combinedaslack.make_copy();
-                _result.ascales = (double[])ascales.Clone();
-                _result.b = (double[])b.Clone();
-                _result.r = (double[])r.Clone();
-                _result.hasr = (bool[])hasr.Clone();
-                _result.mdense = mdense;
-                _result.msparse = msparse;
-                _result.current = (vipmvars)current.make_copy();
-                _result.trial = (vipmvars)trial.make_copy();
-                _result.deltaaff = (vipmvars)deltaaff.make_copy();
-                _result.deltacorr = (vipmvars)deltacorr.make_copy();
-                _result.errp2 = errp2;
-                _result.errd2 = errd2;
-                _result.errpinf = errpinf;
-                _result.errdinf = errdinf;
-                _result.repiterationscount = repiterationscount;
-                _result.repncholesky = repncholesky;
-                _result.factorizationtype = factorizationtype;
-                _result.factorizationpoweredup = factorizationpoweredup;
-                _result.factorizationpresent = factorizationpresent;
-                _result.diagginvz = (double[])diagginvz.Clone();
-                _result.diagzinvg = (double[])diagzinvg.Clone();
-                _result.diagtinvs = (double[])diagtinvs.Clone();
-                _result.diagsinvt = (double[])diagsinvt.Clone();
-                _result.diagvinvw = (double[])diagvinvw.Clone();
-                _result.diagpinvq = (double[])diagpinvq.Clone();
-                _result.diagqinvp = (double[])diagqinvp.Clone();
-                _result.diagd = (double[])diagd.Clone();
-                _result.diage = (double[])diage.Clone();
-                _result.factdensehaug = (double[,])factdensehaug.Clone();
-                _result.factdh = (double[])factdh.Clone();
-                _result.factdz = (double[])factdz.Clone();
-                _result.factinvdz = (double[])factinvdz.Clone();
-                _result.facteffectivee = (double[])facteffectivee.Clone();
-                _result.factsparsekkttmpl = (sparse.sparsematrix)factsparsekkttmpl.make_copy();
-                _result.factsparsekkt = (sparse.sparsematrix)factsparsekkt.make_copy();
-                _result.factsparsekktpivp = (int[])factsparsekktpivp.Clone();
-                _result.factsparsekktpivq = (int[])factsparsekktpivq.Clone();
-                _result.rhsrho = (double[])rhsrho.Clone();
-                _result.rhsnu = (double[])rhsnu.Clone();
-                _result.rhstau = (double[])rhstau.Clone();
-                _result.rhsalpha = (double[])rhsalpha.Clone();
-                _result.rhssigma = (double[])rhssigma.Clone();
-                _result.rhsbeta = (double[])rhsbeta.Clone();
-                _result.rhsgammaz = (double[])rhsgammaz.Clone();
-                _result.rhsgammas = (double[])rhsgammas.Clone();
-                _result.rhsgammaw = (double[])rhsgammaw.Clone();
-                _result.rhsgammaq = (double[])rhsgammaq.Clone();
-                _result.rhsalphacap = (double[])rhsalphacap.Clone();
-                _result.rhsbetacap = (double[])rhsbetacap.Clone();
-                _result.rhsnucap = (double[])rhsnucap.Clone();
-                _result.rhstaucap = (double[])rhstaucap.Clone();
-                _result.deltaxy = (double[])deltaxy.Clone();
-                _result.tmphx = (double[])tmphx.Clone();
-                _result.tmpax = (double[])tmpax.Clone();
-                _result.tmpaty = (double[])tmpaty.Clone();
-                _result.dummyr = (double[])dummyr.Clone();
-                _result.tmp0 = (double[])tmp0.Clone();
-                _result.tmp1 = (double[])tmp1.Clone();
-                _result.tmp2 = (double[])tmp2.Clone();
-                _result.tmpr2 = (double[,])tmpr2.Clone();
-                _result.evalprogressg = (double[])evalprogressg.Clone();
-                _result.tmpi = (int[])tmpi.Clone();
-                _result.tmpsparse0 = (sparse.sparsematrix)tmpsparse0.make_copy();
-                _result.tmpsparse1 = (sparse.sparsematrix)tmpsparse1.make_copy();
-                return _result;
-            }
-        };
-
-
-
-
-        public const int maxipmits = 50;
-        public const double initslackval = 100.0;
-        public const double affinesteplengthdecay = 0.99;
-        public const double steplengthdecay = 0.95;
-        public const double stagnationdelta = 0.99999;
-        public const double primalinfeasible1 = 1.0E-6;
-        public const double dualinfeasible1 = 1.0E-4;
-        public const double bigy = 1.0E10;
-        public const int itersfortoostringentcond = 25;
-        public const int minitersbeforestagnation = 5;
-        public const int primalstagnationlen = 5;
-        public const int dualstagnationlen = 7;
-
-
-        /*************************************************************************
-        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
-        and constraints.
-
-        The solver is configured to work internally with dense NxN  factorization,
-        no matter what exactly is passed - dense or sparse matrices.
-
-        INPUT PARAMETERS:
-            State       -   solver  state  to  be configured; previously allocated
-                            memory is reused as much as possible
-            S           -   scale vector, array[N]:
-                            * I-th element contains scale of I-th variable,
-                            * S[I]>0
-            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
-                            problem of the form
-                            
-                            >
-                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
-                            >
-                            
-                            The terms A and b (as well as constraints) will be
-                            specified later with separate calls.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void vipminitdense(vipmstate state,
-            double[] s,
-            double[] xorigin,
-            int n,
-            alglib.xparams _params)
-        {
-            alglib.ap.assert(n>=1, "VIPMInitDense: N<1");
-            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitDense: S contains infinite or NaN elements");
-            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitDense: XOrigin contains infinite or NaN elements");
-            vipminit(state, s, xorigin, n, n, 0, _params);
-        }
-
-
-        /*************************************************************************
-        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
-        and constraints.
-
-        The solver is configured to work internally with dense NxN problem divided
-        into two distinct parts - "main" and slack one:
-        * dense quadratic term  is  a  NMain*NMain  matrix  (NMain<=N),  quadratic
-          coefficients are zero for variables outside of [0,NMain) range)
-        * linear term is general vector of length N
-        * linear constraints have special structure for variable with  indexes  in
-          [NMain,N) range: at most one element per column can be nonzero.
-
-        This mode is intended for problems arising during SL1QP nonlinear programming.
-
-        INPUT PARAMETERS:
-            State       -   solver  state  to  be configured; previously allocated
-                            memory is reused as much as possible
-            S           -   scale vector, array[N]:
-                            * I-th element contains scale of I-th variable,
-                            * S[I]>0
-            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
-                            problem of the form
-                            
-                            >
-                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
-                            >
-                            
-                            The terms A and b (as well as constraints) will be
-                            specified later with separate calls.
-            NMain       -   number of "main" variables, 1<=NMain<=N
-            N           -   total number of variables including slack ones
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void vipminitdensewithslacks(vipmstate state,
-            double[] s,
-            double[] xorigin,
-            int nmain,
-            int n,
-            alglib.xparams _params)
-        {
-            alglib.ap.assert(nmain>=1, "VIPMInitDense: NMain<1");
-            alglib.ap.assert(n>=1, "VIPMInitDense: N<1");
-            alglib.ap.assert(nmain<=n, "VIPMInitDense: NMain>N");
-            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitDense: S contains infinite or NaN elements");
-            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitDense: XOrigin contains infinite or NaN elements");
-            vipminit(state, s, xorigin, n, nmain, 0, _params);
-        }
-
-
-        /*************************************************************************
-        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
-        and constraints.
-
-        The  solver  is configured  to  work  internally  with  sparse (N+M)x(N+M)
-        factorization no matter what exactly is passed - dense or sparse matrices.
-        Dense quadratic term will be sparsified prior to storage.
-
-        INPUT PARAMETERS:
-            State       -   solver  state  to  be configured; previously allocated
-                            memory is reused as much as possible
-            S           -   scale vector, array[N]:
-                            * I-th element contains scale of I-th variable,
-                            * S[I]>0
-            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
-                            problem of the form
-                            >
-                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
-                            >
-                            The terms A and b (as well as constraints) will be
-                            specified later with separate calls.
-            N           -   total number of variables, N>=1
-            
-        This optimization mode assumes that no slack variables is present.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void vipminitsparse(vipmstate state,
-            double[] s,
-            double[] xorigin,
-            int n,
-            alglib.xparams _params)
-        {
-            alglib.ap.assert(n>=1, "VIPMInitSparse: N<1");
-            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitSparse: S contains infinite or NaN elements");
-            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitSparse: XOrigin contains infinite or NaN elements");
-            vipminit(state, s, xorigin, n, n, 1, _params);
-        }
-
-
-        /*************************************************************************
-        Sets linear/quadratic terms for QP-IPM solver
-
-        If you initialized solver with VIMPInitDenseWithSlacks(), NMain below is a
-        number of non-slack variables. In other cases, NMain=N.
-
-        INPUT PARAMETERS:
-            State               -   instance initialized with one of the initialization
-                                    functions
-            DenseH              -   if HKind=0: array[NMain,NMain], dense quadratic term
-                                    (either upper or lower triangle)
-            SparseH             -   if HKind=1: array[NMain,NMain], sparse quadratic term
-                                    (either upper or lower triangle)
-            HKind               -   0 or 1, quadratic term format
-            IsUpper             -   whether dense/sparse H contains lower or upper
-                                    triangle of the quadratic term
-            C                   -   array[N], linear term
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void vipmsetquadraticlinear(vipmstate state,
-            double[,] denseh,
-            sparse.sparsematrix sparseh,
-            int hkind,
-            bool isupper,
-            double[] c,
-            alglib.xparams _params)
-        {
-            int nmain = 0;
-            int n = 0;
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            int j0 = 0;
-            int j1 = 0;
-            double v = 0;
-            double vv = 0;
-            int nnz = 0;
-            int offs = 0;
-
-            nmain = state.nmain;
-            n = state.n;
-            alglib.ap.assert(hkind==0 || hkind==1, "VIPMSetQuadraticLinear: incorrect HKind");
-            alglib.ap.assert(apserv.isfinitevector(c, n, _params), "VIPMSetQuadraticLinear: C contains infinite or NaN elements");
-            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMSetQuadraticLinear: unexpected factorization type");
-            
-            //
-            // Set problem info, reset factorization flag
-            //
-            state.islinear = false;
-            state.factorizationpresent = false;
-            state.factorizationpoweredup = false;
-            
-            //
-            // Linear term
-            //
-            apserv.rvectorsetlengthatleast(ref state.c, n, _params);
-            ablas.rvectorcopy(n, c, 0, state.c, 0, _params);
-            
-            //
-            // Quadratic term and normalization
-            //
-            // NOTE: we perform integrity check for inifinities/NANs by
-            //       computing sum of all matrix elements and checking its
-            //       value for being finite. It is a bit faster than checking
-            //       each element individually.
-            //
-            state.hkind = -1;
-            state.targetscale = 1.0;
-            if( state.factorizationtype==0 )
-            {
-                
-                //
-                // Quadratic term is stored in dense format: either copy dense
-                // term of densify sparse one
-                //
-                state.hkind = 0;
-                apserv.rmatrixsetlengthatleast(ref state.denseh, nmain, nmain, _params);
-                if( hkind==0 )
-                {
-                    
-                    //
-                    // Copy dense quadratic term
-                    //
-                    if( isupper )
-                    {
-                        ablas.rmatrixtranspose(nmain, nmain, denseh, 0, 0, state.denseh, 0, 0, _params);
-                    }
-                    else
-                    {
-                        ablas.rmatrixcopy(nmain, nmain, denseh, 0, 0, state.denseh, 0, 0, _params);
-                    }
-                }
-                if( hkind==1 )
-                {
-                    
-                    //
-                    // Extract sparse quadratic term
-                    //
-                    alglib.ap.assert(sparseh.matrixtype==1, "VIPMSetQuadraticLinear: unexpected sparse matrix format");
-                    alglib.ap.assert(sparseh.m==nmain, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
-                    alglib.ap.assert(sparseh.n==nmain, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
-                    for(i=0; i<=nmain-1; i++)
-                    {
-                        for(j=0; j<=i; j++)
-                        {
-                            state.denseh[i,j] = 0;
-                        }
-                    }
-                    for(i=0; i<=nmain-1; i++)
-                    {
-                        
-                        //
-                        // diagonal element
-                        //
-                        if( sparseh.didx[i]!=sparseh.uidx[i] )
-                        {
-                            state.denseh[i,i] = sparseh.vals[sparseh.didx[i]];
-                        }
-                        
-                        //
-                        // Off-diagonal elements
-                        //
-                        if( isupper )
-                        {
-                            
-                            //
-                            // superdiagonal elements are moved to subdiagonal part
-                            //
-                            j0 = sparseh.uidx[i];
-                            j1 = sparseh.ridx[i+1]-1;
-                            for(j=j0; j<=j1; j++)
-                            {
-                                state.denseh[sparseh.idx[j],i] = sparseh.vals[j];
-                            }
-                        }
-                        else
-                        {
-                            
-                            //
-                            // subdiagonal elements are moved to subdiagonal part
-                            //
-                            j0 = sparseh.ridx[i];
-                            j1 = sparseh.didx[i]-1;
-                            for(j=j0; j<=j1; j++)
-                            {
-                                state.denseh[i,sparseh.idx[j]] = sparseh.vals[j];
-                            }
-                        }
-                    }
-                }
-                vv = 0;
-                for(i=0; i<=nmain-1; i++)
-                {
-                    for(j=0; j<=i; j++)
-                    {
-                        vv = vv+state.denseh[i,j];
-                    }
-                }
-                alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: DenseH contains infinite or NaN values!");
-                lpqpserv.scaledenseqpinplace(state.denseh, false, nmain, state.c, n, state.scl, _params);
-                state.targetscale = lpqpserv.normalizedenseqpinplace(state.denseh, false, nmain, state.c, n, _params);
-            }
-            if( state.factorizationtype==1 )
-            {
-                alglib.ap.assert(nmain==n, "VIPMSetQuadraticLinear: critical integrity check failed, NMain!=N");
-                
-                //
-                // Quadratic term is stored in sparse format: either sparsify dense
-                // term of copy sparse one
-                //
-                state.hkind = 1;
-                state.sparseh.matrixtype = 1;
-                state.sparseh.m = n;
-                state.sparseh.n = n;
-                if( hkind==0 )
-                {
-                    
-                    //
-                    // Sparsify dense term
-                    //
-                    nnz = 0;
-                    for(i=0; i<=n-1; i++)
-                    {
-                        nnz = nnz+1;
-                        if( isupper )
-                        {
-                            j0 = i+1;
-                            j1 = n-1;
-                        }
-                        else
-                        {
-                            j0 = 0;
-                            j1 = i-1;
-                        }
-                        for(j=j0; j<=j1; j++)
-                        {
-                            if( denseh[i,j]!=0 )
-                            {
-                                nnz = nnz+1;
-                            }
-                        }
-                    }
-                    apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
-                    apserv.ivectorsetlengthatleast(ref state.sparseh.idx, nnz, _params);
-                    apserv.rvectorsetlengthatleast(ref state.sparseh.vals, nnz, _params);
-                    state.sparseh.ridx[0] = 0;
-                    offs = 0;
-                    vv = 0;
-                    for(i=0; i<=n-1; i++)
-                    {
-                        
-                        //
-                        // Off-diagonal elements are copied only when nonzero
-                        //
-                        if( !isupper )
-                        {
-                            for(j=0; j<=i-1; j++)
-                            {
-                                if( denseh[i,j]!=0 )
-                                {
-                                    v = denseh[i,j];
-                                    state.sparseh.idx[offs] = j;
-                                    state.sparseh.vals[offs] = v;
-                                    vv = vv+v;
-                                    offs = offs+1;
-                                }
-                            }
-                        }
-                        
-                        //
-                        // Diagonal element is always copied
-                        //
-                        v = denseh[i,i];
-                        state.sparseh.idx[offs] = i;
-                        state.sparseh.vals[offs] = v;
-                        vv = vv+v;
-                        offs = offs+1;
-                        
-                        //
-                        // Off-diagonal elements are copied only when nonzero
-                        //
-                        if( isupper )
-                        {
-                            for(j=i+1; j<=n-1; j++)
-                            {
-                                if( denseh[i,j]!=0 )
-                                {
-                                    v = denseh[i,j];
-                                    state.sparseh.idx[offs] = j;
-                                    state.sparseh.vals[offs] = v;
-                                    vv = vv+v;
-                                    offs = offs+1;
-                                }
-                            }
-                        }
-                        
-                        //
-                        // Finalize row
-                        //
-                        state.sparseh.ridx[i+1] = offs;
-                    }
-                    alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: DenseH contains infinite or NaN values!");
-                    alglib.ap.assert(offs==nnz, "VIPMSetQuadraticLinear: integrity check failed");
-                    sparse.sparsecreatecrsinplace(state.sparseh, _params);
-                }
-                if( hkind==1 )
-                {
-                    
-                    //
-                    // Copy sparse quadratic term, but make sure that we have diagonal elements
-                    // present (we add diagonal if it is not present)
-                    //
-                    alglib.ap.assert(sparseh.matrixtype==1, "VIPMSetQuadraticLinear: unexpected sparse matrix format");
-                    alglib.ap.assert(sparseh.m==n, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
-                    alglib.ap.assert(sparseh.n==n, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
-                    apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
-                    apserv.ivectorsetlengthatleast(ref state.sparseh.idx, sparseh.ridx[n]+n, _params);
-                    apserv.rvectorsetlengthatleast(ref state.sparseh.vals, sparseh.ridx[n]+n, _params);
-                    state.sparseh.ridx[0] = 0;
-                    offs = 0;
-                    vv = 0;
-                    for(i=0; i<=n-1; i++)
-                    {
-                        
-                        //
-                        // Copy subdiagonal elements (if needed)
-                        //
-                        if( !isupper )
-                        {
-                            j0 = sparseh.ridx[i];
-                            j1 = sparseh.didx[i]-1;
-                            for(k=j0; k<=j1; k++)
-                            {
-                                v = sparseh.vals[k];
-                                state.sparseh.idx[offs] = sparseh.idx[k];
-                                state.sparseh.vals[offs] = v;
-                                vv = vv+v;
-                                offs = offs+1;
-                            }
-                        }
-                        
-                        //
-                        // Diagonal element is always copied
-                        //
-                        v = 0;
-                        if( sparseh.uidx[i]!=sparseh.didx[i] )
-                        {
-                            v = sparseh.vals[sparseh.didx[i]];
-                        }
-                        state.sparseh.idx[offs] = i;
-                        state.sparseh.vals[offs] = v;
-                        vv = vv+v;
-                        offs = offs+1;
-                        
-                        //
-                        // Copy superdiagonal elements (if needed)
-                        //
-                        if( isupper )
-                        {
-                            j0 = sparseh.uidx[i];
-                            j1 = sparseh.ridx[i+1]-1;
-                            for(k=j0; k<=j1; k++)
-                            {
-                                v = sparseh.vals[k];
-                                state.sparseh.idx[offs] = sparseh.idx[k];
-                                state.sparseh.vals[offs] = v;
-                                vv = vv+v;
-                                offs = offs+1;
-                            }
-                        }
-                        
-                        //
-                        // Finalize row
-                        //
-                        state.sparseh.ridx[i+1] = offs;
-                    }
-                    alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: SparseH contains infinite or NaN values!");
-                    alglib.ap.assert(offs<=alglib.ap.len(state.sparseh.vals) && offs<=alglib.ap.len(state.sparseh.idx), "VIPMSetQuadraticLinear: integrity check failed");
-                    sparse.sparsecreatecrsinplace(state.sparseh, _params);
-                    if( isupper )
-                    {
-                        sparse.sparsecopytransposecrsbuf(state.sparseh, state.tmpsparse0, _params);
-                        sparse.sparsecopybuf(state.tmpsparse0, state.sparseh, _params);
-                    }
-                }
-                lpqpserv.scalesparseqpinplace(state.scl, n, state.sparseh, state.c, _params);
-                state.targetscale = lpqpserv.normalizesparseqpinplace(state.sparseh, false, state.c, n, _params);
-            }
-            alglib.ap.assert(state.hkind>=0, "VIPMSetQuadraticLinear: integrity check failed");
-        }
-
-
-        /*************************************************************************
-        Sets constraints for QP-IPM solver
-
-        INPUT PARAMETERS:
-            State               -   instance initialized with one of the initialization
-                                    functions
-            BndL, BndU          -   lower and upper bound. BndL[] can be -INF,
-                                    BndU[] can be +INF.
-            SparseA             -   sparse constraint matrix, CRS format
-            MSparse             -   number of sparse constraints
-            DenseA              -   array[MDense,N], dense part of the constraints
-            MDense              -   number of dense constraints
-            CL, CU              -   lower and upper bounds for constraints, first
-                                    MSparse are bounds for sparse part, following
-                                    MDense ones are bounds for dense part,
-                                    MSparse+MDense in total.
-                                    -INF <= CL[I] <= CU[I] <= +INF.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void vipmsetconstraints(vipmstate state,
-            double[] bndl,
-            double[] bndu,
-            sparse.sparsematrix sparsea,
-            int msparse,
-            double[,] densea,
-            int mdense,
-            double[] cl,
-            double[] cu,
-            alglib.xparams _params)
-        {
-            int m = 0;
-            int n = 0;
-            int nmain = 0;
-            int nslack = 0;
-            int i = 0;
-            int j = 0;
-            int j0 = 0;
-            int j1 = 0;
-            int k = 0;
-            int offsmain = 0;
-            int offscombined = 0;
-            double vs = 0;
-            double v = 0;
-
-            n = state.n;
-            nmain = state.nmain;
-            nslack = n-nmain;
-            alglib.ap.assert(mdense>=0, "VIPMSetConstraints: MDense<0");
-            alglib.ap.assert(msparse>=0, "VIPMSetConstraints: MSparse<0");
-            alglib.ap.assert(apserv.apservisfinitematrix(densea, mdense, n, _params), "VIPMSetConstraints: DenseA contains infinite or NaN values!");
-            alglib.ap.assert(msparse==0 || sparsea.matrixtype==1, "VIPMSetConstraints: non-CRS constraint matrix!");
-            alglib.ap.assert(msparse==0 || (sparsea.m==msparse && sparsea.n==n), "VIPMSetConstraints: constraint matrix has incorrect size");
-            alglib.ap.assert(alglib.ap.len(cl)>=mdense+msparse, "VIPMSetConstraints: CL is too short!");
-            alglib.ap.assert(alglib.ap.len(cu)>=mdense+msparse, "VIPMSetConstraints: CU is too short!");
-            
-            //
-            // Reset factorization flag
-            //
-            state.factorizationpresent = false;
-            state.factorizationpoweredup = false;
-            
-            //
-            // Box constraints
-            //
-            apserv.rvectorsetlengthatleast(ref state.bndl, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.bndu, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rawbndl, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rawbndu, n, _params);
-            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
-            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                state.hasbndl[i] = math.isfinite(bndl[i]);
-                state.hasbndu[i] = math.isfinite(bndu[i]);
-                state.bndl[i] = bndl[i];
-                state.bndu[i] = bndu[i];
-                state.rawbndl[i] = bndl[i];
-                state.rawbndu[i] = bndu[i];
-            }
-            lpqpserv.scaleshiftbcinplace(state.scl, state.xorigin, state.bndl, state.bndu, n, _params);
-            
-            //
-            // Linear constraints (full matrices)
-            //
-            m = mdense+msparse;
-            apserv.rvectorsetlengthatleast(ref state.b, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.r, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.ascales, m, _params);
-            apserv.bvectorsetlengthatleast(ref state.hasr, m, _params);
-            apserv.rmatrixsetlengthatleast(ref state.denseafull, mdense, n, _params);
-            if( msparse>0 )
-            {
-                sparse.sparsecopytocrsbuf(sparsea, state.sparseafull, _params);
-            }
-            if( mdense>0 )
-            {
-                ablas.rmatrixcopy(mdense, n, densea, 0, 0, state.denseafull, 0, 0, _params);
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                alglib.ap.assert(math.isfinite(cl[i]) || Double.IsNegativeInfinity(cl[i]), "VIPMInitDenseQuadratic: CL is not finite number or -INF");
-                alglib.ap.assert(math.isfinite(cu[i]) || Double.IsPositiveInfinity(cu[i]), "VIPMInitDenseQuadratic: CU is not finite number or +INF");
-                alglib.ap.assert(math.isfinite(cl[i]) || math.isfinite(cu[i]), "VIPMInitDenseQuadratic: linear constraint with CL=-INF, CU=+INF; degenerate problem formulation");
-                
-                //
-                // Store range
-                //
-                if( math.isfinite(cl[i]) )
-                {
-                    alglib.ap.assert(!math.isfinite(cu[i]) || (double)(cu[i])>=(double)(cl[i]), "VIPMInitDenseQuadratic: inconsistent range (right-hand side) for linear constraint");
-                    state.b[i] = cl[i];
-                    state.r[i] = cu[i]-cl[i];
-                    state.hasr[i] = math.isfinite(cu[i]);
-                    vs = 1;
-                }
-                else
-                {
-                    state.b[i] = -cu[i];
-                    state.r[i] = Double.PositiveInfinity;
-                    state.hasr[i] = false;
-                    vs = -1;
-                }
-                
-                //
-                // Store matrix row and its scaling coefficient
-                //
-                if( i<msparse )
-                {
-                    j0 = state.sparseafull.ridx[i];
-                    j1 = state.sparseafull.ridx[i+1]-1;
-                    for(j=j0; j<=j1; j++)
-                    {
-                        state.sparseafull.vals[j] = state.sparseafull.vals[j]*vs;
-                    }
-                }
-                else
-                {
-                    for(j=0; j<=n-1; j++)
-                    {
-                        state.denseafull[i-msparse,j] = state.denseafull[i-msparse,j]*vs;
-                    }
-                }
-                state.ascales[i] = vs;
-            }
-            lpqpserv.scaleshiftmixedbrlcinplace(state.scl, state.xorigin, n, state.sparseafull, msparse, state.denseafull, mdense, state.b, state.r, _params);
-            lpqpserv.normalizemixedbrlcinplace(state.sparseafull, msparse, state.denseafull, mdense, state.b, state.r, n, ref state.tmp0, true, _params);
-            for(i=0; i<=m-1; i++)
-            {
-                state.ascales[i] = state.ascales[i]*state.tmp0[i];
-            }
-            state.mdense = mdense;
-            state.msparse = msparse;
-            
-            //
-            // Separate main and slack parts of the constraint matrices
-            //
-            apserv.ivectorsetlengthatleast(ref state.tmpi, nslack, _params);
-            for(i=0; i<=nslack-1; i++)
-            {
-                state.tmpi[i] = 0;
-            }
-            state.combinedaslack.m = mdense+msparse;
-            state.combinedaslack.n = nslack;
-            apserv.ivectorsetlengthatleast(ref state.combinedaslack.ridx, mdense+msparse+1, _params);
-            apserv.ivectorsetlengthatleast(ref state.combinedaslack.idx, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref state.combinedaslack.vals, nslack, _params);
-            state.combinedaslack.ridx[0] = 0;
-            state.sparseamain.m = msparse;
-            state.sparseamain.n = nmain;
-            if( msparse>0 )
-            {
-                apserv.ivectorsetlengthatleast(ref state.sparseamain.ridx, msparse+1, _params);
-                apserv.ivectorsetlengthatleast(ref state.sparseamain.idx, sparsea.ridx[msparse], _params);
-                apserv.rvectorsetlengthatleast(ref state.sparseamain.vals, sparsea.ridx[msparse], _params);
-                state.sparseamain.ridx[0] = 0;
-                for(i=0; i<=msparse-1; i++)
-                {
-                    offsmain = state.sparseamain.ridx[i];
-                    offscombined = state.combinedaslack.ridx[i];
-                    j0 = state.sparseafull.ridx[i];
-                    j1 = state.sparseafull.ridx[i+1]-1;
-                    for(j=j0; j<=j1; j++)
-                    {
-                        v = state.sparseafull.vals[j];
-                        k = state.sparseafull.idx[j];
-                        if( k<nmain )
-                        {
-                            state.sparseamain.idx[offsmain] = k;
-                            state.sparseamain.vals[offsmain] = v;
-                            offsmain = offsmain+1;
-                        }
-                        else
-                        {
-                            alglib.ap.assert(state.tmpi[k-nmain]==0, "VIPMSetConstraints: slack column contains more than one nonzero element");
-                            state.combinedaslack.idx[offscombined] = k-nmain;
-                            state.combinedaslack.vals[offscombined] = v;
-                            state.tmpi[k-nmain] = state.tmpi[k-nmain]+1;
-                            offscombined = offscombined+1;
-                        }
-                    }
-                    state.sparseamain.ridx[i+1] = offsmain;
-                    state.combinedaslack.ridx[i+1] = offscombined;
-                }
-            }
-            sparse.sparsecreatecrsinplace(state.sparseamain, _params);
-            if( mdense>0 )
-            {
-                apserv.rmatrixsetlengthatleast(ref state.denseamain, mdense, nmain, _params);
-                ablas.rmatrixcopy(mdense, nmain, state.denseafull, 0, 0, state.denseamain, 0, 0, _params);
-                for(i=0; i<=mdense-1; i++)
-                {
-                    offscombined = state.combinedaslack.ridx[msparse+i];
-                    for(k=nmain; k<=n-1; k++)
-                    {
-                        if( state.denseafull[i,k]!=0 )
-                        {
-                            alglib.ap.assert(state.tmpi[k-nmain]==0, "VIPMSetConstraints: slack column contains more than one nonzero element");
-                            state.combinedaslack.idx[offscombined] = k-nmain;
-                            state.combinedaslack.vals[offscombined] = state.denseafull[i,k];
-                            state.tmpi[k-nmain] = state.tmpi[k-nmain]+1;
-                            offscombined = offscombined+1;
-                        }
-                    }
-                    state.combinedaslack.ridx[msparse+i+1] = offscombined;
-                }
-            }
-            sparse.sparsecreatecrsinplace(state.combinedaslack, _params);
-        }
-
-
-        /*************************************************************************
-        Sets stopping criteria for QP-IPM solver.
-
-        You can set all epsilon-values to one small value, roughly 1.0E-6 or 1.0E-8.
-
-        INPUT PARAMETERS:
-            State               -   instance initialized with one of the initialization
-                                    functions
-            EpsP                -   maximum primal error allowed in the  solution,
-                                    EpsP>=0. Zero will be  automatically  replaced
-                                    by recommended default value,  which is  equal
-                                    to sqrt(machineEpsilon) in the current version
-            EpsD                -   maximum  dual  error allowed in the  solution,
-                                    EpsP>=0. Zero will be  automatically  replaced
-                                    by recommended default value,  which is  equal
-                                    to sqrt(machineEpsilon) in the current version
-            EpsGap              -   maximum  duality gap allowed in the  solution,
-                                    EpsP>=0. Zero will be  automatically  replaced
-                                    by recommended default value,  which is  equal
-                                    to sqrt(machineEpsilon) in the current version
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void vipmsetcond(vipmstate state,
-            double epsp,
-            double epsd,
-            double epsgap,
-            alglib.xparams _params)
-        {
-            alglib.ap.assert(math.isfinite(epsp) && (double)(epsp)>=(double)(0), "VIPMSetCond: EpsP is infinite or negative");
-            alglib.ap.assert(math.isfinite(epsd) && (double)(epsd)>=(double)(0), "VIPMSetCond: EpsD is infinite or negative");
-            alglib.ap.assert(math.isfinite(epsgap) && (double)(epsgap)>=(double)(0), "VIPMSetCond: EpsP is infinite or negative");
-            state.epsp = apserv.coalesce(epsp, Math.Sqrt(math.machineepsilon), _params);
-            state.epsd = apserv.coalesce(epsd, Math.Sqrt(math.machineepsilon), _params);
-            state.epsgap = apserv.coalesce(epsgap, Math.Sqrt(math.machineepsilon), _params);
-        }
-
-
-        /*************************************************************************
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        public static void vipmoptimize(vipmstate state,
-            ref double[] xs,
-            ref double[] lagbc,
-            ref double[] laglc,
-            ref int terminationtype,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int m = 0;
-            int i = 0;
-            bool dotrace = new bool();
-            bool dodetailedtrace = new bool();
-            int iteridx = 0;
-            double mu = 0;
-            double muaff = 0;
-            double sigma = 0;
-            double alphaaffp = 0;
-            double alphaaffd = 0;
-            double alphap = 0;
-            double alphad = 0;
-            int primalstagnationcnt = 0;
-            int dualstagnationcnt = 0;
-            double preverrp2 = 0;
-            double preverrd2 = 0;
-            double eprimal = 0;
-            double edual = 0;
-            double egap = 0;
-            double bnrminf = 0;
-            double cnrminf = 0;
-            double mumin = 0;
-            double mustop = 0;
-
-            terminationtype = 0;
-
-            n = state.n;
-            m = state.mdense+state.msparse;
-            dotrace = ap.istraceenabled("IPM", _params);
-            dodetailedtrace = dotrace && ap.istraceenabled("IPM.DETAILED", _params);
-            
-            //
-            // Allocate output
-            //
-            apserv.rvectorsetlengthatleast(ref xs, n, _params);
-            apserv.rvectorsetlengthatleast(ref lagbc, n, _params);
-            apserv.rvectorsetlengthatleast(ref laglc, m, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                xs[i] = 0.0;
-                lagbc[i] = 0.0;
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                laglc[i] = 0.0;
-            }
-            
-            //
-            // Some integrity checks:
-            // * we need PrimalStagnationLen<DualStagnationLen in order to be able to correctly
-            //   detect infeasible instances (stagnated dual error is present in both infeasible
-            //   and unbounded instances, so we should check for primal stagnation a few iters
-            //   before checking for dual stagnation)
-            //
-            alglib.ap.assert(primalstagnationlen<dualstagnationlen, "VIPM: critical integrity failure - incorrect configuration parameters");
-            
-            //
-            // Trace output (if needed)
-            //
-            if( dotrace )
-            {
-                alglib.ap.trace("\n\n");
-                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
-                alglib.ap.trace("//  VANDERBEI IPM SOLVER STARTED                                                                  //\n");
-                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
-            }
-            
-            //
-            // Set up initial point.
-            //
-            if( dotrace )
-            {
-                alglib.ap.trace("> initial point was generated\n");
-            }
-            vipmpowerup(state, _params);
-            vipminitialpoint(state, _params);
-            vipmevaluateprogress(state, dotrace, dodetailedtrace, 0.0, 0.0, 0.0, 0.0, 0.0, _params);
-            
-            //
-            // Start iteration
-            //
-            mustop = math.machineepsilon;
-            mumin = 0.01*mustop;
-            bnrminf = nrminf(state.b, m, _params);
-            cnrminf = nrminf(state.c, n, _params);
-            primalstagnationcnt = 0;
-            dualstagnationcnt = 0;
-            terminationtype = 7;
-            for(iteridx=0; iteridx<=maxipmits-1; iteridx++)
-            {
-                
-                //
-                // Precompute factorization
-                //
-                vipmprecomputenewtonfactorization(state, state.current, _params);
-                
-                //
-                // Compute Mu
-                //
-                mu = varscomputemu(state.current, _params);
-                
-                //
-                // Compute affine scaling step for Mehrotra's predictor-corrector algorithm
-                //
-                varsinitbyzero(state.deltaaff, n, m, _params);
-                vipmcomputestepdirection(state, state.current, 0.0, state.deltaaff, _params);
-                vipmcomputesteplength(state, state.current, state.deltaaff, affinesteplengthdecay, ref alphaaffp, ref alphaaffd, _params);
-                
-                //
-                // Compute MuAff and centering parameter
-                //
-                varsinitfrom(state.trial, state.current, _params);
-                varsaddstep(state.trial, state.deltaaff, alphaaffp, alphaaffd, _params);
-                muaff = varscomputemu(state.trial, _params);
-                sigma = Math.Pow((muaff+mumin)/(mu+mumin), 3);
-                alglib.ap.assert((double)(sigma)<=(double)(1), "VIPMOptimize: critical integrity check failed, Sigma>1");
-                
-                //
-                // Compute corrector step
-                //
-                varsinitfrom(state.deltacorr, state.deltaaff, _params);
-                vipmcomputestepdirection(state, state.current, sigma*mu+mumin, state.deltacorr, _params);
-                vipmcomputesteplength(state, state.current, state.deltacorr, steplengthdecay, ref alphap, ref alphad, _params);
-                
-                //
-                // Perform a step
-                //
-                varsaddstep(state.current, state.deltacorr, alphap, alphad, _params);
-                apserv.inc(ref state.repiterationscount, _params);
-                
-                //
-                // Evaluate progress so far
-                //
-                preverrp2 = state.errp2;
-                preverrd2 = state.errd2;
-                if( dotrace )
-                {
-                    alglib.ap.trace(System.String.Format("=== A PREDICTOR-CORRECTOR STEP {0,2:d} WAS PERFORMED ====================================================\n", iteridx));
-                }
-                vipmevaluateprogress(state, dotrace, dodetailedtrace, mu, muaff, sigma, alphap, alphad, _params);
-                
-                //
-                // Check stopping criteria
-                //
-                if( ((double)(state.errp2)>=(double)(stagnationdelta*preverrp2) && (double)(state.errpinf)>=(double)(primalinfeasible1)) && iteridx>=minitersbeforestagnation )
-                {
-                    apserv.inc(ref primalstagnationcnt, _params);
-                }
-                else
-                {
-                    primalstagnationcnt = 0;
-                }
-                if( ((double)(state.errd2)>=(double)(stagnationdelta*preverrd2) && (double)(state.errdinf)>=(double)(dualinfeasible1)) && iteridx>=minitersbeforestagnation )
-                {
-                    apserv.inc(ref dualstagnationcnt, _params);
-                }
-                else
-                {
-                    dualstagnationcnt = 0;
-                }
-                mu = varscomputemu(state.current, _params);
-                egap = varscomputecomplementaritygap(state.current, _params)/(1.0+Math.Abs(vipmtarget(state, state.current.x, _params)));
-                eprimal = state.errpinf/(1.0+bnrminf);
-                edual = state.errdinf/(1.0+cnrminf);
-                if( (double)(mu)<=(double)(mustop) && iteridx>=itersfortoostringentcond )
-                {
-                    if( dotrace )
-                    {
-                        alglib.ap.trace("> stopping conditions are too stringent, stopping at best point found so far\n");
-                    }
-                    terminationtype = 7;
-                    break;
-                }
-                if( ((double)(egap)<=(double)(state.epsgap) && (double)(eprimal)<=(double)(state.epsp)) && (double)(edual)<=(double)(state.epsd) )
-                {
-                    if( dotrace )
-                    {
-                        alglib.ap.trace("> stopping criteria are met\n");
-                    }
-                    terminationtype = 1;
-                    break;
-                }
-                if( primalstagnationcnt>=primalstagnationlen )
-                {
-                    if( dotrace )
-                    {
-                        alglib.ap.trace(System.String.Format("> primal error stagnated for {0,0:d} its, stopping at best point found so far\n", primalstagnationlen));
-                    }
-                    terminationtype = 7;
-                    break;
-                }
-                if( dualstagnationcnt>=dualstagnationlen )
-                {
-                    if( dotrace )
-                    {
-                        alglib.ap.trace(System.String.Format("> dual error stagnated for {0,0:d} its, declaring unboundedness\n", dualstagnationlen));
-                    }
-                    terminationtype = -4;
-                    break;
-                }
-                if( (double)(nrminf(state.current.y, m, _params))>=(double)(bigy) )
-                {
-                    if( dotrace )
-                    {
-                        alglib.ap.trace(System.String.Format("> |Y| increased beyond {0,0:E1}, declaring infeasibility\n", bigy));
-                    }
-                    terminationtype = -3;
-                    break;
-                }
-            }
-            
-            //
-            // Output
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                xs[i] = state.current.x[i];
-                lagbc[i] = 0.0;
-                if( state.hasbndl[i] )
-                {
-                    lagbc[i] = lagbc[i]-state.current.z[i];
-                }
-                if( state.hasbndu[i] )
-                {
-                    lagbc[i] = lagbc[i]+state.current.s[i];
-                }
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                laglc[i] = -state.current.y[i];
-            }
-            
-            //
-            // Unscale point and Lagrange multipliers
-            //
-            lpqpserv.unscaleunshiftpointbc(state.scl, state.xorigin, state.rawbndl, state.rawbndu, state.bndl, state.bndu, state.hasbndl, state.hasbndu, xs, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                lagbc[i] = lagbc[i]*state.targetscale/state.scl[i];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                laglc[i] = laglc[i]*state.targetscale/apserv.coalesce(state.ascales[i], 1.0, _params);
-            }
-        }
-
-
-        /*************************************************************************
-        Allocates place for variables of Vanderbei IPM and fills by zeros.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void varsinitbyzero(vipmvars vstate,
-            int n,
-            int m,
-            alglib.xparams _params)
-        {
-            int i = 0;
-
-            alglib.ap.assert(n>=1, "VarsInitByZero: N<1");
-            alglib.ap.assert(m>=0, "VarsInitByZero: M<0");
-            vstate.n = n;
-            vstate.m = m;
-            apserv.rvectorsetlengthatleast(ref vstate.x, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.g, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.t, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.w, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.p, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.z, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.s, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.y, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.v, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.q, m, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                vstate.x[i] = 0;
-                vstate.g[i] = 0;
-                vstate.t[i] = 0;
-                vstate.z[i] = 0;
-                vstate.s[i] = 0;
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                vstate.w[i] = 0;
-                vstate.p[i] = 0;
-                vstate.y[i] = 0;
-                vstate.v[i] = 0;
-                vstate.q[i] = 0;
-            }
-        }
-
-
-        /*************************************************************************
-        Allocates place for variables of Vanderbei IPM and fills them by values of
-        the source
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void varsinitfrom(vipmvars vstate,
-            vipmvars vsrc,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int n = 0;
-            int m = 0;
-
-            n = vsrc.n;
-            m = vsrc.m;
-            alglib.ap.assert(n>=1, "VarsInitFrom: N<1");
-            alglib.ap.assert(m>=0, "VarsInitFrom: M<0");
-            vstate.n = n;
-            vstate.m = m;
-            apserv.rvectorsetlengthatleast(ref vstate.x, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.g, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.t, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.w, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.p, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.z, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.s, n, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.y, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.v, m, _params);
-            apserv.rvectorsetlengthatleast(ref vstate.q, m, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                vstate.x[i] = vsrc.x[i];
-                vstate.g[i] = vsrc.g[i];
-                vstate.t[i] = vsrc.t[i];
-                vstate.z[i] = vsrc.z[i];
-                vstate.s[i] = vsrc.s[i];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                vstate.w[i] = vsrc.w[i];
-                vstate.p[i] = vsrc.p[i];
-                vstate.y[i] = vsrc.y[i];
-                vstate.v[i] = vsrc.v[i];
-                vstate.q[i] = vsrc.q[i];
-            }
-        }
-
-
-        /*************************************************************************
-        Adds to Vanderbei variables direction vector times step length. Different
-        lengths are used for primal and dual steps.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void varsaddstep(vipmvars vstate,
-            vipmvars vdir,
-            double stpp,
-            double stpd,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int n = 0;
-            int m = 0;
-
-            n = vstate.n;
-            m = vstate.m;
-            alglib.ap.assert(n>=1, "VarsAddStep: N<1");
-            alglib.ap.assert(m>=0, "VarsAddStep: M<0");
-            alglib.ap.assert(n==vdir.n, "VarsAddStep: sizes mismatch");
-            alglib.ap.assert(m==vdir.m, "VarsAddStep: sizes mismatch");
-            for(i=0; i<=n-1; i++)
-            {
-                vstate.x[i] = vstate.x[i]+stpp*vdir.x[i];
-                vstate.g[i] = vstate.g[i]+stpp*vdir.g[i];
-                vstate.t[i] = vstate.t[i]+stpp*vdir.t[i];
-                vstate.z[i] = vstate.z[i]+stpd*vdir.z[i];
-                vstate.s[i] = vstate.s[i]+stpd*vdir.s[i];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                vstate.w[i] = vstate.w[i]+stpp*vdir.w[i];
-                vstate.p[i] = vstate.p[i]+stpp*vdir.p[i];
-                vstate.y[i] = vstate.y[i]+stpd*vdir.y[i];
-                vstate.v[i] = vstate.v[i]+stpd*vdir.v[i];
-                vstate.q[i] = vstate.q[i]+stpd*vdir.q[i];
-            }
-        }
-
-
-        /*************************************************************************
-        Computes complementarity gap
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static double varscomputecomplementaritygap(vipmvars vstate,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            int i = 0;
-            int n = 0;
-            int m = 0;
-
-            n = vstate.n;
-            m = vstate.m;
-            result = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                result = result+vstate.z[i]*vstate.g[i]+vstate.s[i]*vstate.t[i];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                result = result+vstate.v[i]*vstate.w[i]+vstate.p[i]*vstate.q[i];
-            }
-            return result;
-        }
-
-
-        /*************************************************************************
-        Computes empirical value of the barrier parameter Mu
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static double varscomputemu(vipmvars vstate,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            int i = 0;
-            int k = 0;
-
-            k = 0;
-            for(i=0; i<=vstate.n-1; i++)
-            {
-                if( !(vstate.z[i]*vstate.g[i]==0.0) )
-                {
-                    k = k+1;
-                }
-                if( !(vstate.s[i]*vstate.t[i]==0.0) )
-                {
-                    k = k+1;
-                }
-            }
-            for(i=0; i<=vstate.m-1; i++)
-            {
-                if( !(vstate.v[i]*vstate.w[i]==0.0) )
-                {
-                    k = k+1;
-                }
-                if( !(vstate.p[i]*vstate.q[i]==0.0) )
-                {
-                    k = k+1;
-                }
-            }
-            result = varscomputecomplementaritygap(vstate, _params)/apserv.coalesce(k, 1, _params);
-            return result;
-        }
-
-
-        /*************************************************************************
-        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
-        and constraints.
-
-        The solver is configured to work internally with factorization FType
-
-        INPUT PARAMETERS:
-            State       -   solver  state  to  be configured; previously allocated
-                            memory is reused as much as possible
-            S           -   scale vector, array[N]:
-                            * I-th element contains scale of I-th variable,
-                            * S[I]>0
-            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
-                            problem of the form
-                            
-                            >
-                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
-                            >
-                            
-                            The terms A and b (as well as constraints) will be
-                            specified later with separate calls.
-            FType       -   factorization type:
-                            * 0 for dense NxN factorization (normal equations)
-                            * 1 for sparse (N+M)x(N+M) factorization
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipminit(vipmstate state,
-            double[] s,
-            double[] xorigin,
-            int n,
-            int nmain,
-            int ftype,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            int nslack = 0;
-
-            alglib.ap.assert(n>=1, "VIPMInit: N<1");
-            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInit: S contains infinite or NaN elements");
-            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInit: XOrigin contains infinite or NaN elements");
-            alglib.ap.assert(ftype==0 || ftype==1, "VIPMInit: unexpected FType");
-            alglib.ap.assert(nmain>=1, "VIPMInit: NMain<1");
-            alglib.ap.assert(nmain<=n, "VIPMInit: NMain>N");
-            nslack = n-nmain;
-            
-            //
-            // Problem metrics and type
-            //
-            state.regeps = Math.Sqrt(math.machineepsilon);
-            state.epsp = Math.Sqrt(math.machineepsilon);
-            state.epsd = Math.Sqrt(math.machineepsilon);
-            state.epsgap = Math.Sqrt(math.machineepsilon);
-            state.n = n;
-            state.nmain = nmain;
-            state.islinear = true;
-            state.factorizationtype = ftype;
-            state.factorizationpresent = false;
-            state.factorizationpoweredup = false;
-            
-            //
-            // Reports
-            //
-            state.repiterationscount = 0;
-            state.repncholesky = 0;
-            
-            //
-            // Scale and origin
-            //
-            apserv.rvectorsetlengthatleast(ref state.scl, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.invscl, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.xorigin, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                alglib.ap.assert(s[i]>0.0, "VIPMInit: S[i] is non-positive");
-                state.scl[i] = s[i];
-                state.invscl[i] = 1/s[i];
-                state.xorigin[i] = xorigin[i];
-            }
-            state.targetscale = 1.0;
-            
-            //
-            // Linear and quadratic terms - default value
-            //
-            apserv.rvectorsetlengthatleast(ref state.c, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                state.c[i] = 0;
-            }
-            state.hkind = -1;
-            if( ftype==0 )
-            {
-                
-                //
-                // Dense quadratic term
-                //
-                apserv.rmatrixsetlengthatleast(ref state.denseh, nmain, nmain, _params);
-                for(i=0; i<=nmain-1; i++)
-                {
-                    for(j=0; j<=i; j++)
-                    {
-                        state.denseh[i,j] = 0;
-                    }
-                }
-                state.hkind = 0;
-            }
-            if( ftype==1 )
-            {
-                
-                //
-                // Sparse quadratic term
-                //
-                state.sparseh.matrixtype = 1;
-                state.sparseh.m = n;
-                state.sparseh.n = n;
-                state.sparseh.ninitialized = n;
-                apserv.ivectorsetlengthatleast(ref state.sparseh.idx, n, _params);
-                apserv.rvectorsetlengthatleast(ref state.sparseh.vals, n, _params);
-                apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
-                for(i=0; i<=n-1; i++)
-                {
-                    state.sparseh.idx[i] = i;
-                    state.sparseh.vals[i] = 0.0;
-                    state.sparseh.ridx[i] = i;
-                }
-                state.sparseh.ridx[n] = n;
-                sparse.sparsecreatecrsinplace(state.sparseh, _params);
-                state.hkind = 1;
-            }
-            alglib.ap.assert(state.hkind>=0, "VIPMInit: integrity check failed");
-            
-            //
-            // Box constraints - default values
-            //
-            apserv.rvectorsetlengthatleast(ref state.bndl, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.bndu, n, _params);
-            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
-            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                state.hasbndl[i] = false;
-                state.hasbndu[i] = false;
-                state.bndl[i] = Double.NegativeInfinity;
-                state.bndu[i] = Double.PositiveInfinity;
-            }
-            
-            //
-            // Linear constraints - empty
-            //
-            state.mdense = 0;
-            state.msparse = 0;
-            state.combinedaslack.m = 0;
-            state.combinedaslack.n = nslack;
-            state.sparseamain.m = 0;
-            state.sparseamain.n = nmain;
-            sparse.sparsecreatecrsinplace(state.sparseamain, _params);
-            sparse.sparsecreatecrsinplace(state.combinedaslack, _params);
-        }
-
-
-        /*************************************************************************
-        Returns INF-norm
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static double nrminf(double[] x,
-            int n,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            int i = 0;
-
-            result = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                result = Math.Max(result, Math.Abs(x[i]));
-            }
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function computes initial point and loads it to State.Current
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipminitialpoint(vipmstate state,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int m = 0;
-            int i = 0;
-            double v = 0;
-            double priorcoeff = 0;
-
-            n = state.n;
-            m = state.mdense+state.msparse;
-            varsinitbyzero(state.current, n, m, _params);
-            
-            //
-            // Set up initial values of primal and dual variables X and Y by solving
-            // modified KKT system which tries to enforce linear constraints (ignoring
-            // box constraints for a while) subject to minimization of additional prior
-            // term which moves solution towards some interior point.
-            //
-            priorcoeff = 1.0;
-            vipmfactorize(state, 0.0, state.diagd, 0.0, state.diage, priorcoeff, priorcoeff, _params);
-            state.deltaxy = new double[n+m];
-            for(i=0; i<=n-1; i++)
-            {
-                
-                //
-                // Compute I-th component of the prior term. The prior shifts solution
-                // towards interior point
-                //
-                v = 0;
-                if( state.hasbndl[i] && state.hasbndu[i] )
-                {
-                    v = 0.5*(state.bndl[i]+state.bndu[i]);
-                }
-                if( state.hasbndl[i] && !state.hasbndu[i] )
-                {
-                    v = state.bndl[i];
-                }
-                if( state.hasbndu[i] && !state.hasbndl[i] )
-                {
-                    v = state.bndu[i];
-                }
-                
-                //
-                // Right hand side
-                //
-                state.deltaxy[i] = state.c[i]-priorcoeff*v;
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                
-                //
-                // Linear constraints are either at B[i] or B[I]+0.5*R[i]
-                //
-                v = 0;
-                if( state.hasr[i] )
-                {
-                    v = 0.5*state.r[i];
-                }
-                state.deltaxy[n+i] = state.b[i]+v;
-            }
-            vipmsolve(state, state.deltaxy, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                state.current.x[i] = state.deltaxy[i];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                state.current.y[i] = state.deltaxy[n+i];
-            }
-            
-            //
-            // Set up default values of slacks.
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] )
-                {
-                    state.current.g[i] = initslackval;
-                }
-                if( state.hasbndu[i] )
-                {
-                    state.current.t[i] = initslackval;
-                }
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                state.current.w[i] = initslackval;
-                if( state.hasr[i] )
-                {
-                    state.current.p[i] = initslackval;
-                }
-            }
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] )
-                {
-                    state.current.z[i] = initslackval;
-                }
-                if( state.hasbndu[i] )
-                {
-                    state.current.s[i] = initslackval;
-                }
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                state.current.v[i] = initslackval;
-                if( state.hasr[i] )
-                {
-                    state.current.q[i] = initslackval;
-                }
-            }
-            
-            //
-            // Then, having (a) initial values of X[] and Y[i], and (b) default values of nonnegatively
-            // constrained slacks try to deduce better initial guess for slacks.
-            //
-            vipmmultiply(state, state.current.x, state.current.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                
-                //
-                // Better initial guess for box constraint primal slacks
-                //
-                if( state.hasbndl[i] )
-                {
-                    state.current.g[i] = Math.Max(state.current.g[i], Math.Abs(state.current.x[i]-state.bndl[i]));
-                    state.current.z[i] = Math.Max(state.current.z[i], Math.Abs(state.current.x[i]));
-                }
-                if( state.hasbndu[i] )
-                {
-                    state.current.t[i] = Math.Max(state.current.t[i], Math.Abs(state.bndu[i]-state.current.x[i]));
-                    state.current.s[i] = Math.Max(state.current.s[i], Math.Abs(state.current.x[i]));
-                }
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                
-                //
-                // Better initial guess for linear constraint primal slacks
-                //
-                state.current.w[i] = Math.Max(state.current.w[i], Math.Abs(state.current.y[i]));
-                state.current.v[i] = Math.Max(state.current.v[i], Math.Abs(state.current.y[i]));
-                if( state.hasr[i] )
-                {
-                    state.current.p[i] = Math.Max(state.current.p[i], Math.Abs(state.r[i]-state.current.w[i]));
-                    state.current.q[i] = Math.Max(state.current.q[i], Math.Abs(state.r[i]-state.current.w[i]));
-                }
-            }
-        }
-
-
-        /*************************************************************************
-        Computes target function 0.5*x'*H*x+c'*x
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static double vipmtarget(vipmstate state,
-            double[] x,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            int n = 0;
-            int nmain = 0;
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            int j0 = 0;
-            int j1 = 0;
-            double v = 0;
-
-            n = state.n;
-            nmain = state.nmain;
-            alglib.ap.assert(state.hkind==0 || state.hkind==1, "VIPMTarget: unexpected HKind");
-            result = 0;
-            
-            //
-            // Dense
-            //
-            if( state.hkind==0 )
-            {
-                for(i=0; i<=nmain-1; i++)
-                {
-                    for(j=0; j<=i-1; j++)
-                    {
-                        result = result+x[i]*state.denseh[i,j]*x[j];
-                    }
-                    result = result+0.5*x[i]*x[i]*state.denseh[i,i];
-                }
-                for(i=0; i<=n-1; i++)
-                {
-                    result = result+state.c[i]*x[i];
-                }
-                return result;
-            }
-            
-            //
-            // Sparse
-            //
-            if( state.hkind==1 )
-            {
-                result = 0;
-                for(i=0; i<=n-1; i++)
-                {
-                    result = result+state.c[i]*x[i];
-                    j0 = state.sparseh.ridx[i];
-                    j1 = state.sparseh.didx[i]-1;
-                    for(k=j0; k<=j1; k++)
-                    {
-                        v = state.sparseh.vals[k];
-                        j = state.sparseh.idx[k];
-                        result = result+v*x[i]*x[j];
-                    }
-                    alglib.ap.assert(state.sparseh.uidx[i]!=state.sparseh.didx[i], "VIPMTarget: sparse diagonal not found");
-                    v = state.sparseh.vals[state.sparseh.didx[i]];
-                    result = result+0.5*v*x[i]*x[i];
-                }
-                return result;
-            }
-            return result;
-        }
-
-
-        /*************************************************************************
-        Computes products H*x, A*x, A^T*y
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmmultiply(vipmstate state,
-            double[] x,
-            double[] y,
-            ref double[] hx,
-            ref double[] ax,
-            ref double[] aty,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int nmain = 0;
-            int m = 0;
-            int mdense = 0;
-            int msparse = 0;
-            int i = 0;
-
-            n = state.n;
-            nmain = state.nmain;
-            m = state.mdense+state.msparse;
-            mdense = state.mdense;
-            msparse = state.msparse;
-            
-            //
-            // Allocate
-            //
-            apserv.rvectorsetlengthatleast(ref hx, n, _params);
-            apserv.rvectorsetlengthatleast(ref ax, m, _params);
-            apserv.rvectorsetlengthatleast(ref aty, n, _params);
-            
-            //
-            // Compute A*x
-            //
-            if( msparse>0 )
-            {
-                sparse.sparsegemv(state.sparseafull, 1.0, 0, x, 0, 0.0, ax, 0, _params);
-            }
-            if( mdense>0 )
-            {
-                ablas.rmatrixgemv(mdense, n, 1.0, state.denseafull, 0, 0, 0, x, 0, 0.0, ax, msparse, _params);
-            }
-            
-            //
-            // Compute A^T*y
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                aty[i] = 0;
-            }
-            if( msparse>0 )
-            {
-                sparse.sparsegemv(state.sparseafull, 1.0, 1, y, 0, 1.0, aty, 0, _params);
-            }
-            if( mdense>0 )
-            {
-                ablas.rmatrixgemv(n, mdense, 1.0, state.denseafull, 0, 0, 1, y, msparse, 1.0, aty, 0, _params);
-            }
-            
-            //
-            // Compute H*x
-            //
-            alglib.ap.assert(state.hkind==0 || state.hkind==1, "VIPMMultiply: unexpected HKind");
-            if( state.hkind==0 )
-            {
-                ablas.rmatrixsymv(nmain, 1.0, state.denseh, 0, 0, false, x, 0, 0.0, hx, 0, _params);
-                for(i=nmain; i<=n-1; i++)
-                {
-                    hx[i] = 0;
-                }
-            }
-            if( state.hkind==1 )
-            {
-                alglib.ap.assert(state.sparseh.n==n && state.sparseh.m==n, "VIPMMultiply: sparse H has incorrect size");
-                sparse.sparsesmv(state.sparseh, false, x, ref hx, _params);
-            }
-        }
-
-
-        /*************************************************************************
-        This function "powers up" factorization, i.e. prepares some important
-        temporaries. It should be called once prior to the first call to
-        VIPMInitialPoint() or VIPMFactorize().
-
-        Subsequent calls are possible (no actions will be taken), but not needed.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmpowerup(vipmstate state,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int m = 0;
-            int nnzhalfmax = 0;
-            int nnzfull = 0;
-            int offs = 0;
-            int rowoffs = 0;
-            int i = 0;
-            int k = 0;
-            int k0 = 0;
-            int k1 = 0;
-            double v = 0;
-
-            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMFactorize: unexpected factorization type");
-            n = state.n;
-            m = state.mdense+state.msparse;
-            
-            //
-            // Skip if already powered up
-            //
-            if( state.factorizationpoweredup )
-            {
-                return;
-            }
-            
-            //
-            // Only sparse factorization needs powering up
-            //
-            if( state.factorizationtype==1 )
-            {
-                alglib.ap.assert(state.hkind==1, "VIPMPowerUp: unexpected HKind");
-                nnzhalfmax = state.sparseh.ridx[n];
-                if( state.msparse>0 )
-                {
-                    nnzhalfmax = nnzhalfmax+state.sparseafull.ridx[state.msparse];
-                }
-                if( state.mdense>0 )
-                {
-                    nnzhalfmax = nnzhalfmax+n*state.mdense;
-                }
-                
-                //
-                // Prepare strictly lower triangle of template KKT matrix (KKT system without D and E
-                // terms being added to diagonals)
-                //
-                state.tmpsparse0.m = n+m;
-                state.tmpsparse0.n = n+m;
-                apserv.ivectorsetlengthatleast(ref state.tmpsparse0.idx, nnzhalfmax, _params);
-                apserv.rvectorsetlengthatleast(ref state.tmpsparse0.vals, nnzhalfmax, _params);
-                apserv.ivectorsetlengthatleast(ref state.tmpsparse0.ridx, n+m+1, _params);
-                state.tmpsparse0.ridx[0] = 0;
-                offs = 0;
-                rowoffs = 0;
-                for(i=0; i<=n-1; i++)
-                {
-                    k0 = state.sparseh.ridx[i];
-                    k1 = state.sparseh.didx[i]-1;
-                    for(k=k0; k<=k1; k++)
-                    {
-                        state.tmpsparse0.idx[offs] = state.sparseh.idx[k];
-                        state.tmpsparse0.vals[offs] = -state.sparseh.vals[k];
-                        offs = offs+1;
-                    }
-                    rowoffs = rowoffs+1;
-                    state.tmpsparse0.ridx[rowoffs] = offs;
-                }
-                for(i=0; i<=state.msparse-1; i++)
-                {
-                    k0 = state.sparseafull.ridx[i];
-                    k1 = state.sparseafull.ridx[i+1]-1;
-                    for(k=k0; k<=k1; k++)
-                    {
-                        state.tmpsparse0.idx[offs] = state.sparseafull.idx[k];
-                        state.tmpsparse0.vals[offs] = state.sparseafull.vals[k];
-                        offs = offs+1;
-                    }
-                    rowoffs = rowoffs+1;
-                    state.tmpsparse0.ridx[rowoffs] = offs;
-                }
-                for(i=0; i<=state.mdense-1; i++)
-                {
-                    for(k=0; k<=n-1; k++)
-                    {
-                        if( state.denseafull[i,k]!=0.0 )
-                        {
-                            state.tmpsparse0.idx[offs] = k;
-                            state.tmpsparse0.vals[offs] = state.denseafull[i,k];
-                            offs = offs+1;
-                        }
-                    }
-                    rowoffs = rowoffs+1;
-                    state.tmpsparse0.ridx[rowoffs] = offs;
-                }
-                alglib.ap.assert(rowoffs==m+n, "VIPMPowerUp: critical integrity check failed");
-                alglib.ap.assert(offs<=nnzhalfmax, "VIPMPowerUp: critical integrity check failed");
-                sparse.sparsecreatecrsinplace(state.tmpsparse0, _params);
-                
-                //
-                // Prepare strictly upper triangle of KKT system
-                //
-                sparse.sparsecopytransposecrsbuf(state.tmpsparse0, state.tmpsparse1, _params);
-                
-                //
-                // Merge triangles
-                //
-                nnzfull = 2*state.tmpsparse0.ridx[m+n]+(m+n);
-                state.factsparsekkttmpl.m = m+n;
-                state.factsparsekkttmpl.n = m+n;
-                apserv.ivectorsetlengthatleast(ref state.factsparsekkttmpl.idx, nnzfull, _params);
-                apserv.rvectorsetlengthatleast(ref state.factsparsekkttmpl.vals, nnzfull, _params);
-                apserv.ivectorsetlengthatleast(ref state.factsparsekkttmpl.ridx, n+m+1, _params);
-                state.factsparsekkttmpl.ridx[0] = 0;
-                offs = 0;
-                for(i=0; i<=n+m-1; i++)
-                {
-                    
-                    //
-                    // Merge in lower triangle
-                    //
-                    k0 = state.tmpsparse0.ridx[i];
-                    k1 = state.tmpsparse0.ridx[i+1]-1;
-                    for(k=k0; k<=k1; k++)
-                    {
-                        state.factsparsekkttmpl.idx[offs] = state.tmpsparse0.idx[k];
-                        state.factsparsekkttmpl.vals[offs] = state.tmpsparse0.vals[k];
-                        offs = offs+1;
-                    }
-                    
-                    //
-                    // Merge in diagonal term
-                    //
-                    v = 0.0;
-                    if( i<n )
-                    {
-                        alglib.ap.assert(state.sparseh.didx[i]+1==state.sparseh.uidx[i], "VIPMPowerUp: critical integrity check failed for diagonal of H");
-                        v = -state.sparseh.vals[state.sparseh.didx[i]];
-                    }
-                    state.factsparsekkttmpl.idx[offs] = i;
-                    state.factsparsekkttmpl.vals[offs] = v;
-                    offs = offs+1;
-                    
-                    //
-                    // Merge in upper triangle
-                    //
-                    k0 = state.tmpsparse1.ridx[i];
-                    k1 = state.tmpsparse1.ridx[i+1]-1;
-                    for(k=k0; k<=k1; k++)
-                    {
-                        state.factsparsekkttmpl.idx[offs] = state.tmpsparse1.idx[k];
-                        state.factsparsekkttmpl.vals[offs] = state.tmpsparse1.vals[k];
-                        offs = offs+1;
-                    }
-                    
-                    //
-                    // Finalize row
-                    //
-                    state.factsparsekkttmpl.ridx[i+1] = offs;
-                }
-                alglib.ap.assert(offs==nnzfull, "VIPMPowerUp: critical integrity check failed");
-                sparse.sparsecreatecrsinplace(state.factsparsekkttmpl, _params);
-            }
-            
-            //
-            // Powered up!
-            //
-            state.factorizationpoweredup = true;
-        }
-
-
-        /*************************************************************************
-        This function performs factorization of modified KKT system
-
-            (                        |                 )
-            ( -(H+alpha0*D+alpha1*I) |       A^T       )
-            (                        |                 )
-            (------------------------|-----------------)
-            (                        |                 )
-            (           A            | beta0*E+beta1*I )
-            (                        |                 )
-
-        where:
-        * H is an NxN quadratic term
-        * A is an MxN matrix of linear constraint
-        * alpha0, alpha1, beta0, beta1 are nonnegative scalars
-        * D and E are diagonal matrices with nonnegative entries (which are ignored
-          if alpha0 and beta0 are zero - arrays are not referenced at all)
-        * I is an NxN or MxM identity matrix
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmfactorize(vipmstate state,
-            double alpha0,
-            double[] d,
-            double beta0,
-            double[] e,
-            double alpha1,
-            double beta1,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int nmain = 0;
-            int nslack = 0;
-            int m = 0;
-            int mdense = 0;
-            int msparse = 0;
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            int k0 = 0;
-            int k1 = 0;
-            int ka = 0;
-            int kb = 0;
-            int ja = 0;
-            int jb = 0;
-            double va = 0;
-            double vb = 0;
-            double v = 0;
-            double vv = 0;
-
-            alglib.ap.assert(math.isfinite(alpha0) && (double)(alpha0)>=(double)(0), "VIPMFactorize: Alpha0 is infinite or negative");
-            alglib.ap.assert(math.isfinite(alpha1) && (double)(alpha1)>=(double)(0), "VIPMFactorize: Alpha1 is infinite or negative");
-            alglib.ap.assert(math.isfinite(beta0) && (double)(beta0)>=(double)(0), "VIPMFactorize: Beta0 is infinite or negative");
-            alglib.ap.assert(math.isfinite(beta1) && (double)(beta1)>=(double)(0), "VIPMFactorize: Beta1 is infinite or negative");
-            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMFactorize: unexpected factorization type");
-            alglib.ap.assert(state.factorizationpoweredup, "VIPMFactorize: critical integrity check failed (no powerup stage)");
-            n = state.n;
-            nmain = state.nmain;
-            nslack = n-nmain;
-            m = state.mdense+state.msparse;
-            mdense = state.mdense;
-            msparse = state.msparse;
-            state.factorizationpresent = false;
-            
-            //
-            // Dense NxN normal equations approach
-            //
-            if( state.factorizationtype==0 )
-            {
-                
-                //
-                // A problem formulation with possible slacks.
-                //
-                // We have to solve following system:
-                //
-                //     [ -(H+Dh)        Ah'  ] [ Xh ]   [ Bh ]
-                //     [          -Dz   Az'  ] [ Xz ] = [ Bz ]
-                //     [   Ah     Az     E   ] [ Y  ]   [ By ]
-                //
-                // with Xh being NMain-dimensional vector, Xz being NSlack-dimensional vector, constraint
-                // matrix A being divided into non-slack and slack parts Ah and Az (and Ah, in turn, being
-                // divided into sparse and dense parts), Y being M-dimensional vector.
-                //
-                // NOTE: due to definition of slack variables following holds: for any diagonal matrix W
-                //       a product Az*W*Az' is a diagonal matrix.
-                //
-                // From the second line we get
-                //
-                //     Xz = inv(Dz)*Az'*y - inv(Dz)*Bz
-                //        = inv(Dz)*Az'*y - BzWave
-                //
-                // Using this value for Zx, third line gives us 
-                //
-                //     Y  = inv(E+Az*inv(Dz)*Az')*(By+Az*BzWave-Ah*Xh)
-                //        = inv(EWave)*(ByWave-Ah*Xh)
-                //        with EWave = E+Az*inv(Dz)*Az' and ByWave = By+Az*BzWave
-                //
-                // Finally, first line gives us 
-                //
-                //     Xh = -inv(H+Dh+Ah'*inv(EWave)*Ah)*(Bh-Ah'*inv(EWave)*ByWave)
-                //        = -inv(HWave)*BhWave
-                //        with HWave = H+Dh+Ah'*inv(EWave)*Ah and BhWave = Bh-Ah'*inv(EWave)*ByWave
-                //
-                // In order to prepare factorization we need to compute:
-                // (a) diagonal matrices Dh and Dz (and precomputed inverse of Dz)
-                // (b) EWave
-                // (c) HWave
-                //
-                // First, we compute dense Dh and Dz
-                //
-                apserv.rvectorsetlengthatleast(ref state.factdh, nmain, _params);
-                apserv.rvectorsetlengthatleast(ref state.factdz, nslack, _params);
-                apserv.rvectorsetlengthatleast(ref state.factinvdz, nslack, _params);
-                for(i=0; i<=n-1; i++)
-                {
-                    v = 0;
-                    if( (double)(alpha0)>(double)(0) )
-                    {
-                        v = v+alpha0*d[i];
-                    }
-                    if( (double)(alpha1)>(double)(0) )
-                    {
-                        v = v+alpha1;
-                    }
-                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
-                    if( i>=nmain )
-                    {
-                        state.factdz[i-nmain] = v;
-                        state.factinvdz[i-nmain] = 1/v;
-                    }
-                    else
-                    {
-                        state.factdh[i] = v;
-                    }
-                }
-                
-                //
-                // Now we are ready to compute EWave
-                //
-                apserv.rvectorsetlengthatleast(ref state.facteffectivee, m, _params);
-                for(i=0; i<=m-1; i++)
-                {
-                    
-                    //
-                    // Compute diagonal element of E
-                    //
-                    v = 0;
-                    if( (double)(beta0)>(double)(0) )
-                    {
-                        v = v+beta0*e[i];
-                    }
-                    if( (double)(beta1)>(double)(0) )
-                    {
-                        v = v+beta1;
-                    }
-                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
-                    
-                    //
-                    // Compute diagonal modification Az*inv(Dz)*Az'
-                    //
-                    k0 = state.combinedaslack.ridx[i];
-                    k1 = state.combinedaslack.ridx[i+1]-1;
-                    for(k=k0; k<=k1; k++)
-                    {
-                        vv = state.combinedaslack.vals[k];
-                        v = v+vv*vv*state.factinvdz[state.combinedaslack.idx[k]];
-                    }
-                    
-                    //
-                    // Save EWave
-                    //
-                    state.facteffectivee[i] = v;
-                }
-                
-                //
-                // Now we are ready to compute HWave:
-                // * store H
-                // * add Dh
-                // * add Ah'*inv(EWave)*Ah
-                //
-                apserv.rmatrixsetlengthatleast(ref state.factdensehaug, nmain, nmain, _params);
-                alglib.ap.assert(state.hkind==0, "VIPMFactorize: unexpected HKind");
-                ablas.rmatrixcopy(nmain, nmain, state.denseh, 0, 0, state.factdensehaug, 0, 0, _params);
-                for(i=0; i<=nmain-1; i++)
-                {
-                    state.factdensehaug[i,i] = state.factdensehaug[i,i]+state.factdh[i];
-                }
-                if( msparse>0 )
-                {
-                    
-                    //
-                    // Handle sparse part of Ah in Ah'*inv(EWave)*Ah
-                    //
-                    for(i=0; i<=msparse-1; i++)
-                    {
-                        v = 1.0/state.facteffectivee[i];
-                        k0 = state.sparseamain.ridx[i];
-                        k1 = state.sparseamain.ridx[i+1]-1;
-                        for(ka=k0; ka<=k1; ka++)
-                        {
-                            ja = state.sparseamain.idx[ka];
-                            va = state.sparseamain.vals[ka];
-                            for(kb=k0; kb<=ka; kb++)
-                            {
-                                jb = state.sparseamain.idx[kb];
-                                vb = state.sparseamain.vals[kb];
-                                state.factdensehaug[ja,jb] = state.factdensehaug[ja,jb]+v*va*vb;
-                            }
-                        }
-                    }
-                }
-                if( mdense>0 )
-                {
-                    
-                    //
-                    // Handle dense part of Ah in Ah'*inv(EWave)*Ah
-                    //
-                    apserv.rmatrixsetlengthatleast(ref state.tmpr2, mdense, nmain, _params);
-                    ablas.rmatrixcopy(mdense, nmain, state.denseamain, 0, 0, state.tmpr2, 0, 0, _params);
-                    for(i=0; i<=mdense-1; i++)
-                    {
-                        v = 1.0/Math.Sqrt(state.facteffectivee[msparse+i]);
-                        for(j=0; j<=nmain-1; j++)
-                        {
-                            state.tmpr2[i,j] = v*state.tmpr2[i,j];
-                        }
-                    }
-                    ablas.rmatrixsyrk(nmain, mdense, 1.0, state.tmpr2, 0, 0, 2, 1.0, state.factdensehaug, 0, 0, false, _params);
-                }
-                
-                //
-                // Compute Cholesky factorization of HWave
-                //
-                if( !trfac.spdmatrixcholesky(ref state.factdensehaug, nmain, false, _params) )
-                {
-                    alglib.ap.assert(false, "VIPMFactorize: critical failure, nonconvex input detected");
-                }
-                state.factorizationpresent = true;
-            }
-            
-            //
-            // Sparse (M+N)x(M+N) factorization
-            //
-            if( state.factorizationtype==1 )
-            {
-                sparse.sparsecopybuf(state.factsparsekkttmpl, state.factsparsekkt, _params);
-                for(i=0; i<=n-1; i++)
-                {
-                    alglib.ap.assert(state.factsparsekkt.didx[i]+1==state.factsparsekkt.uidx[i], "VIPMFactorize: integrity check failed, no diagonal element");
-                    v = state.factsparsekkt.vals[state.factsparsekkt.didx[i]];
-                    if( (double)(alpha0)>(double)(0) )
-                    {
-                        v = v-alpha0*d[i];
-                    }
-                    if( (double)(alpha1)>(double)(0) )
-                    {
-                        v = v-alpha1;
-                    }
-                    state.factsparsekkt.vals[state.factsparsekkt.didx[i]] = v;
-                }
-                for(i=0; i<=msparse+mdense-1; i++)
-                {
-                    alglib.ap.assert(state.factsparsekkt.didx[n+i]+1==state.factsparsekkt.uidx[n+i], "VIPMFactorize: integrity check failed, no diagonal element");
-                    v = state.factsparsekkt.vals[state.factsparsekkt.didx[n+i]];
-                    if( (double)(beta0)>(double)(0) )
-                    {
-                        v = v+beta0*e[i];
-                    }
-                    if( (double)(beta1)>(double)(0) )
-                    {
-                        v = v+beta1;
-                    }
-                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
-                    state.factsparsekkt.vals[state.factsparsekkt.didx[n+i]] = v;
-                }
-                if( !trfac.sparselu(state.factsparsekkt, 0, ref state.factsparsekktpivp, ref state.factsparsekktpivq, _params) )
-                {
-                    alglib.ap.assert(false, "VIPMFactorize: critical failure, degenerate KKT system encountered");
-                }
-                state.factorizationpresent = true;
-            }
-            
-            //
-            // Done, integrity control
-            //
-            alglib.ap.assert(state.factorizationpresent, "VIPMFactorize: integrity check failed");
-            apserv.inc(ref state.repncholesky, _params);
-        }
-
-
-        /*************************************************************************
-        Solves KKT system whose factorization was prepared by VIPMFactorize().
-
-        On input, right-hand-side is stored in DeltaXY; on output, solution replaces
-        DeltaXY.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmsolve(vipmstate state,
-            double[] deltaxy,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int nmain = 0;
-            int nslack = 0;
-            int m = 0;
-            int mdense = 0;
-            int msparse = 0;
-            int i = 0;
-            int j = 0;
-            double v = 0;
-
-            alglib.ap.assert(state.factorizationpresent, "VIPMSolve: integrity check failed - factorization is not present");
-            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMSolve: unexpected factorization type");
-            n = state.n;
-            nmain = state.nmain;
-            nslack = n-nmain;
-            m = state.mdense+state.msparse;
-            mdense = state.mdense;
-            msparse = state.msparse;
-            
-            //
-            // Dense solving
-            //
-            if( state.factorizationtype==0 )
-            {
-                
-                //
-                // Compute
-                //
-                //     BzWave = inv(Dz)*Bz
-                //     ByWave = By+Az*BzWave
-                //     BhWave = Bh-Ah'*inv(EWave)*ByWave
-                //
-                for(i=0; i<=nslack-1; i++)
-                {
-                    deltaxy[nmain+i] = deltaxy[nmain+i]*state.factinvdz[i];
-                }
-                sparse.sparsegemv(state.combinedaslack, 1.0, 0, deltaxy, nmain, 1.0, deltaxy, n, _params);
-                apserv.rvectorsetlengthatleast(ref state.tmp1, m, _params);
-                for(i=0; i<=m-1; i++)
-                {
-                    state.tmp1[i] = deltaxy[n+i]/state.facteffectivee[i];
-                }
-                sparse.sparsegemv(state.sparseamain, -1.0, 1, state.tmp1, 0, 1.0, deltaxy, 0, _params);
-                ablas.rmatrixgemv(nmain, mdense, -1.0, state.denseamain, 0, 0, 1, state.tmp1, msparse, 1.0, deltaxy, 0, _params);
-                
-                //
-                // Compute Xh = -inv(HWave)*BhWave
-                //
-                for(i=0; i<=nmain-1; i++)
-                {
-                    state.deltaxy[i] = -state.deltaxy[i];
-                }
-                ablas.rmatrixtrsv(nmain, state.factdensehaug, 0, 0, false, false, 0, state.deltaxy, 0, _params);
-                ablas.rmatrixtrsv(nmain, state.factdensehaug, 0, 0, false, false, 1, state.deltaxy, 0, _params);
-                
-                //
-                // Compute Y = inv(EWave)*(ByWave-Ah*Xh)
-                //
-                sparse.sparsegemv(state.sparseamain, -1.0, 0, deltaxy, 0, 1.0, deltaxy, n, _params);
-                ablas.rmatrixgemv(mdense, nmain, -1.0, state.denseamain, 0, 0, 0, deltaxy, 0, 1.0, deltaxy, n+msparse, _params);
-                for(i=0; i<=m-1; i++)
-                {
-                    deltaxy[n+i] = deltaxy[n+i]/state.facteffectivee[i];
-                }
-                
-                //
-                // Compute Xz = -(BzWave - inv(Dz)*Az'*y)
-                //
-                apserv.rvectorsetlengthatleast(ref state.tmp0, nslack, _params);
-                for(i=0; i<=nslack-1; i++)
-                {
-                    state.tmp0[i] = 0;
-                }
-                sparse.sparsegemv(state.combinedaslack, 1.0, 1, deltaxy, n, 1.0, state.tmp0, 0, _params);
-                for(i=0; i<=nslack-1; i++)
-                {
-                    state.deltaxy[nmain+i] = -(state.deltaxy[nmain+i]-state.factinvdz[i]*state.tmp0[i]);
-                }
-                
-                //
-                // Done
-                //
-                return;
-            }
-            
-            //
-            // Sparse solving
-            //
-            if( state.factorizationtype==1 )
-            {
-                
-                //
-                // Solve sparse KKT system given by its triangular factorization
-                //
-                for(i=0; i<=n-1; i++)
-                {
-                    alglib.ap.assert(state.factsparsekkt.didx[i]+1==state.factsparsekkt.uidx[i] && state.factsparsekkt.vals[state.factsparsekkt.didx[i]]!=0.0, "VIPMSolve: degenerate KKT system encountered");
-                }
-                for(i=0; i<=n+m-1; i++)
-                {
-                    j = state.factsparsekktpivp[i];
-                    v = deltaxy[i];
-                    deltaxy[i] = deltaxy[j];
-                    deltaxy[j] = v;
-                }
-                sparse.sparsetrsv(state.factsparsekkt, false, true, 0, deltaxy, _params);
-                sparse.sparsetrsv(state.factsparsekkt, true, false, 0, deltaxy, _params);
-                for(i=n+m-1; i>=0; i--)
-                {
-                    j = state.factsparsekktpivq[i];
-                    v = deltaxy[i];
-                    deltaxy[i] = deltaxy[j];
-                    deltaxy[j] = v;
-                }
-                
-                //
-                // Done
-                //
-                return;
-            }
-            
-            //
-            //
-            //
-            alglib.ap.assert(false, "VIPMSolve: integrity check failed - unexpected factorization");
-        }
-
-
-        /*************************************************************************
-        Generates precomputed temporary  vectors  and  KKT  factorization  at  the
-        beginning of the current iteration.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmprecomputenewtonfactorization(vipmstate state,
-            vipmvars v0,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int m = 0;
-            int i = 0;
-
-            n = state.n;
-            m = state.mdense+state.msparse;
-            apserv.rvectorsetlengthatleast(ref state.diagginvz, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.diagzinvg, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.diagtinvs, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.diagsinvt, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.diagpinvq, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.diagqinvp, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.diagvinvw, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.diagd, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.diage, m, _params);
-            
-            //
-            // Handle temporary matrices arising due to box constraints
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                
-                //
-                // Lower bound: G*inv(Z) and Z*inv(G)
-                //
-                if( state.hasbndl[i] )
-                {
-                    alglib.ap.assert(v0.g[i]>0.0 && v0.z[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - G[i]<=0 or Z[i]<=0");
-                    state.diagginvz[i] = v0.g[i]/v0.z[i];
-                    state.diagzinvg[i] = v0.z[i]/v0.g[i];
-                }
-                else
-                {
-                    alglib.ap.assert(v0.g[i]==0.0 && v0.z[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - G[i]<>0 or Z[i]<>0 for absent lower bound");
-                    state.diagginvz[i] = 0.0;
-                    state.diagzinvg[i] = 0.0;
-                }
-                
-                //
-                // Upper bound: T*inv(S) and S*inv(T)
-                //
-                if( state.hasbndu[i] )
-                {
-                    alglib.ap.assert(v0.t[i]>0.0 && v0.s[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - T[i]<=0 or S[i]<=0");
-                    state.diagtinvs[i] = v0.t[i]/v0.s[i];
-                    state.diagsinvt[i] = v0.s[i]/v0.t[i];
-                }
-                else
-                {
-                    alglib.ap.assert(v0.t[i]==0.0 && v0.s[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - T[i]<>0 or S[i]<>0 for absent upper bound");
-                    state.diagtinvs[i] = 0.0;
-                    state.diagsinvt[i] = 0.0;
-                }
-                
-                //
-                // Diagonal term D
-                //
-                state.diagd[i] = state.diagzinvg[i]+state.diagsinvt[i];
-            }
-            
-            //
-            // Handle temporary matrices arising due to linear constraints: with lower bound B[]
-            // or with lower and upper bounds.
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                
-                //
-                // Lower bound: always present
-                //
-                alglib.ap.assert(v0.v[i]>0.0 && v0.w[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - V[i]<=0 or W[i]<=0");
-                state.diagvinvw[i] = v0.v[i]/v0.w[i];
-                
-                //
-                // Upper bound
-                //
-                if( state.hasr[i] )
-                {
-                    alglib.ap.assert(v0.p[i]>0.0 && v0.q[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - P[i]<=0 or Q[i]<=0");
-                    state.diagpinvq[i] = v0.p[i]/v0.q[i];
-                    state.diagqinvp[i] = v0.q[i]/v0.p[i];
-                }
-                else
-                {
-                    alglib.ap.assert(v0.p[i]==0.0 && v0.q[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - P[i]<>0 or Q[i]<>0 for absent range of linear constraint");
-                    state.diagpinvq[i] = 0.0;
-                    state.diagqinvp[i] = 0.0;
-                }
-                
-                //
-                // Diagonal term E
-                //
-                state.diage[i] = 1/(state.diagvinvw[i]+state.diagqinvp[i]);
-            }
-            
-            //
-            // Perform factorization
-            //
-            vipmfactorize(state, 1.0, state.diagd, 1.0, state.diage, state.regeps, state.regeps, _params);
-        }
-
-
-        /*************************************************************************
-        Compute VIPM step by solving KKT system
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmcomputestepdirection(vipmstate state,
-            vipmvars v0,
-            double mu,
-            vipmvars vd,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int m = 0;
-            int i = 0;
-
-            n = state.n;
-            m = state.mdense+state.msparse;
-            
-            //
-            // Allocate
-            //
-            apserv.rvectorsetlengthatleast(ref state.rhssigma, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsbeta, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsrho, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsnu, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhstau, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsalpha, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsgammaz, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsgammas, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsgammaw, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsgammaq, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsnucap, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhstaucap, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsbetacap, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.rhsalphacap, m, _params);
-            
-            //
-            // Compute products H*x, A*x, A^T*y
-            // We compute these products in one location for the sake of simplicity.
-            //
-            vipmmultiply(state, v0.x, v0.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
-            
-            //
-            // RhsRho = b - A*x + w
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                state.rhsrho[i] = state.b[i]-state.tmpax[i]+v0.w[i];
-            }
-            
-            //
-            // RhsNu = l - x + g
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] )
-                {
-                    
-                    //
-                    // Lower bound is present
-                    //
-                    state.rhsnu[i] = state.bndl[i]-v0.x[i]+v0.g[i];
-                }
-                else
-                {
-                    
-                    //
-                    // Lower bound is absent, g[i] = 0
-                    //
-                    alglib.ap.assert(v0.g[i]==0.0, "VIPMComputeStep: G[i]<>0 for absent constraint");
-                    state.rhsnu[i] = 0;
-                }
-            }
-            
-            //
-            // RhsTau = u - x - t
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndu[i] )
-                {
-                    
-                    //
-                    // Upper bound is present
-                    //
-                    state.rhstau[i] = state.bndu[i]-v0.x[i]-v0.t[i];
-                }
-                else
-                {
-                    
-                    //
-                    // Upper bound is absent, t[i] = 0
-                    //
-                    alglib.ap.assert(v0.t[i]==0.0, "VIPMComputeStep: T[i]<>0 for absent constraint");
-                    state.rhstau[i] = 0;
-                }
-            }
-            
-            //
-            // RhsAlpha = r - w - p
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                if( state.hasr[i] )
-                {
-                    state.rhsalpha[i] = state.r[i]-v0.w[i]-v0.p[i];
-                }
-                else
-                {
-                    state.rhsalpha[i] = 0;
-                }
-            }
-            
-            //
-            // RhsSigma = c - A^T*y - z + s + H*x
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                state.rhssigma[i] = state.c[i]-state.tmpaty[i]+state.tmphx[i];
-                if( state.hasbndl[i] )
-                {
-                    state.rhssigma[i] = state.rhssigma[i]-v0.z[i];
-                }
-                if( state.hasbndu[i] )
-                {
-                    state.rhssigma[i] = state.rhssigma[i]+v0.s[i];
-                }
-            }
-            
-            //
-            // RhsBeta = y + q - v
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                state.rhsbeta[i] = v0.y[i]-v0.v[i];
-                if( state.hasr[i] )
-                {
-                    state.rhsbeta[i] = state.rhsbeta[i]+v0.q[i];
-                }
-            }
-            
-            //
-            // RhsGammaZ = mu*inv(G)*e - z - inv(G)*DELTAG*deltaZ
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] )
-                {
-                    alglib.ap.assert(v0.g[i]>0.0, "VIPMComputeStep: G[i]<=0");
-                    state.rhsgammaz[i] = mu/v0.g[i]-v0.z[i]-vd.g[i]*vd.z[i]/v0.g[i];
-                }
-                else
-                {
-                    alglib.ap.assert(v0.g[i]==0.0, "VIPMComputeStep: G[i]<>0 for absent constraint");
-                    alglib.ap.assert(v0.z[i]==0.0, "VIPMComputeStep: Z[i]<>0 for absent constraint");
-                    state.rhsgammaz[i] = 0;
-                }
-            }
-            
-            //
-            // RhsGammaW = mu*inv(V)*e - w - inv(V)*DELTAV*deltaW
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                alglib.ap.assert(v0.v[i]>0.0, "VIPMComputeStep: V[i]<=0");
-                state.rhsgammaw[i] = mu/v0.v[i]-v0.w[i]-vd.v[i]*vd.w[i]/v0.v[i];
-            }
-            
-            //
-            // RhsGammaS = mu*inv(T)*e - s - inv(T)*DELTAT*deltaS
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndu[i] )
-                {
-                    
-                    //
-                    // Upper bound is present
-                    //
-                    alglib.ap.assert(v0.t[i]>0.0, "VIPMComputeStep: T[i]<=0");
-                    state.rhsgammas[i] = mu/v0.t[i]-v0.s[i]-vd.t[i]*vd.s[i]/v0.t[i];
-                }
-                else
-                {
-                    
-                    //
-                    // Upper bound is absent
-                    //
-                    alglib.ap.assert(v0.t[i]==0.0, "VIPMComputeStep: T[i]<>0 for absent constraint");
-                    alglib.ap.assert(v0.s[i]==0.0, "VIPMComputeStep: S[i]<>0 for absent constraint");
-                    state.rhsgammas[i] = 0;
-                }
-            }
-            
-            //
-            // GammaQ = mu*inv(P)*e - q - inv(P)*DELTAP*deltaQ
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                if( state.hasr[i] )
-                {
-                    alglib.ap.assert(v0.p[i]>0.0, "VIPMComputeStep: P[i]<=0");
-                    state.rhsgammaq[i] = mu/v0.p[i]-v0.q[i]-vd.p[i]*vd.q[i]/v0.p[i];
-                }
-                else
-                {
-                    alglib.ap.assert(v0.p[i]==0.0, "VIPMComputeStep: P[i]<>0 for absent range");
-                    alglib.ap.assert(v0.q[i]==0.0, "VIPMComputeStep: Q[i]<>0 for absent range");
-                    state.rhsgammaq[i] = 0;
-                }
-            }
-            
-            //
-            // RhsAlphaCap = RhsAlpha - PInvQ*GammaQ
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                state.rhsalphacap[i] = state.rhsalpha[i]-state.diagpinvq[i]*state.rhsgammaq[i];
-            }
-            
-            //
-            // RhsNuCap = RhsNu + GinvZ*GammaZ
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                state.rhsnucap[i] = state.rhsnu[i]+state.diagginvz[i]*state.rhsgammaz[i];
-            }
-            
-            //
-            // RhsTauCap = RhsTau - TInvS*GammaS
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                state.rhstaucap[i] = state.rhstau[i]-state.diagtinvs[i]*state.rhsgammas[i];
-            }
-            
-            //
-            // RhsBetaCap = RhsBeta - VInvW*GammaW
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                state.rhsbetacap[i] = state.rhsbeta[i]-state.diagvinvw[i]*state.rhsgammaw[i];
-            }
-            
-            //
-            // Solve KKT system
-            //
-            state.deltaxy = new double[n+m];
-            for(i=0; i<=n-1; i++)
-            {
-                state.deltaxy[i] = state.rhssigma[i]-state.diagzinvg[i]*state.rhsnucap[i]-state.diagsinvt[i]*state.rhstaucap[i];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                state.deltaxy[n+i] = state.rhsrho[i]-state.diage[i]*(state.rhsbetacap[i]-state.diagqinvp[i]*state.rhsalphacap[i]);
-            }
-            vipmsolve(state, state.deltaxy, _params);
-            
-            //
-            // Perform backsubstitution
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                vd.x[i] = state.deltaxy[i];
-                vd.s[i] = state.diagsinvt[i]*(vd.x[i]-state.rhstaucap[i]);
-                vd.z[i] = state.diagzinvg[i]*(state.rhsnucap[i]-vd.x[i]);
-                vd.g[i] = state.diagginvz[i]*(state.rhsgammaz[i]-vd.z[i]);
-                vd.t[i] = state.diagtinvs[i]*(state.rhsgammas[i]-vd.s[i]);
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                vd.y[i] = state.deltaxy[n+i];
-                vd.w[i] = -(state.diage[i]*(state.rhsbetacap[i]-state.diagqinvp[i]*state.rhsalphacap[i]+vd.y[i]));
-                vd.q[i] = state.diagqinvp[i]*(vd.w[i]-state.rhsalphacap[i]);
-                vd.v[i] = state.diagvinvw[i]*(state.rhsgammaw[i]-vd.w[i]);
-                vd.p[i] = state.diagpinvq[i]*(state.rhsgammaq[i]-vd.q[i]);
-            }
-        }
-
-
-        /*************************************************************************
-        This function estimates primal and dual step lengths (subject to step
-        decay parameter, which should be in [0,1] range).
-
-        Current version returns same step lengths for primal and dual steps.
-
-        INPUT PARAMETERS:
-            State               -   solver state
-            V0                  -   current point (we ignore one stored in State.Current)
-            VS                  -   step direction
-            StepDecay           -   decay parameter, the step is multiplied by this
-                                    coefficient. 1.0 corresponds to full step
-                                    length being returned. Values in (0,1] range.
-            
-        OUTPUT PARAMETERS:
-            AlphaP              -   primal step (after applying decay coefficient)
-            AlphaD              -   dual   step (after applying decay coefficient)
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmcomputesteplength(vipmstate state,
-            vipmvars v0,
-            vipmvars vs,
-            double stepdecay,
-            ref double alphap,
-            ref double alphad,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int m = 0;
-            int i = 0;
-            double alpha = 0;
-
-            alphap = 0;
-            alphad = 0;
-
-            n = state.n;
-            m = state.mdense+state.msparse;
-            alglib.ap.assert(n==v0.n && m==v0.m, "VIPMComputeStepLength: sizes mismatch");
-            alphap = 1;
-            alphad = 1;
-            for(i=0; i<=n-1; i++)
-            {
-                
-                //
-                // Primal
-                //
-                if( state.hasbndl[i] )
-                {
-                    alphap = apserv.safeminposrv(v0.g[i], -vs.g[i], alphap, _params);
-                }
-                if( state.hasbndu[i] )
-                {
-                    alphap = apserv.safeminposrv(v0.t[i], -vs.t[i], alphap, _params);
-                }
-                
-                //
-                // Dual
-                //
-                alphad = apserv.safeminposrv(v0.z[i], -vs.z[i], alphad, _params);
-                alphad = apserv.safeminposrv(v0.s[i], -vs.s[i], alphad, _params);
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                
-                //
-                // Primal
-                //
-                alphap = apserv.safeminposrv(v0.w[i], -vs.w[i], alphap, _params);
-                alphap = apserv.safeminposrv(v0.p[i], -vs.p[i], alphap, _params);
-                
-                //
-                // Dual
-                //
-                alphad = apserv.safeminposrv(v0.v[i], -vs.v[i], alphad, _params);
-                alphad = apserv.safeminposrv(v0.q[i], -vs.q[i], alphad, _params);
-            }
-            
-            //
-            // Because we solve QP problem, step length have to be same for primal and dual variables
-            //
-            alpha = Math.Min(alphap, alphad);
-            
-            //
-            // Apply decay
-            //
-            alphap = stepdecay*alpha;
-            alphad = stepdecay*alpha;
-        }
-
-
-        /*************************************************************************
-        Evaluate progress so far, sets following fields of State:
-        * ErrP and ErrD are set to primal and dual infeasibilities computed in L2 norm
-
-        Also outputs trace data, if requested to do so.
-
-          -- ALGLIB --
-             Copyright 01.11.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void vipmevaluateprogress(vipmstate state,
-            bool dotrace,
-            bool dodetailedtrace,
-            double mu,
-            double muaff,
-            double sigma,
-            double alphap,
-            double alphad,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int m = 0;
-            int i = 0;
-            double v = 0;
-            int cntp2 = 0;
-            int cntd2 = 0;
-
-            n = state.n;
-            m = state.mdense+state.msparse;
-            apserv.rvectorsetlengthatleast(ref state.evalprogressg, n, _params);
-            
-            //
-            // Compute primal and dual infeasibilities
-            //
-            vipmmultiply(state, state.current.x, state.current.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
-            cntp2 = 0;
-            state.errp2 = 0;
-            state.errpinf = 0;
-            for(i=0; i<=m-1; i++)
-            {
-                v = state.tmpax[i]-state.current.w[i]-state.b[i];
-                state.errp2 = state.errp2+v*v;
-                state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
-                apserv.inc(ref cntp2, _params);
-                if( state.hasr[i] )
-                {
-                    v = state.current.w[i]+state.current.p[i]-state.r[i];
-                    state.errp2 = state.errp2+v*v;
-                    state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
-                    apserv.inc(ref cntp2, _params);
-                }
-            }
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] )
-                {
-                    v = state.current.x[i]-state.current.g[i]-state.bndl[i];
-                    state.errp2 = state.errp2+v*v;
-                    state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
-                    apserv.inc(ref cntp2, _params);
-                }
-                if( state.hasbndu[i] )
-                {
-                    v = state.current.x[i]+state.current.t[i]-state.bndu[i];
-                    state.errp2 = state.errp2+v*v;
-                    state.errpinf = Math.Max(state.errpinf, Math.Abs(v));
-                    apserv.inc(ref cntp2, _params);
-                }
-            }
-            state.errp2 = Math.Sqrt(state.errp2/apserv.coalesce(cntp2, 1, _params));
-            cntd2 = 0;
-            state.errd2 = 0;
-            state.errdinf = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                v = state.tmphx[i]+state.c[i]-state.tmpaty[i];
-                if( state.hasbndl[i] )
-                {
-                    v = v-state.current.z[i];
-                }
-                if( state.hasbndu[i] )
-                {
-                    v = v+state.current.s[i];
-                }
-                state.evalprogressg[i] = v;
-                state.errd2 = state.errd2+v*v;
-                state.errdinf = Math.Max(state.errdinf, Math.Abs(v));
-                apserv.inc(ref cntd2, _params);
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                v = state.current.y[i]-state.current.v[i];
-                if( state.hasr[i] )
-                {
-                    v = v+state.current.q[i];
-                }
-                state.errd2 = state.errd2+v*v;
-                state.errdinf = Math.Max(state.errdinf, Math.Abs(v));
-                apserv.inc(ref cntd2, _params);
-            }
-            state.errd2 = Math.Sqrt(state.errd2/apserv.coalesce(cntd2, 1, _params));
-            
-            //
-            // Trace
-            //
-            if( dotrace )
-            {
-                alglib.ap.trace(System.String.Format("mu_init = {0,0:E3}    (at the beginning)\n", mu));
-                alglib.ap.trace(System.String.Format("mu_aff  = {0,0:E3}    (by affine scaling step)\n", muaff));
-                alglib.ap.trace(System.String.Format("sigma   = {0,0:E3}    (centering parameter)\n", sigma));
-                alglib.ap.trace(System.String.Format("errP    = {0,0:E3}    (primal infeasibility, 2-norm)\n", state.errp2));
-                alglib.ap.trace(System.String.Format("errD    = {0,0:E3}    (dual infeasibility,   2-norm)\n", state.errd2));
-                alglib.ap.trace(System.String.Format("alphaP  = {0,0:E3}    (primal step)\n", alphap));
-                alglib.ap.trace(System.String.Format("alphaD  = {0,0:E3}    (dual   step)\n", alphad));
-                alglib.ap.trace(System.String.Format("|X|={0,0:E1}, |G|={1,0:E1}, |W|={2,0:E1}, |T|={3,0:E1}, |P|={4,0:E1}\n", nrminf(state.current.x, n, _params), nrminf(state.current.g, n, _params), nrminf(state.current.w, m, _params), nrminf(state.current.t, n, _params), nrminf(state.current.p, m, _params)));
-                alglib.ap.trace(System.String.Format("|Y|={0,0:E1}, |Z|={1,0:E1}, |V|={2,0:E1}, |S|={3,0:E1}, |Q|={4,0:E1}\n", nrminf(state.current.y, m, _params), nrminf(state.current.z, n, _params), nrminf(state.current.v, m, _params), nrminf(state.current.s, n, _params), nrminf(state.current.q, m, _params)));
-                if( dodetailedtrace )
-                {
-                    alglib.ap.trace("--- printing raw data (prior to applying variable scales and shifting by XOrigin) ------------------\n");
-                    alglib.ap.trace("X (raw)         = ");
-                    apserv.tracevectorunscaledunshiftedautoprec(state.current.x, n, state.scl, true, state.xorigin, true, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("--- printing scaled data (after applying variable scales and shifting by XOrigin) ------------------\n");
-                    alglib.ap.trace("> reporting X, Lagrangian gradient\n");
-                    alglib.ap.trace("Xnew            = ");
-                    apserv.tracevectorautoprec(state.current.x, 0, n, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("Lag-grad        = ");
-                    apserv.tracevectorautoprec(state.evalprogressg, 0, n, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("> primal slacks and dual multipliers for box constraints\n");
-                    alglib.ap.trace("G (L prim slck) = ");
-                    apserv.tracevectorautoprec(state.current.g, 0, n, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("Z (L dual mult) = ");
-                    apserv.tracevectorautoprec(state.current.z, 0, n, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("T (U prim slck) = ");
-                    apserv.tracevectorautoprec(state.current.t, 0, n, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("S (U dual mult) = ");
-                    apserv.tracevectorautoprec(state.current.s, 0, n, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("> primal slacks and dual multipliers for linear constraints, B/R stand for B<=Ax<=B+R\n");
-                    alglib.ap.trace("Y (lag mult)    = ");
-                    apserv.tracevectorautoprec(state.current.y, 0, m, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("W (B prim slck) = ");
-                    apserv.tracevectorautoprec(state.current.w, 0, m, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("V (B dual mult) = ");
-                    apserv.tracevectorautoprec(state.current.v, 0, m, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("P (R prim slck) = ");
-                    apserv.tracevectorautoprec(state.current.p, 0, m, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("Q (R dual mult) = ");
-                    apserv.tracevectorautoprec(state.current.q, 0, m, _params);
-                    alglib.ap.trace("\n");
-                }
-                alglib.ap.trace("\n");
-            }
-        }
-
-
-    }
-    public class nlcsqp
-    {
-        /*************************************************************************
-        This object stores temporaries of SQP subsolver.
-        *************************************************************************/
-        public class minsqpsubsolver : apobject
-        {
-            public int algokind;
-            public vipmsolver.vipmstate ipmsolver;
-            public double[] curb;
-            public double[] curbndl;
-            public double[] curbndu;
-            public double[] cural;
-            public double[] curau;
-            public sparse.sparsematrix sparserawlc;
-            public sparse.sparsematrix sparseefflc;
-            public double[] d0;
-            public double[,] h;
-            public double[,] densedummy;
-            public sparse.sparsematrix sparsedummy;
-            public double[] tmp0;
-            public double[] tmp1;
-            public double[] tmp2;
-            public double[] sk;
-            public double[] yk;
-            public bool[] hasbndl;
-            public bool[] hasbndu;
-            public bool[] hasal;
-            public bool[] hasau;
-            public double[,] activea;
-            public double[] activerhs;
-            public int[] activeidx;
-            public int activesetsize;
-            public minsqpsubsolver()
-            {
-                init();
-            }
-            public override void init()
-            {
-                ipmsolver = new vipmsolver.vipmstate();
-                curb = new double[0];
-                curbndl = new double[0];
-                curbndu = new double[0];
-                cural = new double[0];
-                curau = new double[0];
-                sparserawlc = new sparse.sparsematrix();
-                sparseefflc = new sparse.sparsematrix();
-                d0 = new double[0];
-                h = new double[0,0];
-                densedummy = new double[0,0];
-                sparsedummy = new sparse.sparsematrix();
-                tmp0 = new double[0];
-                tmp1 = new double[0];
-                tmp2 = new double[0];
-                sk = new double[0];
-                yk = new double[0];
-                hasbndl = new bool[0];
-                hasbndu = new bool[0];
-                hasal = new bool[0];
-                hasau = new bool[0];
-                activea = new double[0,0];
-                activerhs = new double[0];
-                activeidx = new int[0];
-            }
-            public override alglib.apobject make_copy()
-            {
-                minsqpsubsolver _result = new minsqpsubsolver();
-                _result.algokind = algokind;
-                _result.ipmsolver = (vipmsolver.vipmstate)ipmsolver.make_copy();
-                _result.curb = (double[])curb.Clone();
-                _result.curbndl = (double[])curbndl.Clone();
-                _result.curbndu = (double[])curbndu.Clone();
-                _result.cural = (double[])cural.Clone();
-                _result.curau = (double[])curau.Clone();
-                _result.sparserawlc = (sparse.sparsematrix)sparserawlc.make_copy();
-                _result.sparseefflc = (sparse.sparsematrix)sparseefflc.make_copy();
-                _result.d0 = (double[])d0.Clone();
-                _result.h = (double[,])h.Clone();
-                _result.densedummy = (double[,])densedummy.Clone();
-                _result.sparsedummy = (sparse.sparsematrix)sparsedummy.make_copy();
-                _result.tmp0 = (double[])tmp0.Clone();
-                _result.tmp1 = (double[])tmp1.Clone();
-                _result.tmp2 = (double[])tmp2.Clone();
-                _result.sk = (double[])sk.Clone();
-                _result.yk = (double[])yk.Clone();
-                _result.hasbndl = (bool[])hasbndl.Clone();
-                _result.hasbndu = (bool[])hasbndu.Clone();
-                _result.hasal = (bool[])hasal.Clone();
-                _result.hasau = (bool[])hasau.Clone();
-                _result.activea = (double[,])activea.Clone();
-                _result.activerhs = (double[])activerhs.Clone();
-                _result.activeidx = (int[])activeidx.Clone();
-                _result.activesetsize = activesetsize;
-                return _result;
-            }
-        };
-
-
-        /*************************************************************************
-        This object stores temporaries for LagrangianFG() function
-        *************************************************************************/
-        public class minsqptmplagrangian : apobject
-        {
-            public double[] sclagtmp0;
-            public double[] sclagtmp1;
-            public minsqptmplagrangian()
-            {
-                init();
-            }
-            public override void init()
-            {
-                sclagtmp0 = new double[0];
-                sclagtmp1 = new double[0];
-            }
-            public override alglib.apobject make_copy()
-            {
-                minsqptmplagrangian _result = new minsqptmplagrangian();
-                _result.sclagtmp0 = (double[])sclagtmp0.Clone();
-                _result.sclagtmp1 = (double[])sclagtmp1.Clone();
-                return _result;
-            }
-        };
-
-
-        /*************************************************************************
-        This object stores temporaries for LagrangianFG() function
-        *************************************************************************/
-        public class minsqptmpmerit : apobject
-        {
-            public double[] mftmp0;
-            public minsqptmpmerit()
-            {
-                init();
-            }
-            public override void init()
-            {
-                mftmp0 = new double[0];
-            }
-            public override alglib.apobject make_copy()
-            {
-                minsqptmpmerit _result = new minsqptmpmerit();
-                _result.mftmp0 = (double[])mftmp0.Clone();
-                return _result;
-            }
-        };
-
-
-        /*************************************************************************
-        This object stores temporaries of Phase 1 (merit function optimization).
-        *************************************************************************/
-        public class minsqpmeritphasestate : apobject
-        {
-            public int n;
-            public int nec;
-            public int nic;
-            public int nlec;
-            public int nlic;
-            public double[] d;
-            public double[] dx;
-            public double[] stepkx;
-            public double[] stepkxc;
-            public double[] stepkxn;
-            public double[] stepkfi;
-            public double[] stepkfic;
-            public double[] stepkfin;
-            public double[,] stepkj;
-            public double[,] stepkjc;
-            public double[,] stepkjn;
-            public double[] lagmult;
-            public double[] dummylagmult;
-            public minsqptmpmerit tmpmerit;
-            public minsqptmplagrangian tmplagrangianfg;
-            public double[] stepklaggrad;
-            public double[] stepknlaggrad;
-            public int status;
-            public rcommstate rmeritphasestate;
-            public minsqpmeritphasestate()
-            {
-                init();
-            }
-            public override void init()
-            {
-                d = new double[0];
-                dx = new double[0];
-                stepkx = new double[0];
-                stepkxc = new double[0];
-                stepkxn = new double[0];
-                stepkfi = new double[0];
-                stepkfic = new double[0];
-                stepkfin = new double[0];
-                stepkj = new double[0,0];
-                stepkjc = new double[0,0];
-                stepkjn = new double[0,0];
-                lagmult = new double[0];
-                dummylagmult = new double[0];
-                tmpmerit = new minsqptmpmerit();
-                tmplagrangianfg = new minsqptmplagrangian();
-                stepklaggrad = new double[0];
-                stepknlaggrad = new double[0];
-                rmeritphasestate = new rcommstate();
-            }
-            public override alglib.apobject make_copy()
-            {
-                minsqpmeritphasestate _result = new minsqpmeritphasestate();
-                _result.n = n;
-                _result.nec = nec;
-                _result.nic = nic;
-                _result.nlec = nlec;
-                _result.nlic = nlic;
-                _result.d = (double[])d.Clone();
-                _result.dx = (double[])dx.Clone();
-                _result.stepkx = (double[])stepkx.Clone();
-                _result.stepkxc = (double[])stepkxc.Clone();
-                _result.stepkxn = (double[])stepkxn.Clone();
-                _result.stepkfi = (double[])stepkfi.Clone();
-                _result.stepkfic = (double[])stepkfic.Clone();
-                _result.stepkfin = (double[])stepkfin.Clone();
-                _result.stepkj = (double[,])stepkj.Clone();
-                _result.stepkjc = (double[,])stepkjc.Clone();
-                _result.stepkjn = (double[,])stepkjn.Clone();
-                _result.lagmult = (double[])lagmult.Clone();
-                _result.dummylagmult = (double[])dummylagmult.Clone();
-                _result.tmpmerit = (minsqptmpmerit)tmpmerit.make_copy();
-                _result.tmplagrangianfg = (minsqptmplagrangian)tmplagrangianfg.make_copy();
-                _result.stepklaggrad = (double[])stepklaggrad.Clone();
-                _result.stepknlaggrad = (double[])stepknlaggrad.Clone();
-                _result.status = status;
-                _result.rmeritphasestate = (rcommstate)rmeritphasestate.make_copy();
-                return _result;
-            }
-        };
-
-
-        /*************************************************************************
-        This object stores temporaries of SQP solver.
-        *************************************************************************/
-        public class minsqpstate : apobject
-        {
-            public int n;
-            public int nec;
-            public int nic;
-            public int nlec;
-            public int nlic;
-            public double[] s;
-            public double[,] scaledcleic;
-            public int[] lcsrcidx;
-            public bool[] hasbndl;
-            public bool[] hasbndu;
-            public double[] scaledbndl;
-            public double[] scaledbndu;
-            public double epsx;
-            public int maxits;
-            public double[] x;
-            public double[] fi;
-            public double[,] j;
-            public double f;
-            public bool needfij;
-            public bool xupdated;
-            public minsqpmeritphasestate meritstate;
-            public double trustrad;
-            public int fstagnationcnt;
-            public double[] step0x;
-            public double[] stepkx;
-            public double[] backupx;
-            public double[] step0fi;
-            public double[] stepkfi;
-            public double[] backupfi;
-            public double[,] step0j;
-            public double[,] stepkj;
-            public bool haslagmult;
-            public double[] meritlagmult;
-            public double[] dummylagmult;
-            public double[] fscales;
-            public minsqpsubsolver subsolver;
-            public minsqptmpmerit tmpmerit;
-            public int repsimplexiterations;
-            public int repsimplexiterations1;
-            public int repsimplexiterations2;
-            public int repsimplexiterations3;
-            public int repiterationscount;
-            public int repterminationtype;
-            public double repbcerr;
-            public int repbcidx;
-            public double replcerr;
-            public int replcidx;
-            public double repnlcerr;
-            public int repnlcidx;
-            public rcommstate rstate;
-            public minsqpstate()
-            {
-                init();
-            }
-            public override void init()
-            {
-                s = new double[0];
-                scaledcleic = new double[0,0];
-                lcsrcidx = new int[0];
-                hasbndl = new bool[0];
-                hasbndu = new bool[0];
-                scaledbndl = new double[0];
-                scaledbndu = new double[0];
-                x = new double[0];
-                fi = new double[0];
-                j = new double[0,0];
-                meritstate = new minsqpmeritphasestate();
-                step0x = new double[0];
-                stepkx = new double[0];
-                backupx = new double[0];
-                step0fi = new double[0];
-                stepkfi = new double[0];
-                backupfi = new double[0];
-                step0j = new double[0,0];
-                stepkj = new double[0,0];
-                meritlagmult = new double[0];
-                dummylagmult = new double[0];
-                fscales = new double[0];
-                subsolver = new minsqpsubsolver();
-                tmpmerit = new minsqptmpmerit();
-                rstate = new rcommstate();
-            }
-            public override alglib.apobject make_copy()
-            {
-                minsqpstate _result = new minsqpstate();
-                _result.n = n;
-                _result.nec = nec;
-                _result.nic = nic;
-                _result.nlec = nlec;
-                _result.nlic = nlic;
-                _result.s = (double[])s.Clone();
-                _result.scaledcleic = (double[,])scaledcleic.Clone();
-                _result.lcsrcidx = (int[])lcsrcidx.Clone();
-                _result.hasbndl = (bool[])hasbndl.Clone();
-                _result.hasbndu = (bool[])hasbndu.Clone();
-                _result.scaledbndl = (double[])scaledbndl.Clone();
-                _result.scaledbndu = (double[])scaledbndu.Clone();
-                _result.epsx = epsx;
-                _result.maxits = maxits;
-                _result.x = (double[])x.Clone();
-                _result.fi = (double[])fi.Clone();
-                _result.j = (double[,])j.Clone();
-                _result.f = f;
-                _result.needfij = needfij;
-                _result.xupdated = xupdated;
-                _result.meritstate = (minsqpmeritphasestate)meritstate.make_copy();
-                _result.trustrad = trustrad;
-                _result.fstagnationcnt = fstagnationcnt;
-                _result.step0x = (double[])step0x.Clone();
-                _result.stepkx = (double[])stepkx.Clone();
-                _result.backupx = (double[])backupx.Clone();
-                _result.step0fi = (double[])step0fi.Clone();
-                _result.stepkfi = (double[])stepkfi.Clone();
-                _result.backupfi = (double[])backupfi.Clone();
-                _result.step0j = (double[,])step0j.Clone();
-                _result.stepkj = (double[,])stepkj.Clone();
-                _result.haslagmult = haslagmult;
-                _result.meritlagmult = (double[])meritlagmult.Clone();
-                _result.dummylagmult = (double[])dummylagmult.Clone();
-                _result.fscales = (double[])fscales.Clone();
-                _result.subsolver = (minsqpsubsolver)subsolver.make_copy();
-                _result.tmpmerit = (minsqptmpmerit)tmpmerit.make_copy();
-                _result.repsimplexiterations = repsimplexiterations;
-                _result.repsimplexiterations1 = repsimplexiterations1;
-                _result.repsimplexiterations2 = repsimplexiterations2;
-                _result.repsimplexiterations3 = repsimplexiterations3;
-                _result.repiterationscount = repiterationscount;
-                _result.repterminationtype = repterminationtype;
-                _result.repbcerr = repbcerr;
-                _result.repbcidx = repbcidx;
-                _result.replcerr = replcerr;
-                _result.replcidx = replcidx;
-                _result.repnlcerr = repnlcerr;
-                _result.repnlcidx = repnlcidx;
-                _result.rstate = (rcommstate)rstate.make_copy();
-                return _result;
-            }
-        };
-
-
-
-
-        public const double sqpdeltadecrease = 0.20;
-        public const double sqpdeltaincrease = 0.80;
-        public const double maxtrustraddecay = 0.1;
-        public const double maxtrustradgrowth = 1.333;
-        public const double bigc = 500.0;
-        public const double meritfunctionbase = 0.0;
-        public const double meritfunctiongain = 2.0;
-        public const double augmentationfactor = 10.0;
-        public const double inittrustrad = 0.1;
-        public const double stagnationepsf = 1.0E-12;
-        public const int fstagnationlimit = 20;
-        public const double sqpbigscale = 5.0;
-        public const double sqpsmallscale = 0.2;
-
-
-        public static void minsqpinitbuf(double[] bndl,
-            double[] bndu,
-            double[] s,
-            double[] x0,
-            int n,
-            double[,] cleic,
-            int[] lcsrcidx,
-            int nec,
-            int nic,
-            int nlec,
-            int nlic,
-            double epsx,
-            int maxits,
-            minsqpstate state,
-            alglib.xparams _params)
-        {
-            int nslack = 0;
-            int i = 0;
-            int j = 0;
-            double v = 0;
-            double vv = 0;
-
-            nslack = n+2*(nec+nlec)+(nic+nlic);
-            state.n = n;
-            state.nec = nec;
-            state.nic = nic;
-            state.nlec = nlec;
-            state.nlic = nlic;
-            
-            //
-            // Prepare RCOMM state
-            //
-            state.rstate.ia = new int[9+1];
-            state.rstate.ba = new bool[1+1];
-            state.rstate.ra = new double[7+1];
-            state.rstate.stage = -1;
-            state.needfij = false;
-            state.xupdated = false;
-            state.x = new double[n];
-            state.fi = new double[1+nlec+nlic];
-            state.j = new double[1+nlec+nlic, n];
-            
-            //
-            // Allocate memory.
-            //
-            apserv.rvectorsetlengthatleast(ref state.s, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.step0x, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepkx, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.backupx, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.step0fi, 1+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.stepkfi, 1+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.backupfi, 1+nlec+nlic, _params);
-            apserv.rmatrixsetlengthatleast(ref state.step0j, 1+nlec+nlic, n, _params);
-            apserv.rmatrixsetlengthatleast(ref state.stepkj, 1+nlec+nlic, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.fscales, 1+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.meritlagmult, nec+nic+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref state.dummylagmult, nec+nic+nlec+nlic, _params);
-            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
-            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.scaledbndl, n, _params);
-            apserv.rvectorsetlengthatleast(ref state.scaledbndu, n, _params);
-            apserv.rmatrixsetlengthatleast(ref state.scaledcleic, nec+nic, n+1, _params);
-            apserv.ivectorsetlengthatleast(ref state.lcsrcidx, nec+nic, _params);
-            
-            //
-            // Prepare scaled problem
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                state.hasbndl[i] = math.isfinite(bndl[i]);
-                state.hasbndu[i] = math.isfinite(bndu[i]);
-                if( state.hasbndl[i] )
-                {
-                    state.scaledbndl[i] = bndl[i]/s[i];
-                }
-                if( state.hasbndu[i] )
-                {
-                    state.scaledbndu[i] = bndu[i]/s[i];
-                }
-                if( state.hasbndl[i] && state.hasbndu[i] )
-                {
-                    alglib.ap.assert((double)(bndl[i])<=(double)(bndu[i]), "SQP: integrity check failed, box constraints are inconsistent");
-                }
-                state.step0x[i] = x0[i]/s[i];
-                state.s[i] = s[i];
-            }
-            for(i=0; i<=nec+nic-1; i++)
-            {
-                
-                //
-                // Permutation
-                //
-                state.lcsrcidx[i] = lcsrcidx[i];
-                
-                //
-                // Scale and normalize linear constraints
-                //
-                vv = 0.0;
-                for(j=0; j<=n-1; j++)
-                {
-                    v = cleic[i,j]*s[j];
-                    state.scaledcleic[i,j] = v;
-                    vv = vv+v*v;
-                }
-                vv = Math.Sqrt(vv);
-                state.scaledcleic[i,n] = cleic[i,n];
-                if( (double)(vv)>(double)(0) )
-                {
-                    for(j=0; j<=n; j++)
-                    {
-                        state.scaledcleic[i,j] = state.scaledcleic[i,j]/vv;
-                    }
-                }
-            }
-            
-            //
-            // Initial enforcement of box constraints
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] )
-                {
-                    state.step0x[i] = Math.Max(state.step0x[i], state.scaledbndl[i]);
-                }
-                if( state.hasbndu[i] )
-                {
-                    state.step0x[i] = Math.Min(state.step0x[i], state.scaledbndu[i]);
-                }
-            }
-            
-            //
-            // Stopping criteria
-            //
-            state.epsx = epsx;
-            state.maxits = maxits;
-            
-            //
-            // Report fields
-            //
-            state.repsimplexiterations = 0;
-            state.repsimplexiterations1 = 0;
-            state.repsimplexiterations2 = 0;
-            state.repsimplexiterations3 = 0;
-            state.repterminationtype = 0;
-            state.repbcerr = 0;
-            state.repbcidx = -1;
-            state.replcerr = 0;
-            state.replcidx = -1;
-            state.repnlcerr = 0;
-            state.repnlcidx = -1;
-            state.repiterationscount = 0;
-            
-            //
-            // Integrity checks
-            //
-            alglib.ap.assert((double)(sqpdeltadecrease)<(double)(sqpdeltaincrease), "MinSQP: integrity check failed");
-        }
-
-
-        /*************************************************************************
-        This function performs actual processing for  SQP  algorithm.  It  expects
-        that caller redirects its reverse communication  requests NeedFiJ/XUpdated
-        to external user who will provide analytic derivative (or  handle  reports
-        about progress).
-
-        In case external user does not have analytic derivative, it is responsibility
-        of caller to intercept NeedFiJ request and  replace  it  with  appropriate
-        numerical differentiation scheme.
-
-        Results are stored:
-        * point - in State.StepKX
-
-        IMPORTANT: this function works with scaled problem formulation; it is
-                   responsibility of the caller to unscale request and scale
-                   Jacobian.
-                   
-        NOTE: SMonitor is expected to be correctly initialized smoothness monitor.
-
-          -- ALGLIB --
-             Copyright 05.03.2018 by Bochkanov Sergey
-        *************************************************************************/
-        public static bool minsqpiteration(minsqpstate state,
-            optserv.smoothnessmonitor smonitor,
-            bool userterminationneeded,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-            int n = 0;
-            int nslack = 0;
-            int nec = 0;
-            int nic = 0;
-            int nlec = 0;
-            int nlic = 0;
-            int i = 0;
-            int j = 0;
-            double v = 0;
-            double vv = 0;
-            double mx = 0;
-            double gammamax = 0;
-            int status = 0;
-            double deltamax = 0;
-            double multiplyby = 0;
-            double setscaleto = 0;
-            double prevtrustrad = 0;
-            int subiterationidx = 0;
-            bool dotrace = new bool();
-            bool dodetailedtrace = new bool();
-
-            
-            //
-            // Reverse communication preparations
-            // I know it looks ugly, but it works the same way
-            // anywhere from C++ to Python.
-            //
-            // This code initializes locals by:
-            // * random values determined during code
-            //   generation - on first subroutine call
-            // * values from previous call - on subsequent calls
-            //
-            if( state.rstate.stage>=0 )
-            {
-                n = state.rstate.ia[0];
-                nslack = state.rstate.ia[1];
-                nec = state.rstate.ia[2];
-                nic = state.rstate.ia[3];
-                nlec = state.rstate.ia[4];
-                nlic = state.rstate.ia[5];
-                i = state.rstate.ia[6];
-                j = state.rstate.ia[7];
-                status = state.rstate.ia[8];
-                subiterationidx = state.rstate.ia[9];
-                dotrace = state.rstate.ba[0];
-                dodetailedtrace = state.rstate.ba[1];
-                v = state.rstate.ra[0];
-                vv = state.rstate.ra[1];
-                mx = state.rstate.ra[2];
-                gammamax = state.rstate.ra[3];
-                deltamax = state.rstate.ra[4];
-                multiplyby = state.rstate.ra[5];
-                setscaleto = state.rstate.ra[6];
-                prevtrustrad = state.rstate.ra[7];
-            }
-            else
-            {
-                n = 359;
-                nslack = -58;
-                nec = -919;
-                nic = -909;
-                nlec = 81;
-                nlic = 255;
-                i = 74;
-                j = -788;
-                status = 809;
-                subiterationidx = 205;
-                dotrace = false;
-                dodetailedtrace = true;
-                v = -526;
-                vv = 763;
-                mx = -541;
-                gammamax = -698;
-                deltamax = -900;
-                multiplyby = -318;
-                setscaleto = -940;
-                prevtrustrad = 1016;
-            }
-            if( state.rstate.stage==0 )
-            {
-                goto lbl_0;
-            }
-            if( state.rstate.stage==1 )
-            {
-                goto lbl_1;
-            }
-            if( state.rstate.stage==2 )
-            {
-                goto lbl_2;
-            }
-            
-            //
-            // Routine body
-            //
-            n = state.n;
-            nec = state.nec;
-            nic = state.nic;
-            nlec = state.nlec;
-            nlic = state.nlic;
-            nslack = n+2*(nec+nlec)+(nic+nlic);
-            dotrace = ap.istraceenabled("SQP", _params);
-            dodetailedtrace = dotrace && ap.istraceenabled("SQP.DETAILED", _params);
-            
-            //
-            // Prepare rcomm interface
-            //
-            state.needfij = false;
-            state.xupdated = false;
-            
-            //
-            // Initialize algorithm data:
-            // * Lagrangian and "Big C" estimates
-            // * trust region
-            // * initial function scales (vector of 1's)
-            // * current approximation of the Hessian matrix H (unit matrix)
-            // * initial linearized constraints
-            // * initial violation of linear/nonlinear constraints
-            //
-            state.fstagnationcnt = 0;
-            state.trustrad = inittrustrad;
-            for(i=0; i<=nlec+nlic; i++)
-            {
-                state.fscales[i] = 1.0;
-            }
-            gammamax = 0.0;
-            state.haslagmult = false;
-            
-            //
-            // Avoid spurious warnings about possibly uninitialized vars
-            //
-            status = 0;
-            
-            //
-            // Evaluate function vector and Jacobian at Step0X, send first location report.
-            // Compute initial violation of constraints.
-            //
-            sqpsendx(state, state.step0x, _params);
-            state.needfij = true;
-            state.rstate.stage = 0;
-            goto lbl_rcomm;
-        lbl_0:
-            state.needfij = false;
-            if( !sqpretrievefij(state, state.step0fi, state.step0j, _params) )
-            {
-                
-                //
-                // Failed to retrieve function/Jaconian, infinities detected!
-                //
-                for(i=0; i<=n-1; i++)
-                {
-                    state.stepkx[i] = state.step0x[i];
-                }
-                state.repterminationtype = -8;
-                result = false;
-                return result;
-            }
-            sqpcopystate(state, state.step0x, state.step0fi, state.step0j, state.stepkx, state.stepkfi, state.stepkj, _params);
-            sqpsendx(state, state.stepkx, _params);
-            state.f = state.stepkfi[0]*state.fscales[0];
-            state.xupdated = true;
-            state.rstate.stage = 1;
-            goto lbl_rcomm;
-        lbl_1:
-            state.xupdated = false;
-            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, state.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
-            optserv.unscaleandchecknlcviolation(state.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
-            
-            //
-            // Trace output (if needed)
-            //
-            if( dotrace )
-            {
-                alglib.ap.trace("\n\n");
-                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
-                alglib.ap.trace("//  SQP SOLVER STARTED                                                                            //\n");
-                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
-            }
-            
-            //
-            // Perform outer (NLC) iterations
-            //
-            initqpsubsolver(state, state.subsolver, _params);
-        lbl_3:
-            if( false )
-            {
-                goto lbl_4;
-            }
-            
-            //
-            // Before beginning new outer iteration:
-            // * renormalize target function and/or constraints, if some of them have too large magnitudes
-            // * save initial point for the outer iteration
-            //
-            for(i=0; i<=nlec+nlic; i++)
-            {
-                
-                //
-                // Determine (a) multiplicative coefficient applied to function value
-                // and Jacobian row, and (b) new value of the function scale.
-                //
-                mx = 0;
-                for(j=0; j<=n-1; j++)
-                {
-                    mx = Math.Max(mx, Math.Abs(state.stepkj[i,j]));
-                }
-                multiplyby = 1.0;
-                setscaleto = state.fscales[i];
-                if( (double)(mx)>=(double)(sqpbigscale) )
-                {
-                    multiplyby = 1/mx;
-                    setscaleto = state.fscales[i]*mx;
-                }
-                if( (double)(mx)<=(double)(sqpsmallscale) && (double)(state.fscales[i])>(double)(1.0) )
-                {
-                    if( (double)(state.fscales[i]*mx)>(double)(1) )
-                    {
-                        multiplyby = 1/mx;
-                        setscaleto = state.fscales[i]*mx;
-                    }
-                    else
-                    {
-                        multiplyby = state.fscales[i];
-                        setscaleto = 1.0;
-                    }
-                }
-                if( (double)(multiplyby)!=(double)(1.0) )
-                {
-                    
-                    //
-                    // Function #I needs renormalization:
-                    // * update function vector element and Jacobian matrix row
-                    // * update FScales[] array
-                    //
-                    state.stepkfi[i] = state.stepkfi[i]*multiplyby;
-                    for(j=0; j<=n-1; j++)
-                    {
-                        state.stepkj[i,j] = state.stepkj[i,j]*multiplyby;
-                    }
-                    state.fscales[i] = setscaleto;
-                }
-            }
-            
-            //
-            // Trace output (if needed)
-            //
-            if( dotrace )
-            {
-                alglib.ap.trace(System.String.Format("\n=== OUTER ITERATION {0,5:d} STARTED ==================================================================\n", state.repiterationscount));
-                if( dodetailedtrace )
-                {
-                    alglib.ap.trace("> printing raw data (prior to applying variable and function scales)\n");
-                    alglib.ap.trace("X (raw)       = ");
-                    apserv.tracevectorunscaledunshiftedautoprec(state.step0x, n, state.s, true, state.s, false, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("> printing scaled data (after applying variable and function scales)\n");
-                    alglib.ap.trace("X (scaled)    = ");
-                    apserv.tracevectorautoprec(state.step0x, 0, n, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("FScales       = ");
-                    apserv.tracevectorautoprec(state.fscales, 0, 1+nlec+nlic, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("Fi (scaled)   = ");
-                    apserv.tracevectorautoprec(state.stepkfi, 0, 1+nlec+nlic, _params);
-                    alglib.ap.trace("\n");
-                    alglib.ap.trace("|Ji| (scaled) = ");
-                    apserv.tracerownrm1autoprec(state.stepkj, 0, 1+nlec+nlic, 0, n, _params);
-                    alglib.ap.trace("\n");
-                }
-                mx = 0;
-                for(i=1; i<=nlec; i++)
-                {
-                    mx = Math.Max(mx, Math.Abs(state.stepkfi[i]));
-                }
-                for(i=nlec+1; i<=nlec+nlic; i++)
-                {
-                    mx = Math.Max(mx, state.stepkfi[i]);
-                }
-                alglib.ap.trace(System.String.Format("trustRad      = {0,0:E3}\n", state.trustrad));
-                alglib.ap.trace(System.String.Format("lin.violation = {0,0:E3}    (scaled violation of linear constraints)\n", state.replcerr));
-                alglib.ap.trace(System.String.Format("nlc.violation = {0,0:E3}    (scaled violation of nonlinear constraints)\n", mx));
-                alglib.ap.trace(System.String.Format("gammaMax      = {0,0:E3}\n", gammamax));
-            }
-            
-            //
-            // PHASE 2
-            //
-            // This phase is a primary part of the algorithm which is responsible for its
-            // convergence properties.
-            //
-            // It solves QP subproblem with possible activation and deactivation of constraints
-            // and then starts backtracking (step length is bounded by 1.0) merit function search
-            // (with second-order correction to deal with Maratos effect) on the direction produced
-            // by QP subproblem.
-            //
-            // This phase is everything we need to in order to have convergence; however,
-            // it has one performance-related issue: using "general" interior point QP solver
-            // results in slow solution times. Fast equality-constrained phase is essential for
-            // the convergence.
-            //
-            qpsubsolversetalgoipm(state.subsolver, _params);
-            sqpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.step0x, state.step0fi, state.step0j, _params);
-            meritphaseinit(state.meritstate, state.stepkx, state.stepkfi, state.stepkj, n, nec, nic, nlec, nlic, _params);
-        lbl_5:
-            if( !meritphaseiteration(state, state.meritstate, smonitor, userterminationneeded, _params) )
-            {
-                goto lbl_6;
-            }
-            state.rstate.stage = 2;
-            goto lbl_rcomm;
-        lbl_2:
-            goto lbl_5;
-        lbl_6:
-            meritphaseresults(state.meritstate, state.stepkx, state.stepkfi, state.stepkj, state.meritlagmult, ref status, _params);
-            if( status==0 )
-            {
-                goto lbl_4;
-            }
-            alglib.ap.assert(status>0, "MinSQPIteration: integrity check failed");
-            state.haslagmult = true;
-            
-            //
-            // Update trust region
-            //
-            prevtrustrad = state.trustrad;
-            deltamax = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                deltamax = Math.Max(deltamax, Math.Abs(state.step0x[i]-state.stepkx[i])/state.trustrad);
-            }
-            if( (double)(deltamax)<=(double)(sqpdeltadecrease) )
-            {
-                state.trustrad = state.trustrad*Math.Max(deltamax/sqpdeltadecrease, maxtrustraddecay);
-            }
-            if( (double)(deltamax)>=(double)(sqpdeltaincrease) )
-            {
-                state.trustrad = state.trustrad*Math.Min(deltamax/sqpdeltaincrease, maxtrustradgrowth);
-            }
-            
-            //
-            // Trace
-            //
-            if( dotrace )
-            {
-                alglib.ap.trace("\n--- outer iteration ends ---------------------------------------------------------------------------\n");
-                alglib.ap.trace(System.String.Format("deltaMax    = {0,0:F3} (ratio of step length to trust radius)\n", deltamax));
-                alglib.ap.trace(System.String.Format("newTrustRad = {0,0:E3}", state.trustrad));
-                if( (double)(state.trustrad)>(double)(prevtrustrad) )
-                {
-                    alglib.ap.trace(", trust radius increased");
-                }
-                if( (double)(state.trustrad)<(double)(prevtrustrad) )
-                {
-                    alglib.ap.trace(", trust radius decreased");
-                }
-                alglib.ap.trace("\n");
-            }
-            
-            //
-            // Advance outer iteration counter, test stopping criteria
-            //
-            apserv.inc(ref state.repiterationscount, _params);
-            if( (double)(Math.Abs(state.stepkfi[0]-state.step0fi[0]))<=(double)(stagnationepsf*Math.Abs(state.step0fi[0])) )
-            {
-                apserv.inc(ref state.fstagnationcnt, _params);
-            }
-            else
-            {
-                state.fstagnationcnt = 0;
-            }
-            if( (double)(state.trustrad)<=(double)(state.epsx) )
-            {
-                state.repterminationtype = 2;
-                if( dotrace )
-                {
-                    alglib.ap.trace(System.String.Format("> stopping condition met: trust radius is smaller than {0,0:E3}\n", state.epsx));
-                }
-                goto lbl_4;
-            }
-            if( state.maxits>0 && state.repiterationscount>=state.maxits )
-            {
-                state.repterminationtype = 5;
-                if( dotrace )
-                {
-                    alglib.ap.trace(System.String.Format("> stopping condition met: {0,0:d} iterations performed\n", state.repiterationscount));
-                }
-                goto lbl_4;
-            }
-            if( state.fstagnationcnt>=fstagnationlimit )
-            {
-                state.repterminationtype = 7;
-                if( dotrace )
-                {
-                    alglib.ap.trace(System.String.Format("> stopping criteria are too stringent: F stagnated for {0,0:d} its, stopping\n", state.fstagnationcnt));
-                }
-                goto lbl_4;
-            }
-            goto lbl_3;
-        lbl_4:
-            optserv.smoothnessmonitortracestatus(smonitor, dotrace, _params);
-            result = false;
-            return result;
-            
-            //
-            // Saving state
-            //
-        lbl_rcomm:
-            result = true;
-            state.rstate.ia[0] = n;
-            state.rstate.ia[1] = nslack;
-            state.rstate.ia[2] = nec;
-            state.rstate.ia[3] = nic;
-            state.rstate.ia[4] = nlec;
-            state.rstate.ia[5] = nlic;
-            state.rstate.ia[6] = i;
-            state.rstate.ia[7] = j;
-            state.rstate.ia[8] = status;
-            state.rstate.ia[9] = subiterationidx;
-            state.rstate.ba[0] = dotrace;
-            state.rstate.ba[1] = dodetailedtrace;
-            state.rstate.ra[0] = v;
-            state.rstate.ra[1] = vv;
-            state.rstate.ra[2] = mx;
-            state.rstate.ra[3] = gammamax;
-            state.rstate.ra[4] = deltamax;
-            state.rstate.ra[5] = multiplyby;
-            state.rstate.ra[6] = setscaleto;
-            state.rstate.ra[7] = prevtrustrad;
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function initializes SQP subproblem.
-        Should be called once in the beginning of the optimization.
-
-        INPUT PARAMETERS:
-            SState          -   solver state
-            Subsolver       -   SQP subproblem to initialize
-                                
-                                
-        RETURN VALUE:
-            True on success
-            False on failure of the QP solver (unexpected... but possible due to numerical errors)
-                                
-
-          -- ALGLIB --
-             Copyright 05.03.2018 by Bochkanov Sergey
-        *************************************************************************/
-        private static void initqpsubsolver(minsqpstate sstate,
-            minsqpsubsolver subsolver,
-            alglib.xparams _params)
-        {
-            int n = 0;
-            int nslack = 0;
-            int nec = 0;
-            int nic = 0;
-            int nlec = 0;
-            int nlic = 0;
-            int lccnt = 0;
-            int nnz = 0;
-            int offs = 0;
-            int i = 0;
-            int j = 0;
-
-            n = sstate.n;
-            nec = sstate.nec;
-            nic = sstate.nic;
-            nlec = sstate.nlec;
-            nlic = sstate.nlic;
-            nslack = n+2*(nec+nlec)+(nic+nlic);
-            lccnt = nec+nic+nlec+nlic;
-            
-            //
-            // Allocate temporaries
-            //
-            apserv.rvectorsetlengthatleast(ref subsolver.cural, lccnt, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.curau, lccnt, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.curbndl, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.curbndu, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.curb, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.sk, n, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.yk, n, _params);
-            
-            //
-            // Initial state
-            //
-            subsolver.algokind = 0;
-            apserv.rmatrixsetlengthatleast(ref subsolver.h, n, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                for(j=0; j<=n-1; j++)
-                {
-                    subsolver.h[i,j] = 0;
-                }
-                subsolver.h[i,i] = 1;
-            }
-            
-            //
-            // Linear constraints do not change across subiterations, that's
-            // why we allocate storage for them at the start of the program.
-            //
-            // A full set of "raw" constraints is stored; later we will filter
-            // out inequality ones which are inactive anywhere in the current
-            // trust region.
-            //
-            // NOTE: because sparserawlc object stores only linear constraint
-            //       (linearizations of nonlinear ones are not stored) we
-            //       allocate only minimum necessary space.
-            //
-            nnz = 0;
-            for(i=0; i<=nec+nic-1; i++)
-            {
-                for(j=0; j<=n-1; j++)
-                {
-                    if( sstate.scaledcleic[i,j]!=0.0 )
-                    {
-                        nnz = nnz+1;
-                    }
-                }
-            }
-            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.ridx, nec+nic+1, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.sparserawlc.vals, nnz, _params);
-            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.idx, nnz, _params);
-            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.didx, nec+nic, _params);
-            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.uidx, nec+nic, _params);
-            offs = 0;
-            subsolver.sparserawlc.ridx[0] = 0;
-            for(i=0; i<=nec+nic-1; i++)
-            {
-                for(j=0; j<=n-1; j++)
-                {
-                    if( sstate.scaledcleic[i,j]!=0.0 )
-                    {
-                        
-                        //
-                        // Primary part of the matrix
-                        //
-                        subsolver.sparserawlc.vals[offs] = sstate.scaledcleic[i,j];
-                        subsolver.sparserawlc.idx[offs] = j;
-                        offs = offs+1;
-                    }
-                }
-                subsolver.sparserawlc.ridx[i+1] = offs;
-            }
-            subsolver.sparserawlc.matrixtype = 1;
-            subsolver.sparserawlc.ninitialized = subsolver.sparserawlc.ridx[nec+nic];
-            subsolver.sparserawlc.m = nec+nic;
-            subsolver.sparserawlc.n = n;
-            sparse.sparseinitduidx(subsolver.sparserawlc, _params);
-        }
-
-
-        /*************************************************************************
-        This function sets subsolver algorithm to interior point method (IPM)
-
-          -- ALGLIB --
-             Copyright 05.03.2018 by Bochkanov Sergey
-        *************************************************************************/
-        private static void qpsubsolversetalgoipm(minsqpsubsolver subsolver,
-            alglib.xparams _params)
-        {
-            subsolver.algokind = 0;
-        }
-
-
-        /*************************************************************************
-        This function sets subsolver algorithm to fast active set method
-
-          -- ALGLIB --
-             Copyright 05.03.2018 by Bochkanov Sergey
-        *************************************************************************/
-        private static void qpsubsolversetalgofastactiveset(minsqpsubsolver subsolver,
-            double[] lagmult,
-            alglib.xparams _params)
-        {
-            subsolver.algokind = 1;
-        }
-
-
-        /*************************************************************************
-        Updates Hessian estimate, uses regularized formula which prevents  Hessian
-        eigenvalues from decreasing below sqrt(Eps)  and  rejects  updates  larger
-        than 1/sqrt(Eps) in magnitude.
-
-        INPUT PARAMETERS:
-            SState          -   solver state
-            Subsolver       -   SQP subproblem to initialize
-            X0, G0          -   point #0 and gradient at #0, array[N]
-            X1, G1          -   point #1 and gradient at #1, array[N]
-                                
-
-          -- ALGLIB --
-             Copyright 05.03.2018 by Bochkanov Sergey
-        *************************************************************************/
-        private static bool qpsubproblemupdatehessian(minsqpstate sstate,
-            minsqpsubsolver subsolver,
-            double[] x0,
-            double[] g0,
-            double[] x1,
-            double[] g1,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-            int i = 0;
-            int n = 0;
-            double shs = 0;
-            double rawsy = 0;
-            double sy = 0;
-            double snrm2 = 0;
-            double ynrm2 = 0;
-            double v2 = 0;
-            double gk = 0;
-            double sk = 0;
-            double yk = 0;
-            double mxs = 0;
-            double mxy = 0;
-            double mxhs = 0;
-            double reg = 0;
-            double big = 0;
-            double growth = 0;
-            double eigold = 0;
-            double eignew = 0;
-            double eigcorrection = 0;
-
-            
-            //
-            // Algorithm parameters
-            //
-            reg = 100*Math.Sqrt(math.machineepsilon);
-            big = 1/reg;
-            growth = 100.0;
-            
-            //
-            // Proceed
-            //
-            result = false;
-            n = sstate.n;
-            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, n, _params);
-            rawsy = 0;
-            sy = 0;
-            snrm2 = 0;
-            ynrm2 = 0;
-            v2 = 0;
-            mxs = 0;
-            mxy = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                
-                //
-                // Fetch components
-                //
-                sk = x1[i]-x0[i];
-                yk = g1[i]-g0[i];
-                gk = g0[i];
-                
-                //
-                // Compute raw (S,Y) without regularization (to be used later
-                // during comparison with zero)
-                //
-                rawsy = rawsy+sk*yk;
-                
-                //
-                // Convexify Y
-                //
-                yk = yk+reg*sk;
-                
-                //
-                // Compute various coefficients using regularized values
-                //
-                sy = sy+sk*yk;
-                snrm2 = snrm2+sk*sk;
-                ynrm2 = ynrm2+yk*yk;
-                v2 = v2+gk*gk;
-                mxs = Math.Max(mxs, Math.Abs(sk));
-                mxy = Math.Max(mxy, Math.Abs(yk));
-                subsolver.sk[i] = sk;
-                subsolver.yk[i] = yk;
-            }
-            shs = ablas.rmatrixsyvmv(n, subsolver.h, 0, 0, true, subsolver.sk, 0, subsolver.tmp0, _params);
-            ablas.rmatrixgemv(n, n, 1.0, subsolver.h, 0, 0, 0, subsolver.sk, 0, 0.0, subsolver.tmp0, 0, _params);
-            mxhs = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                mxhs = Math.Max(mxhs, Math.Abs(subsolver.tmp0[i]));
-            }
-            
-            //
-            // Skip updates if (Sk,Yk)<=0 or Sk*H*Sk<=0
-            //
-            // NOTE: we use 0.5*(SY+RawSY) in place of (Sk,Yk) which allows us to have slight
-            //       nonconvexity due to numerical noise.
-            //
-            if( (double)(0.5*(sy+rawsy))<=(double)(0) )
-            {
-                return result;
-            }
-            if( (double)(shs)<=(double)(0) )
-            {
-                return result;
-            }
-            if( (double)(snrm2)<=(double)(0) )
-            {
-                return result;
-            }
-            alglib.ap.assert((double)(sy)>(double)(0), "UpdateHessian: integrity check failed");
-            
-            //
-            // Skip updates with too short steps
-            //
-            // NOTE: may prevent us from updating Hessian near the solution
-            //
-            if( (double)(mxs)<=(double)(sstate.epsx) )
-            {
-                return result;
-            }
-            
-            //
-            // Too large Hessian updates sometimes may come from noisy or nonsmooth problems.
-            // 
-            // Skip updates with max(Yk)^2/(Yk,Sk)>=BIG or max(H*Sk)^2/(Sk*H*Sk)>=BIG
-            //
-            if( (double)(math.sqr(mxy)/sy)>=(double)(big) )
-            {
-                return result;
-            }
-            if( (double)(math.sqr(mxhs)/shs)>=(double)(big) )
-            {
-                return result;
-            }
-            
-            //
-            // Compare eigenvalues of H: old one removed by update, and new one.
-            // We require that new eigenvalue is not much larger/smaller than the old one.
-            // In order to enforce this condition we compute correction coefficient and
-            // multiply one of the rank-1 updates by this coefficient.
-            //
-            eigold = shs/snrm2;
-            eignew = sy/snrm2;
-            eignew = Math.Min(eignew, eigold*growth);
-            eignew = Math.Max(eignew, eigold/growth);
-            eigcorrection = eignew/(sy/snrm2);
-            
-            //
-            // Update Hessian
-            //
-            ablas.rmatrixger(n, n, subsolver.h, 0, 0, -(1/shs), subsolver.tmp0, 0, subsolver.tmp0, 0, _params);
-            ablas.rmatrixger(n, n, subsolver.h, 0, 0, eigcorrection*(1/sy), subsolver.yk, 0, subsolver.yk, 0, _params);
-            result = true;
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function solves QP subproblem given by initial point X, function vector Fi
-        and Jacobian Jac, and returns estimates of Lagrangian multipliers and search direction D[].
-
-          -- ALGLIB --
-             Copyright 05.03.2018 by Bochkanov Sergey
-        *************************************************************************/
-        private static void fassolve(minsqpsubsolver subsolver,
-            double[] d0,
-            double[,] h,
-            int nq,
-            double[] b,
-            int n,
-            double[] bndl,
-            double[] bndu,
-            sparse.sparsematrix a,
-            int m,
-            double[] al,
-            double[] au,
-            double trustrad,
-            ref int terminationtype,
-            double[] d,
-            double[] lagmult,
-            alglib.xparams _params)
-        {
-            int i = 0;
-
-            terminationtype = 1;
-            
-            //
-            // Initial point, integrity check for constraints
-            //
-            apserv.bvectorsetlengthatleast(ref subsolver.hasbndl, n, _params);
-            apserv.bvectorsetlengthatleast(ref subsolver.hasbndu, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                subsolver.hasbndl[i] = math.isfinite(bndl[i]);
-                subsolver.hasbndu[i] = math.isfinite(bndu[i]);
-                alglib.ap.assert(!subsolver.hasbndl[i] || (double)(bndl[i])<=(double)(d0[i]), "FASSolve: integrity check failed");
-                alglib.ap.assert(!subsolver.hasbndu[i] || (double)(bndu[i])>=(double)(d0[i]), "FASSolve: integrity check failed");
-                d[i] = d0[i];
-            }
-            apserv.bvectorsetlengthatleast(ref subsolver.hasal, m, _params);
-            apserv.bvectorsetlengthatleast(ref subsolver.hasau, m, _params);
-            for(i=0; i<=m-1; i++)
-            {
-                subsolver.hasal[i] = math.isfinite(al[i]);
-                subsolver.hasau[i] = math.isfinite(au[i]);
-                if( subsolver.hasal[i] && subsolver.hasau[i] )
-                {
-                    alglib.ap.assert((double)(al[i])<=(double)(au[i]), "FASSolve: integrity check failed");
-                }
-            }
-            apserv.rmatrixsetlengthatleast(ref subsolver.activea, n, n, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.activerhs, n, _params);
-            apserv.ivectorsetlengthatleast(ref subsolver.activeidx, n, _params);
-            subsolver.activesetsize = 0;
-            
-            //
-            // Activate equality constraints (at most N)
-            //
-            for(i=0; i<=m-1; i++)
-            {
-                if( (subsolver.hasal[i] && subsolver.hasau[i]) && (double)(al[i])==(double)(au[i]) )
-                {
-                    
-                    //
-                    // Stop if full set of constraints is activated
-                    //
-                    if( subsolver.activesetsize>=n )
-                    {
-                        break;
-                    }
-                }
-            }
-            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, n, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.tmp1, n, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                subsolver.tmp0[i] = trustrad;
-                subsolver.tmp1[i] = 0.0;
-            }
-            vipmsolver.vipminitdensewithslacks(subsolver.ipmsolver, subsolver.tmp0, subsolver.tmp1, nq, n, _params);
-            vipmsolver.vipmsetquadraticlinear(subsolver.ipmsolver, h, subsolver.sparsedummy, 0, true, b, _params);
-            vipmsolver.vipmsetconstraints(subsolver.ipmsolver, bndl, bndu, a, m, subsolver.densedummy, 0, al, au, _params);
-            vipmsolver.vipmoptimize(subsolver.ipmsolver, ref subsolver.tmp0, ref subsolver.tmp1, ref subsolver.tmp2, ref terminationtype, _params);
-            if( terminationtype<=0 )
-            {
-                return;
-            }
-            for(i=0; i<=n-1; i++)
-            {
-                d[i] = subsolver.tmp0[i];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                lagmult[i] = subsolver.tmp2[i];
-            }
-        }
-
-
-        /*************************************************************************
-        This function solves QP subproblem given by initial point X, function vector Fi
-        and Jacobian Jac, and returns estimates of Lagrangian multipliers and search direction D[].
-
-          -- ALGLIB --
-             Copyright 05.03.2018 by Bochkanov Sergey
-        *************************************************************************/
-        private static bool qpsubproblemsolve(minsqpstate state,
-            minsqpsubsolver subsolver,
-            double[] x,
-            double[] fi,
-            double[,] jac,
-            double[] d,
-            double[] lagmult,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-            int n = 0;
-            int nslack = 0;
-            int nec = 0;
-            int nic = 0;
-            int nlec = 0;
-            int nlic = 0;
-            int i = 0;
-            int j = 0;
-            int k = 0;
-            double v = 0;
-            double vv = 0;
-            double vright = 0;
-            double vmax = 0;
-            int lccnt = 0;
-            int offsslackec = 0;
-            int offsslacknlec = 0;
-            int offsslackic = 0;
-            int offsslacknlic = 0;
-            int offs = 0;
-            int nnz = 0;
-            int j0 = 0;
-            int j1 = 0;
-            int terminationtype = 0;
-
-            n = state.n;
-            nec = state.nec;
-            nic = state.nic;
-            nlec = state.nlec;
-            nlic = state.nlic;
-            nslack = n+2*(nec+nlec)+(nic+nlic);
-            lccnt = nec+nic+nlec+nlic;
-            
-            //
-            // Locations of slack variables
-            //
-            offsslackec = n;
-            offsslacknlec = n+2*nec;
-            offsslackic = n+2*nec+2*nlec;
-            offsslacknlic = n+2*(nec+nlec)+nic;
-            
-            //
-            // Prepare temporary structures
-            //
-            apserv.rvectorgrowto(ref subsolver.cural, lccnt, _params);
-            apserv.rvectorgrowto(ref subsolver.curau, lccnt, _params);
-            apserv.rvectorsetlengthatleast(ref subsolver.d0, nslack, _params);
-            
-            //
-            // Prepare default solution: all zeros
-            //
-            result = true;
-            for(i=0; i<=nslack-1; i++)
-            {
-                d[i] = 0.0;
-                subsolver.d0[i] = 0;
-            }
-            for(i=0; i<=lccnt-1; i++)
-            {
-                lagmult[i] = 0;
-            }
-            
-            //
-            // Linear term B
-            //
-            // NOTE: elements [N,NSlack) are equal to bigC + perturbation to improve numeric properties of QP problem
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                subsolver.curb[i] = jac[0,i];
-            }
-            v = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                v = v+math.sqr(jac[0,i]);
-            }
-            v = apserv.coalesce(Math.Sqrt(v), 1.0, _params);
-            for(i=n; i<=nslack-1; i++)
-            {
-                subsolver.curb[i] = (bigc+1.0/(1+i))*v;
-            }
-            
-            //
-            // Trust radius constraints for primary variables
-            //
-            for(i=0; i<=n-1; i++)
-            {
-                subsolver.curbndl[i] = -state.trustrad;
-                subsolver.curbndu[i] = state.trustrad;
-                if( state.hasbndl[i] )
-                {
-                    subsolver.curbndl[i] = Math.Max(subsolver.curbndl[i], state.scaledbndl[i]-x[i]);
-                }
-                if( state.hasbndu[i] )
-                {
-                    subsolver.curbndu[i] = Math.Min(subsolver.curbndu[i], state.scaledbndu[i]-x[i]);
-                }
-            }
-            
-            //
-            // Prepare storage for "effective" constraining matrix
-            //
-            nnz = subsolver.sparserawlc.ridx[nec+nic];
-            for(i=0; i<=nlec+nlic-1; i++)
-            {
-                for(j=0; j<=n-1; j++)
-                {
-                    if( jac[1+i,j]!=0.0 )
-                    {
-                        nnz = nnz+1;
-                    }
-                }
-            }
-            nnz = nnz+2*nec+nic;
-            nnz = nnz+2*nlec+nlic;
-            apserv.ivectorgrowto(ref subsolver.sparseefflc.ridx, lccnt+1, _params);
-            apserv.rvectorgrowto(ref subsolver.sparseefflc.vals, nnz, _params);
-            apserv.ivectorgrowto(ref subsolver.sparseefflc.idx, nnz, _params);
-            apserv.ivectorsetlengthatleast(ref subsolver.sparseefflc.didx, lccnt, _params);
-            apserv.ivectorsetlengthatleast(ref subsolver.sparseefflc.uidx, lccnt, _params);
-            subsolver.sparseefflc.m = 0;
-            subsolver.sparseefflc.n = nslack;
-            subsolver.sparseefflc.matrixtype = 1;
-            
-            //
-            // Append linear equality/inequality constraints
-            //
-            // Scan sparsified linear constraints stored in sparserawlc[], skip ones
-            // which are inactive anywhere in the trust region.
-            //
-            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, nslack, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                subsolver.tmp0[i] = x[i];
-            }
-            for(i=n; i<=nslack-1; i++)
-            {
-                subsolver.tmp0[i] = 0;
-            }
-            for(i=0; i<=nec+nic-1; i++)
-            {
-                
-                //
-                // Calculate:
-                // * VRight - product of X[] (extended with zeros up to NSlack elements)
-                //            and AR[i] - Ith row of sparserawlc matrix.
-                // * VMax   - maximum value of X*ARi computed over trust region
-                //
-                vright = 0;
-                vmax = 0;
-                j0 = subsolver.sparserawlc.ridx[i];
-                j1 = subsolver.sparserawlc.ridx[i+1]-1;
-                for(k=j0; k<=j1; k++)
-                {
-                    j = subsolver.sparserawlc.idx[k];
-                    v = subsolver.tmp0[j];
-                    vv = subsolver.sparserawlc.vals[k];
-                    vright = vright+vv*v;
-                    if( vv>=0 )
-                    {
-                        vmax = vmax+vv*(v+subsolver.curbndu[j]);
-                    }
-                    else
-                    {
-                        vmax = vmax+vv*(v+subsolver.curbndl[j]);
-                    }
-                }
-                
-                //
-                // If constraint is an inequality one and guaranteed to be inactive
-                // within trust region, it is skipped (row itself is retained but
-                // filled by zeros).
-                //
-                if( i>=nec && vmax<=state.scaledcleic[i,n] )
-                {
-                    offs = subsolver.sparseefflc.ridx[i];
-                    subsolver.sparseefflc.vals[offs] = -1;
-                    subsolver.sparseefflc.idx[offs] = offsslackic+(i-nec);
-                    subsolver.sparseefflc.ridx[i+1] = offs+1;
-                    subsolver.cural[i] = 0.0;
-                    subsolver.curau[i] = 0.0;
-                    subsolver.curbndl[offsslackic+(i-nec)] = 0;
-                    subsolver.curbndu[offsslackic+(i-nec)] = 0;
-                    continue;
-                }
-                
-                //
-                // Start working on row I
-                //
-                offs = subsolver.sparseefflc.ridx[i];
-                
-                //
-                // Copy constraint from sparserawlc[] to sparseefflc[]
-                //
-                j0 = subsolver.sparserawlc.ridx[i];
-                j1 = subsolver.sparserawlc.ridx[i+1]-1;
-                for(k=j0; k<=j1; k++)
-                {
-                    subsolver.sparseefflc.idx[offs] = subsolver.sparserawlc.idx[k];
-                    subsolver.sparseefflc.vals[offs] = subsolver.sparserawlc.vals[k];
-                    offs = offs+1;
-                }
-                
-                //
-                // Set up slack variables
-                //
-                if( i<nec )
-                {
-                    subsolver.sparseefflc.vals[offs+0] = -1;
-                    subsolver.sparseefflc.vals[offs+1] = 1;
-                    subsolver.sparseefflc.idx[offs+0] = offsslackec+2*i+0;
-                    subsolver.sparseefflc.idx[offs+1] = offsslackec+2*i+1;
-                    offs = offs+2;
-                }
-                else
-                {
-                    
-                    //
-                    // Slack variables for inequality constraints
-                    //
-                    subsolver.sparseefflc.vals[offs] = -1;
-                    subsolver.sparseefflc.idx[offs] = offsslackic+(i-nec);
-                    offs = offs+1;
-                }
-                
-                //
-                // Finalize row
-                //
-                subsolver.sparseefflc.ridx[i+1] = offs;
-                
-                //
-                // Set up bounds and slack part of D0.
-                //
-                // NOTE: bounds for equality and inequality constraints are
-                //       handled differently
-                //
-                v = vright-state.scaledcleic[i,n];
-                if( i<nec )
-                {
-                    subsolver.cural[i] = -v;
-                    subsolver.curau[i] = -v;
-                    subsolver.curbndl[offsslackec+2*i+0] = 0;
-                    subsolver.curbndl[offsslackec+2*i+1] = 0;
-                    subsolver.curbndu[offsslackec+2*i+0] = Math.Abs(v);
-                    subsolver.curbndu[offsslackec+2*i+1] = Math.Abs(v);
-                    if( (double)(v)>=(double)(0) )
-                    {
-                        subsolver.d0[offsslackec+2*i+0] = Math.Abs(v);
-                        subsolver.d0[offsslackec+2*i+1] = 0;
-                    }
-                    else
-                    {
-                        subsolver.d0[offsslackec+2*i+0] = 0;
-                        subsolver.d0[offsslackec+2*i+1] = Math.Abs(v);
-                    }
-                }
-                else
-                {
-                    subsolver.cural[i] = Double.NegativeInfinity;
-                    subsolver.curau[i] = -v;
-                    subsolver.curbndl[offsslackic+(i-nec)] = 0;
-                    subsolver.curbndu[offsslackic+(i-nec)] = Math.Max(v, 0);
-                    subsolver.d0[offsslackic+(i-nec)] = Math.Max(v, 0);
-                }
-            }
-            subsolver.sparseefflc.m = subsolver.sparseefflc.m+(nec+nic);
-            
-            //
-            // Append nonlinear equality/inequality constraints
-            //
-            for(i=0; i<=nlec+nlic-1; i++)
-            {
-                
-                //
-                // Calculate scale coefficient
-                //
-                vv = 0;
-                for(j=0; j<=n-1; j++)
-                {
-                    v = jac[1+i,j];
-                    vv = vv+v*v;
-                }
-                vv = 1/apserv.coalesce(Math.Sqrt(vv), 1, _params);
-                
-                //
-                // Copy scaled row
-                //
-                offs = subsolver.sparseefflc.ridx[subsolver.sparseefflc.m+i];
-                for(j=0; j<=n-1; j++)
-                {
-                    if( jac[1+i,j]!=0.0 )
-                    {
-                        subsolver.sparseefflc.vals[offs] = vv*jac[1+i,j];
-                        subsolver.sparseefflc.idx[offs] = j;
-                        offs = offs+1;
-                    }
-                }
-                if( i<nlec )
-                {
-                    
-                    //
-                    // Add slack terms for equality constraints
-                    //
-                    subsolver.sparseefflc.vals[offs+0] = -1;
-                    subsolver.sparseefflc.vals[offs+1] = 1;
-                    subsolver.sparseefflc.idx[offs+0] = offsslacknlec+2*i+0;
-                    subsolver.sparseefflc.idx[offs+1] = offsslacknlec+2*i+1;
-                    offs = offs+2;
-                }
-                else
-                {
-                    
-                    //
-                    // Add slack terms for inequality constraints
-                    //
-                    subsolver.sparseefflc.vals[offs] = -1;
-                    subsolver.sparseefflc.idx[offs] = offsslacknlic+(i-nlec);
-                    offs = offs+1;
-                }
-                subsolver.sparseefflc.ridx[subsolver.sparseefflc.m+i+1] = offs;
-                
-                //
-                // Set box constraints on slack variables and bounds on linear equality/inequality constraints
-                //
-                v = vv*fi[1+i];
-                if( i<nlec )
-                {
-                    
-                    //
-                    // Equality constraint
-                    //
-                    subsolver.cural[subsolver.sparseefflc.m+i] = -v;
-                    subsolver.curau[subsolver.sparseefflc.m+i] = -v;
-                    subsolver.curbndl[offsslacknlec+2*i+0] = 0;
-                    subsolver.curbndl[offsslacknlec+2*i+1] = 0;
-                    subsolver.curbndu[offsslacknlec+2*i+0] = Math.Abs(v);
-                    subsolver.curbndu[offsslacknlec+2*i+1] = Math.Abs(v);
-                    if( (double)(v)>=(double)(0) )
-                    {
-                        subsolver.d0[offsslacknlec+2*i+0] = Math.Abs(v);
-                        subsolver.d0[offsslacknlec+2*i+1] = 0;
-                    }
-                    else
-                    {
-                        subsolver.d0[offsslacknlec+2*i+0] = 0;
-                        subsolver.d0[offsslacknlec+2*i+1] = Math.Abs(v);
-                    }
-                }
-                else
-                {
-                    
-                    //
-                    // Inequality constraint
-                    //
-                    subsolver.cural[subsolver.sparseefflc.m+i] = Double.NegativeInfinity;
-                    subsolver.curau[subsolver.sparseefflc.m+i] = -v;
-                    subsolver.curbndl[offsslacknlic+(i-nlec)] = 0;
-                    subsolver.curbndu[offsslacknlic+(i-nlec)] = Math.Max(v, 0);
-                    subsolver.d0[offsslacknlic+(i-nlec)] = Math.Max(v, 0);
-                }
-            }
-            subsolver.sparseefflc.m = subsolver.sparseefflc.m+(nlec+nlic);
-            
-            //
-            // Finalize sparse matrix structure
-            //
-            alglib.ap.assert(subsolver.sparseefflc.ridx[subsolver.sparseefflc.m]<=alglib.ap.len(subsolver.sparseefflc.idx), "QPSubproblemSolve: critical integrity check failed");
-            alglib.ap.assert(subsolver.sparseefflc.ridx[subsolver.sparseefflc.m]<=alglib.ap.len(subsolver.sparseefflc.vals), "QPSubproblemSolve: critical integrity check failed");
-            subsolver.sparseefflc.ninitialized = subsolver.sparseefflc.ridx[subsolver.sparseefflc.m];
-            sparse.sparseinitduidx(subsolver.sparseefflc, _params);
-            
-            //
-            // Solve quadratic program
-            //
-            if( subsolver.algokind==0 )
-            {
-                
-                //
-                // Use dense IPM
-                //
-                apserv.rvectorsetlengthatleast(ref subsolver.tmp0, nslack, _params);
-                apserv.rvectorsetlengthatleast(ref subsolver.tmp1, nslack, _params);
-                for(i=0; i<=nslack-1; i++)
-                {
-                    subsolver.tmp0[i] = state.trustrad;
-                    subsolver.tmp1[i] = 0.0;
-                }
-                vipmsolver.vipminitdensewithslacks(subsolver.ipmsolver, subsolver.tmp0, subsolver.tmp1, n, nslack, _params);
-                vipmsolver.vipmsetquadraticlinear(subsolver.ipmsolver, subsolver.h, subsolver.sparsedummy, 0, true, subsolver.curb, _params);
-                vipmsolver.vipmsetconstraints(subsolver.ipmsolver, subsolver.curbndl, subsolver.curbndu, subsolver.sparseefflc, subsolver.sparseefflc.m, subsolver.densedummy, 0, subsolver.cural, subsolver.curau, _params);
-                vipmsolver.vipmoptimize(subsolver.ipmsolver, ref subsolver.tmp0, ref subsolver.tmp1, ref subsolver.tmp2, ref terminationtype, _params);
-                if( terminationtype<=0 )
-                {
-                    
-                    //
-                    // QP solver failed due to numerical errors; exit
-                    //
-                    result = false;
-                    return result;
-                }
-                for(i=0; i<=nslack-1; i++)
-                {
-                    d[i] = subsolver.tmp0[i];
-                }
-                for(i=0; i<=lccnt-1; i++)
-                {
-                    lagmult[i] = subsolver.tmp2[i];
-                }
-                return result;
-            }
-            if( subsolver.algokind==1 )
-            {
-                
-                //
-                // Use fast active set
-                //
-                fassolve(subsolver, subsolver.d0, subsolver.h, n, subsolver.curb, nslack, subsolver.curbndl, subsolver.curbndu, subsolver.sparseefflc, subsolver.sparseefflc.m, subsolver.cural, subsolver.curau, state.trustrad, ref terminationtype, d, lagmult, _params);
-                if( terminationtype<=0 )
-                {
-                    
-                    //
-                    // QP solver failed due to numerical errors; exit
-                    //
-                    result = false;
-                    return result;
-                }
-                return result;
-            }
-            
-            //
-            // Unexpected
-            //
-            alglib.ap.assert(false, "SQP: unexpected subsolver type");
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function initializes MeritPhase temporaries. It should be called before
-        beginning of each new iteration. You may call it multiple  times  for  the
-        same instance of MeritPhase temporaries.
-
-        INPUT PARAMETERS:
-            MeritState          -   instance to be initialized.
-            N                   -   problem dimensionality
-            NEC, NIC            -   linear equality/inequality constraint count
-            NLEC, NLIC          -   nonlinear equality/inequality constraint count
-
-        OUTPUT PARAMETERS:
-            MeritState          -   instance being initialized
-
-          -- ALGLIB --
-             Copyright 05.02.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void meritphaseinit(minsqpmeritphasestate meritstate,
-            double[] curx,
-            double[] curfi,
-            double[,] curj,
-            int n,
-            int nec,
-            int nic,
-            int nlec,
-            int nlic,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-            int nslack = 0;
-
-            nslack = n+2*(nec+nlec)+(nic+nlic);
-            meritstate.n = n;
-            meritstate.nec = nec;
-            meritstate.nic = nic;
-            meritstate.nlec = nlec;
-            meritstate.nlic = nlic;
-            apserv.rvectorsetlengthatleast(ref meritstate.d, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.dx, nslack, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepkx, n, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepkxc, n, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepkxn, n, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepkfi, 1+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepkfic, 1+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepkfin, 1+nlec+nlic, _params);
-            apserv.rmatrixsetlengthatleast(ref meritstate.stepkj, 1+nlec+nlic, n, _params);
-            apserv.rmatrixsetlengthatleast(ref meritstate.stepkjc, 1+nlec+nlic, n, _params);
-            apserv.rmatrixsetlengthatleast(ref meritstate.stepkjn, 1+nlec+nlic, n, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepklaggrad, n, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.stepknlaggrad, n, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.lagmult, nec+nic+nlec+nlic, _params);
-            apserv.rvectorsetlengthatleast(ref meritstate.dummylagmult, nec+nic+nlec+nlic, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                meritstate.stepkx[i] = curx[i];
-            }
-            for(i=0; i<=nlec+nlic; i++)
-            {
-                meritstate.stepkfi[i] = curfi[i];
-                for(j=0; j<=n-1; j++)
-                {
-                    meritstate.stepkj[i,j] = curj[i,j];
-                }
-            }
-            meritstate.rmeritphasestate.ia = new int[7+1];
-            meritstate.rmeritphasestate.ba = new bool[3+1];
-            meritstate.rmeritphasestate.ra = new double[8+1];
-            meritstate.rmeritphasestate.stage = -1;
-        }
-
-
-        /*************************************************************************
-        This function tries to perform either phase #1 or phase #3 step.
-
-        Former corresponds to linear model step (without conjugacy constraints) with
-        correction for nonlinearity ("second order correction").  Such  correction
-        helps to overcome  Maratos  effect  (a  tendency  of  L1  penalized  merit
-        functions to reject nonzero steps).
-
-        Latter is a step using linear model with no second order correction.
-
-        INPUT PARAMETERS:
-            State       -   SQP solver state
-            SMonitor    -   smoothness monitor
-            UserTerminationNeeded-True if user requested termination
-            LagMult     -   array[NEC+NIC+NLEC+NLIC], contents ignored on input.
-
-        OUTPUT PARAMETERS:
-            State       -   RepTerminationType is set to current termination code (if Status=0).
-            LagMult     -   filled with current Lagrange multipliers
-            Status      -   when reverse communication is done, Status is set to:
-                            * positive value,  if we can proceed to the next stage
-                              of the outer iteration
-                            * zero, if algorithm is terminated (RepTerminationType
-                              is set to appropriate value)
-
-          -- ALGLIB --
-             Copyright 05.02.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static bool meritphaseiteration(minsqpstate state,
-            minsqpmeritphasestate meritstate,
-            optserv.smoothnessmonitor smonitor,
-            bool userterminationneeded,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-            int n = 0;
-            int nslack = 0;
-            int nec = 0;
-            int nic = 0;
-            int nlec = 0;
-            int nlic = 0;
-            int i = 0;
-            int j = 0;
-            double v = 0;
-            double mx = 0;
-            double f0 = 0;
-            double f1 = 0;
-            double nu = 0;
-            double localstp = 0;
-            double stepklagval = 0;
-            double stepknlagval = 0;
-            bool hessianupdateperformed = new bool();
-            bool dotrace = new bool();
-            bool doprobing = new bool();
-            bool dotracexd = new bool();
-            double stp = 0;
-
-            
-            //
-            // Reverse communication preparations
-            // I know it looks ugly, but it works the same way
-            // anywhere from C++ to Python.
-            //
-            // This code initializes locals by:
-            // * random values determined during code
-            //   generation - on first subroutine call
-            // * values from previous call - on subsequent calls
-            //
-            if( meritstate.rmeritphasestate.stage>=0 )
-            {
-                n = meritstate.rmeritphasestate.ia[0];
-                nslack = meritstate.rmeritphasestate.ia[1];
-                nec = meritstate.rmeritphasestate.ia[2];
-                nic = meritstate.rmeritphasestate.ia[3];
-                nlec = meritstate.rmeritphasestate.ia[4];
-                nlic = meritstate.rmeritphasestate.ia[5];
-                i = meritstate.rmeritphasestate.ia[6];
-                j = meritstate.rmeritphasestate.ia[7];
-                hessianupdateperformed = meritstate.rmeritphasestate.ba[0];
-                dotrace = meritstate.rmeritphasestate.ba[1];
-                doprobing = meritstate.rmeritphasestate.ba[2];
-                dotracexd = meritstate.rmeritphasestate.ba[3];
-                v = meritstate.rmeritphasestate.ra[0];
-                mx = meritstate.rmeritphasestate.ra[1];
-                f0 = meritstate.rmeritphasestate.ra[2];
-                f1 = meritstate.rmeritphasestate.ra[3];
-                nu = meritstate.rmeritphasestate.ra[4];
-                localstp = meritstate.rmeritphasestate.ra[5];
-                stepklagval = meritstate.rmeritphasestate.ra[6];
-                stepknlagval = meritstate.rmeritphasestate.ra[7];
-                stp = meritstate.rmeritphasestate.ra[8];
-            }
-            else
-            {
-                n = -229;
-                nslack = -536;
-                nec = 487;
-                nic = -115;
-                nlec = 886;
-                nlic = 346;
-                i = -722;
-                j = -413;
-                hessianupdateperformed = true;
-                dotrace = true;
-                doprobing = true;
-                dotracexd = false;
-                v = -154;
-                mx = 306;
-                f0 = -1011;
-                f1 = 951;
-                nu = -463;
-                localstp = 88;
-                stepklagval = -861;
-                stepknlagval = -678;
-                stp = -731;
-            }
-            if( meritstate.rmeritphasestate.stage==0 )
-            {
-                goto lbl_0;
-            }
-            if( meritstate.rmeritphasestate.stage==1 )
-            {
-                goto lbl_1;
-            }
-            if( meritstate.rmeritphasestate.stage==2 )
-            {
-                goto lbl_2;
-            }
-            if( meritstate.rmeritphasestate.stage==3 )
-            {
-                goto lbl_3;
-            }
-            
-            //
-            // Routine body
-            //
-            n = state.n;
-            nec = state.nec;
-            nic = state.nic;
-            nlec = state.nlec;
-            nlic = state.nlic;
-            nslack = n+2*(nec+nlec)+(nic+nlic);
-            dotrace = ap.istraceenabled("SQP", _params);
-            dotracexd = dotrace && ap.istraceenabled("SQP.DETAILED", _params);
-            doprobing = ap.istraceenabled("SQP.PROBING", _params);
-            alglib.ap.assert(alglib.ap.len(meritstate.lagmult)>=nec+nic+nlec+nlic, "MeritPhaseIteration: integrity check failed");
-            
-            //
-            // Report iteration beginning
-            //
-            if( dotrace )
-            {
-                alglib.ap.trace("\n--- quadratic step with automatic second-order correction ------------------------------------------\n");
-            }
-            
-            //
-            // Default decision is to continue algorithm
-            //
-            meritstate.status = 1;
-            stp = 0;
-            
-            //
-            // Determine step direction using linearized model with no conjugacy terms
-            //
-            if( !qpsubproblemsolve(state, state.subsolver, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, meritstate.d, meritstate.lagmult, _params) )
-            {
-                if( dotrace )
-                {
-                    alglib.ap.trace("> [WARNING] QP subproblem failed\n");
-                }
-                result = false;
-                return result;
-            }
-            
-            //
-            // Perform merit function line search.
-            //
-            // First, we try unit step. If it does not decrease merit function,
-            // a second-order correction is tried (helps to combat Maratos effect).
-            //
-            localstp = 1.0;
-            f0 = meritfunction(state, meritstate.stepkx, meritstate.stepkfi, meritstate.lagmult, meritstate.tmpmerit, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                meritstate.stepkxn[i] = meritstate.stepkx[i]+localstp*meritstate.d[i];
-            }
-            sqpsendx(state, meritstate.stepkxn, _params);
-            state.needfij = true;
-            meritstate.rmeritphasestate.stage = 0;
-            goto lbl_rcomm;
-        lbl_0:
-            state.needfij = false;
-            if( !sqpretrievefij(state, meritstate.stepkfin, meritstate.stepkjn, _params) )
-            {
-                
-                //
-                // Failed to retrieve func/Jac, infinities detected
-                //
-                state.repterminationtype = -8;
-                meritstate.status = 0;
-                if( dotrace )
-                {
-                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
-                }
-                result = false;
-                return result;
-            }
-            optserv.smoothnessmonitorstartlinesearch(smonitor, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, _params);
-            optserv.smoothnessmonitorenqueuepoint(smonitor, meritstate.d, localstp, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
-            f1 = meritfunction(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.lagmult, meritstate.tmpmerit, _params);
-            if( (double)(f1)<(double)(f0) )
-            {
-                goto lbl_4;
-            }
-            
-            //
-            // Full step increases merit function. Let's compute second order
-            // correction to the constraint model and recompute trial step D:
-            // * use original linearization of the target
-            // * extrapolate linearization of nonlinear constraints at StepKX+D back to origin
-            //
-            //
-            meritstate.stepkfic[0] = meritstate.stepkfi[0];
-            for(j=0; j<=n-1; j++)
-            {
-                meritstate.stepkjc[0,j] = meritstate.stepkj[0,j];
-            }
-            for(i=1; i<=nlec+nlic; i++)
-            {
-                v = 0;
-                for(j=0; j<=n-1; j++)
-                {
-                    v = v+meritstate.d[j]*meritstate.stepkj[i,j];
-                    meritstate.stepkjc[i,j] = meritstate.stepkj[i,j];
-                }
-                meritstate.stepkfic[i] = meritstate.stepkfin[i]-v;
-            }
-            if( !qpsubproblemsolve(state, state.subsolver, meritstate.stepkx, meritstate.stepkfic, meritstate.stepkjc, meritstate.dx, meritstate.dummylagmult, _params) )
-            {
-                if( dotrace )
-                {
-                    alglib.ap.trace("> [WARNING] second-order QP subproblem failed\n");
-                }
-                result = false;
-                return result;
-            }
-            for(i=0; i<=n-1; i++)
-            {
-                meritstate.d[i] = meritstate.dx[i];
-            }
-            
-            //
-            // Perform line search, we again try full step (maybe it will work after SOC)
-            //
-            // NOTE: we use MeritLagMult - Lagrange multipliers computed for initial,
-            //       uncorrected task - for the merit function model.
-            //       Using DummyLagMult can destabilize algorithm.
-            //
-            localstp = 1.0;
-            nu = 0.5;
-            f1 = f0;
-        lbl_6:
-            if( false )
-            {
-                goto lbl_7;
-            }
-            for(i=0; i<=n-1; i++)
-            {
-                meritstate.stepkxn[i] = meritstate.stepkx[i]+localstp*meritstate.d[i];
-            }
-            sqpsendx(state, meritstate.stepkxn, _params);
-            state.needfij = true;
-            meritstate.rmeritphasestate.stage = 1;
-            goto lbl_rcomm;
-        lbl_1:
-            state.needfij = false;
-            if( !sqpretrievefij(state, meritstate.stepkfin, meritstate.stepkjn, _params) )
-            {
-                
-                //
-                // Failed to retrieve func/Jac, infinities detected
-                //
-                state.repterminationtype = -8;
-                meritstate.status = 0;
-                if( dotrace )
-                {
-                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
-                }
-                result = false;
-                return result;
-            }
-            optserv.smoothnessmonitorenqueuepoint(smonitor, meritstate.d, localstp, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
-            f1 = meritfunction(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.lagmult, meritstate.tmpmerit, _params);
-            if( (double)(f1)<(double)(f0) )
-            {
-                
-                //
-                // Step is found!
-                //
-                goto lbl_7;
-            }
-            if( (double)(localstp)<(double)(0.001) )
-            {
-                
-                //
-                // Step is shorter than 0.001 times current search direction,
-                // it means that no good step can be found.
-                //
-                localstp = 0;
-                sqpcopystate(state, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
-                goto lbl_7;
-            }
-            localstp = nu*localstp;
-            nu = Math.Max(0.1, 0.5*nu);
-            goto lbl_6;
-        lbl_7:
-        lbl_4:
-            optserv.smoothnessmonitorfinalizelinesearch(smonitor, _params);
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] )
-                {
-                    meritstate.stepkxn[i] = Math.Max(meritstate.stepkxn[i], state.scaledbndl[i]);
-                }
-                if( state.hasbndu[i] )
-                {
-                    meritstate.stepkxn[i] = Math.Min(meritstate.stepkxn[i], state.scaledbndu[i]);
-                }
-            }
-            if( userterminationneeded )
-            {
-                
-                //
-                // User requested termination, break before we move to new point
-                //
-                state.repterminationtype = 8;
-                meritstate.status = 0;
-                if( dotrace )
-                {
-                    alglib.ap.trace("> user requested termination\n");
-                }
-                result = false;
-                return result;
-            }
-            lagrangianfg(state, meritstate.stepkx, state.trustrad, meritstate.stepkfi, meritstate.stepkj, meritstate.lagmult, meritstate.tmplagrangianfg, ref stepklagval, meritstate.stepklaggrad, _params);
-            lagrangianfg(state, meritstate.stepkxn, state.trustrad, meritstate.stepkfin, meritstate.stepkjn, meritstate.lagmult, meritstate.tmplagrangianfg, ref stepknlagval, meritstate.stepknlaggrad, _params);
-            
-            //
-            // Trace
-            //
-            if( !dotrace )
-            {
-                goto lbl_8;
-            }
-            if( !doprobing )
-            {
-                goto lbl_10;
-            }
-            optserv.smoothnessmonitorstartprobing(smonitor, 1.0, 2, state.trustrad, _params);
-        lbl_12:
-            if( !optserv.smoothnessmonitorprobe(smonitor, _params) )
-            {
-                goto lbl_13;
-            }
-            for(j=0; j<=n-1; j++)
-            {
-                meritstate.stepkxc[j] = meritstate.stepkx[j]+smonitor.probingstp*meritstate.d[j];
-                if( state.hasbndl[j] )
-                {
-                    meritstate.stepkxc[j] = Math.Max(meritstate.stepkxc[j], state.scaledbndl[j]);
-                }
-                if( state.hasbndu[j] )
-                {
-                    meritstate.stepkxc[j] = Math.Min(meritstate.stepkxc[j], state.scaledbndu[j]);
-                }
-            }
-            sqpsendx(state, meritstate.stepkxc, _params);
-            state.needfij = true;
-            meritstate.rmeritphasestate.stage = 2;
-            goto lbl_rcomm;
-        lbl_2:
-            state.needfij = false;
-            if( !sqpretrievefij(state, meritstate.stepkfic, meritstate.stepkjc, _params) )
-            {
-                goto lbl_13;
-            }
-            smonitor.probingf[0] = rawlagrangian(state, meritstate.stepkxc, meritstate.stepkfic, meritstate.lagmult, meritstate.tmpmerit, _params);
-            smonitor.probingf[1] = meritstate.stepkfic[0];
-            goto lbl_12;
-        lbl_13:
-            alglib.ap.trace("*** ------------------------------------------------------------\n");
-            alglib.ap.trace("*** |   probing search direction suggested by QP subproblem    |\n");
-            alglib.ap.trace("*** ------------------------------------------------------------\n");
-            alglib.ap.trace("*** |  Step  | Lagrangian (unaugmentd)|    Target  function    |\n");
-            alglib.ap.trace("*** |along  D|     must be smooth     |     must be smooth     |\n");
-            alglib.ap.trace("*** |        | function   |    slope  | function   |    slope  |\n");
-            optserv.smoothnessmonitortraceprobingresults(smonitor, _params);
-        lbl_10:
-            mx = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                mx = Math.Max(mx, Math.Abs(meritstate.d[i])/state.trustrad);
-            }
-            if( (double)(localstp)>(double)(0) )
-            {
-                alglib.ap.trace("> nonzero linear step was performed\n");
-            }
-            else
-            {
-                alglib.ap.trace("> zero linear step was performed\n");
-            }
-            alglib.ap.trace(System.String.Format("max(|Di|)/TrustRad = {0,0:F6}\n", mx));
-            alglib.ap.trace(System.String.Format("stp = {0,0:F6}\n", localstp));
-            if( dotracexd )
-            {
-                alglib.ap.trace("X0 (scaled) = ");
-                apserv.tracevectorautoprec(meritstate.stepkx, 0, n, _params);
-                alglib.ap.trace("\n");
-                alglib.ap.trace("D  (scaled) = ");
-                apserv.tracevectorautoprec(meritstate.d, 0, n, _params);
-                alglib.ap.trace("\n");
-                alglib.ap.trace("X1 (scaled) = ");
-                apserv.tracevectorautoprec(meritstate.stepkxn, 0, n, _params);
-                alglib.ap.trace("\n");
-            }
-            alglib.ap.trace(System.String.Format("meritF:         {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", f0, f1, f1-f0));
-            alglib.ap.trace(System.String.Format("scaled-targetF: {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", meritstate.stepkfi[0], meritstate.stepkfin[0], meritstate.stepkfin[0]-meritstate.stepkfi[0]));
-            alglib.ap.trace("> evaluating possible Hessian update\n");
-            v = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                v = v+(meritstate.stepkxn[i]-meritstate.stepkx[i])*(meritstate.stepknlaggrad[i]-meritstate.stepklaggrad[i]);
-            }
-            alglib.ap.trace(System.String.Format("(Sk,Yk)     = {0,0:E3}\n", v));
-            v = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                v = v+math.sqr(meritstate.stepkxn[i]-meritstate.stepkx[i]);
-            }
-            alglib.ap.trace(System.String.Format("(Sk,Sk)     = {0,0:E3}\n", v));
-            v = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                v = v+math.sqr(meritstate.stepknlaggrad[i]-meritstate.stepklaggrad[i]);
-            }
-            alglib.ap.trace(System.String.Format("(Yk,Yk)     = {0,0:E3}\n", v));
-            v = 0;
-            for(i=0; i<=n-1; i++)
-            {
-                v = v+math.sqr(meritstate.stepkxn[i]-meritstate.stepkx[i])*state.subsolver.h[i,i];
-                for(j=i+1; j<=n-1; j++)
-                {
-                    v = v+2*(meritstate.stepkxn[i]-meritstate.stepkx[i])*state.subsolver.h[i,j]*(meritstate.stepkxn[j]-meritstate.stepkx[j]);
-                }
-            }
-            alglib.ap.trace(System.String.Format("Sk*Bk*Sk    = {0,0:E3}\n", v));
-            v = state.subsolver.h[0,0];
-            for(i=0; i<=n-1; i++)
-            {
-                v = Math.Min(v, state.subsolver.h[i,i]);
-            }
-            alglib.ap.trace(System.String.Format("mindiag(Bk) = {0,0:E3}\n", v));
-            v = state.subsolver.h[0,0];
-            for(i=0; i<=n-1; i++)
-            {
-                v = Math.Max(v, state.subsolver.h[i,i]);
-            }
-            alglib.ap.trace(System.String.Format("maxdiag(Bk) = {0,0:E3}\n", v));
-        lbl_8:
-            
-            //
-            // Perform Hessian update
-            //
-            hessianupdateperformed = false;
-            if( (double)(localstp)>(double)(0) )
-            {
-                hessianupdateperformed = qpsubproblemupdatehessian(state, state.subsolver, meritstate.stepkx, meritstate.stepklaggrad, meritstate.stepkxn, meritstate.stepknlaggrad, _params);
-            }
-            if( dotrace )
-            {
-                if( hessianupdateperformed )
-                {
-                    alglib.ap.trace("> Hessian updated\n");
-                    v = state.subsolver.h[0,0];
-                    for(i=0; i<=n-1; i++)
-                    {
-                        v = Math.Min(v, state.subsolver.h[i,i]);
-                    }
-                    alglib.ap.trace(System.String.Format("mindiag(Bk) = {0,0:E3}\n", v));
-                    v = state.subsolver.h[0,0];
-                    for(i=0; i<=n-1; i++)
-                    {
-                        v = Math.Max(v, state.subsolver.h[i,i]);
-                    }
-                    alglib.ap.trace(System.String.Format("maxdiag(Bk) = {0,0:E3}\n", v));
-                }
-                else
-                {
-                    alglib.ap.trace("> skipping Hessian update\n");
-                }
-            }
-            
-            //
-            // Move to new point
-            //
-            stp = localstp;
-            sqpcopystate(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, _params);
-            if( (double)(localstp)<=(double)(0) )
-            {
-                goto lbl_14;
-            }
-            
-            //
-            // Report one more inner iteration
-            //
-            sqpsendx(state, meritstate.stepkx, _params);
-            state.f = meritstate.stepkfi[0]*state.fscales[0];
-            state.xupdated = true;
-            meritstate.rmeritphasestate.stage = 3;
-            goto lbl_rcomm;
-        lbl_3:
-            state.xupdated = false;
-            
-            //
-            // Update constraint violations
-            //
-            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, meritstate.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
-            optserv.unscaleandchecknlcviolation(meritstate.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
-        lbl_14:
-            result = false;
-            return result;
-            
-            //
-            // Saving state
-            //
-        lbl_rcomm:
-            result = true;
-            meritstate.rmeritphasestate.ia[0] = n;
-            meritstate.rmeritphasestate.ia[1] = nslack;
-            meritstate.rmeritphasestate.ia[2] = nec;
-            meritstate.rmeritphasestate.ia[3] = nic;
-            meritstate.rmeritphasestate.ia[4] = nlec;
-            meritstate.rmeritphasestate.ia[5] = nlic;
-            meritstate.rmeritphasestate.ia[6] = i;
-            meritstate.rmeritphasestate.ia[7] = j;
-            meritstate.rmeritphasestate.ba[0] = hessianupdateperformed;
-            meritstate.rmeritphasestate.ba[1] = dotrace;
-            meritstate.rmeritphasestate.ba[2] = doprobing;
-            meritstate.rmeritphasestate.ba[3] = dotracexd;
-            meritstate.rmeritphasestate.ra[0] = v;
-            meritstate.rmeritphasestate.ra[1] = mx;
-            meritstate.rmeritphasestate.ra[2] = f0;
-            meritstate.rmeritphasestate.ra[3] = f1;
-            meritstate.rmeritphasestate.ra[4] = nu;
-            meritstate.rmeritphasestate.ra[5] = localstp;
-            meritstate.rmeritphasestate.ra[6] = stepklagval;
-            meritstate.rmeritphasestate.ra[7] = stepknlagval;
-            meritstate.rmeritphasestate.ra[8] = stp;
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function initializes MeritPhase temporaries. It should be called before
-        beginning of each new iteration. You may call it multiple  times  for  the
-        same instance of MeritPhase temporaries.
-
-        INPUT PARAMETERS:
-            MeritState          -   instance to be initialized.
-            N                   -   problem dimensionality
-            NEC, NIC            -   linear equality/inequality constraint count
-            NLEC, NLIC          -   nonlinear equality/inequality constraint count
-
-        OUTPUT PARAMETERS:
-            MeritState          -   instance being initialized
-
-          -- ALGLIB --
-             Copyright 05.02.2019 by Bochkanov Sergey
-        *************************************************************************/
-        private static void meritphaseresults(minsqpmeritphasestate meritstate,
-            double[] curx,
-            double[] curfi,
-            double[,] curj,
-            double[] lagmult,
-            ref int status,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int j = 0;
-
-            status = meritstate.status;
-            for(i=0; i<=meritstate.n-1; i++)
-            {
-                curx[i] = meritstate.stepkx[i];
-            }
-            for(i=0; i<=meritstate.nlec+meritstate.nlic; i++)
-            {
-                curfi[i] = meritstate.stepkfi[i];
-                for(j=0; j<=meritstate.n-1; j++)
-                {
-                    curj[i,j] = meritstate.stepkj[i,j];
-                }
-            }
-            alglib.ap.assert(alglib.ap.len(lagmult)>=meritstate.nec+meritstate.nic+meritstate.nlec+meritstate.nlic, "MeritPhaseResults: LagMult too short");
-            for(i=0; i<=meritstate.nec+meritstate.nic+meritstate.nlec+meritstate.nlic-1; i++)
-            {
-                lagmult[i] = meritstate.lagmult[i];
-            }
-        }
-
-
-        /*************************************************************************
-        Copies X to State.X
-        *************************************************************************/
-        private static void sqpsendx(minsqpstate state,
-            double[] xs,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int n = 0;
-
-            n = state.n;
-            for(i=0; i<=n-1; i++)
-            {
-                if( state.hasbndl[i] && xs[i]<=state.scaledbndl[i] )
-                {
-                    state.x[i] = state.scaledbndl[i];
-                    continue;
-                }
-                if( state.hasbndu[i] && xs[i]>=state.scaledbndu[i] )
-                {
-                    state.x[i] = state.scaledbndu[i];
-                    continue;
-                }
-                state.x[i] = xs[i];
-            }
-        }
-
-
-        /*************************************************************************
-        Retrieves F-vector and scaled Jacobian, copies them to FiS and JS.
-
-        Returns True on success, False on failure (when F or J are not finite numbers).
-        *************************************************************************/
-        private static bool sqpretrievefij(minsqpstate state,
-            double[] fis,
-            double[,] js,
-            alglib.xparams _params)
-        {
-            bool result = new bool();
-            int nlec = 0;
-            int nlic = 0;
-            int n = 0;
-            int i = 0;
-            int j = 0;
-            double v = 0;
-            double vv = 0;
-
-            n = state.n;
-            nlec = state.nlec;
-            nlic = state.nlic;
-            v = 0;
-            for(i=0; i<=nlec+nlic; i++)
-            {
-                vv = 1/state.fscales[i];
-                fis[i] = vv*state.fi[i];
-                v = 0.1*v+fis[i];
-                for(j=0; j<=n-1; j++)
-                {
-                    js[i,j] = vv*state.j[i,j];
-                    v = 0.1*v+js[i,j];
-                }
-            }
-            result = math.isfinite(v);
-            return result;
-        }
-
-
-        /*************************************************************************
-        Copies state (X point, Fi vector, J jacobian) to preallocated storage.
-        *************************************************************************/
-        private static void sqpcopystate(minsqpstate state,
-            double[] x0,
-            double[] fi0,
-            double[,] j0,
-            double[] x1,
-            double[] fi1,
-            double[,] j1,
-            alglib.xparams _params)
-        {
-            int nlec = 0;
-            int nlic = 0;
-            int n = 0;
-            int i = 0;
-            int j = 0;
-
-            n = state.n;
-            nlec = state.nlec;
-            nlic = state.nlic;
-            for(i=0; i<=n-1; i++)
-            {
-                x1[i] = x0[i];
-            }
-            for(i=0; i<=nlec+nlic; i++)
-            {
-                fi1[i] = fi0[i];
-                for(j=0; j<=n-1; j++)
-                {
-                    j1[i,j] = j0[i,j];
-                }
-            }
-        }
-
-
-        /*************************************************************************
-        This function calculates Lagrangian of the problem (in scaled variables):
-        its value and gradient.
-
-        Additionally it also estimates violation of linear constraints at the point
-        as well as index of the most violated constraint
-        *************************************************************************/
-        private static void lagrangianfg(minsqpstate state,
-            double[] x,
-            double trustrad,
-            double[] fi,
-            double[,] j,
-            double[] lagmult,
-            minsqptmplagrangian tmp,
-            ref double f,
-            double[] g,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int n = 0;
-            int nec = 0;
-            int nic = 0;
-            int nlec = 0;
-            int nlic = 0;
-            double v = 0;
-            double vlag = 0;
-            double vact = 0;
-            double vd = 0;
-            bool usesparsegemv = new bool();
-
-            f = 0;
-
-            n = state.n;
-            nec = state.nec;
-            nic = state.nic;
-            nlec = state.nlec;
-            nlic = state.nlic;
-            
-            //
-            // Target function
-            //
-            f = fi[0];
-            for(i=0; i<=n-1; i++)
-            {
-                g[i] = j[0,i];
-            }
-            
-            //
-            // Lagrangian terms for linear constraints, constraint violations
-            //
-            if( nec+nic>0 )
-            {
-                usesparsegemv = state.subsolver.sparserawlc.ridx[nec+nic]<apserv.sparselevel2density(_params)*n*(nec+nic);
-                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp0, Math.Max(nec+nic, n), _params);
-                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, Math.Max(nec+nic, n), _params);
-                if( usesparsegemv )
-                {
-                    sparse.sparsemv(state.subsolver.sparserawlc, x, ref tmp.sclagtmp0, _params);
-                }
-                else
-                {
-                    ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.sclagtmp0, 0, _params);
-                }
-                for(i=0; i<=nec+nic-1; i++)
-                {
-                    
-                    //
-                    // Prepare
-                    //
-                    v = tmp.sclagtmp0[i]-state.scaledcleic[i,n];
-                    vlag = lagmult[i];
-                    tmp.sclagtmp1[i] = 0;
-                    
-                    //
-                    // Primary Lagrangian term
-                    //
-                    vact = v;
-                    vd = 1;
-                    f = f+vlag*vact;
-                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
-                    
-                    //
-                    // Quadratic augmentation term
-                    //
-                    if( i<nec || v>0 )
-                    {
-                        vact = v;
-                    }
-                    else
-                    {
-                        vact = 0;
-                    }
-                    f = f+0.5*augmentationfactor*vact*vact;
-                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
-                }
-                if( usesparsegemv )
-                {
-                    sparse.sparsemtv(state.subsolver.sparserawlc, tmp.sclagtmp1, ref tmp.sclagtmp0, _params);
-                    for(i=0; i<=n-1; i++)
-                    {
-                        g[i] = g[i]+tmp.sclagtmp0[i];
-                    }
-                }
-                else
-                {
-                    ablas.rmatrixgemv(n, nec+nic, 1.0, state.scaledcleic, 0, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
-                }
-            }
-            
-            //
-            // Lagrangian terms for nonlinear constraints
-            //
-            apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, nlec+nlic, _params);
-            for(i=0; i<=nlec+nlic-1; i++)
-            {
-                v = fi[1+i];
-                vlag = lagmult[nec+nic+i];
-                tmp.sclagtmp1[i] = 0;
-                
-                //
-                // Lagrangian term
-                //
-                vact = v;
-                vd = 1;
-                f = f+vlag*vact;
-                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
-                
-                //
-                // Augmentation term
-                //
-                if( i<nlec || v>0 )
-                {
-                    vact = v;
-                }
-                else
-                {
-                    vact = 0;
-                }
-                f = f+0.5*augmentationfactor*vact*vact;
-                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
-            }
-            ablas.rmatrixgemv(n, nlec+nlic, 1.0, j, 1, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
-        }
-
-
-        /*************************************************************************
-        This function calculates L1-penalized merit function
-        *************************************************************************/
-        private static double meritfunction(minsqpstate state,
-            double[] x,
-            double[] fi,
-            double[] lagmult,
-            minsqptmpmerit tmp,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            double tmp0 = 0;
-            double tmp1 = 0;
-
-            meritfunctionandrawlagrangian(state, x, fi, lagmult, tmp, ref tmp0, ref tmp1, _params);
-            result = tmp0;
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function calculates raw (unaugmented and smooth) Lagrangian
-        *************************************************************************/
-        private static double rawlagrangian(minsqpstate state,
-            double[] x,
-            double[] fi,
-            double[] lagmult,
-            minsqptmpmerit tmp,
-            alglib.xparams _params)
-        {
-            double result = 0;
-            double tmp0 = 0;
-            double tmp1 = 0;
-
-            meritfunctionandrawlagrangian(state, x, fi, lagmult, tmp, ref tmp0, ref tmp1, _params);
-            result = tmp1;
-            return result;
-        }
-
-
-        /*************************************************************************
-        This function calculates L1-penalized merit function and raw  (smooth  and
-        un-augmented) Lagrangian
-        *************************************************************************/
-        private static void meritfunctionandrawlagrangian(minsqpstate state,
-            double[] x,
-            double[] fi,
-            double[] lagmult,
-            minsqptmpmerit tmp,
-            ref double meritf,
-            ref double rawlag,
-            alglib.xparams _params)
-        {
-            int i = 0;
-            int n = 0;
-            int nec = 0;
-            int nic = 0;
-            int nlec = 0;
-            int nlic = 0;
-            double v = 0;
-
-            meritf = 0;
-            rawlag = 0;
-
-            n = state.n;
-            nec = state.nec;
-            nic = state.nic;
-            nlec = state.nlec;
-            nlic = state.nlic;
-            
-            //
-            // Merit function and Lagrangian: primary term
-            //
-            meritf = fi[0];
-            rawlag = fi[0];
-            
-            //
-            // Merit function: augmentation and penalty for linear constraints
-            //
-            apserv.rvectorsetlengthatleast(ref tmp.mftmp0, nec+nic, _params);
-            ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.mftmp0, 0, _params);
-            for(i=0; i<=nec+nic-1; i++)
-            {
-                v = tmp.mftmp0[i]-state.scaledcleic[i,n];
-                if( i<nec )
-                {
-                    
-                    //
-                    // Merit function: augmentation term + L1 penalty term
-                    //
-                    meritf = meritf+0.5*augmentationfactor*v*v;
-                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[i]))*Math.Abs(v);
-                    
-                    //
-                    // Raw Lagrangian
-                    //
-                    rawlag = rawlag+lagmult[i]*v;
-                }
-                else
-                {
-                    
-                    //
-                    // Merit function: augmentation term + L1 penalty term
-                    //
-                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
-                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[i]))*Math.Max(v, 0);
-                    
-                    //
-                    // Raw Lagrangian
-                    //
-                    rawlag = rawlag+lagmult[i]*v;
-                }
-            }
-            
-            //
-            // Merit function: augmentation and penalty for nonlinear constraints
-            //
-            for(i=0; i<=nlec+nlic-1; i++)
-            {
-                v = fi[1+i];
-                if( i<nlec )
-                {
-                    
-                    //
-                    // Merit function: augmentation term + L1 penalty term
-                    //
-                    meritf = meritf+0.5*augmentationfactor*v*v;
-                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[nec+nic+i]))*Math.Abs(v);
-                    
-                    //
-                    // Raw Lagrangian
-                    //
-                    rawlag = rawlag+lagmult[nec+nic+i]*v;
-                }
-                else
-                {
-                    
-                    //
-                    // Merit function: augmentation term + L1 penalty term
-                    //
-                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
-                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Abs(1+Math.Abs(lagmult[nec+nic+i]))*Math.Max(v, 0);
-                    
-                    //
-                    // Raw Lagrangian
-                    //
-                    rawlag = rawlag+lagmult[nec+nic+i]*v;
-                }
-            }
-        }
-
-
-    }
     public class minlbfgs
     {
         public class minlbfgsstate : apobject
@@ -32842,7 +26173,7 @@ public partial class alglib
             //
             state.teststep = 0;
             state.smoothnessguardlevel = 0;
-            optserv.smoothnessmonitorinit(state.smonitor, 0, 0, false, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, 0, 0, false, _params);
             state.diffstep = diffstep;
             state.n = n;
             state.m = m;
@@ -33271,7 +26602,7 @@ public partial class alglib
             state.repterminationtype = 0;
             state.repiterationscount = 0;
             state.repnfev = 0;
-            optserv.smoothnessmonitorinit(state.smonitor, n, 1, state.smoothnessguardlevel>0, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, n, 1, state.smoothnessguardlevel>0, _params);
             apserv.rvectorsetlengthatleast(ref state.invs, n, _params);
             for(i=0; i<=n-1; i++)
             {
@@ -34372,6 +27703,8945 @@ public partial class alglib
             state.needf = false;
             state.needfg = false;
             state.xupdated = false;
+        }
+
+
+    }
+    public class lpqpserv
+    {
+        /*************************************************************************
+        This function generates scaled (by S) and shifted (by XC) reformulation of
+        the box constraints.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            XOrigin         -   origin term, array[N]. Can be zero.
+            BndL            -     raw lower bounds, array[N]
+            BndU            -   raw upper bounds, array[N]
+            N               -   number of variables.
+
+        OUTPUT PARAMETERS:
+            BndL            -   replaced by scaled/shifted lower bounds, array[N]
+            BndU            -   replaced by scaled/shifted upper bounds, array[N]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaleshiftbcinplace(double[] s,
+            double[] xorigin,
+            double[] bndl,
+            double[] bndu,
+            int n,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            bool hasbndl = new bool();
+            bool hasbndu = new bool();
+
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(math.isfinite(s[i]) && s[i]>0.0, "ScaleShiftBC: S[i] is nonpositive");
+                alglib.ap.assert(math.isfinite(bndl[i]) || Double.IsNegativeInfinity(bndl[i]), "ScaleShiftBC: BndL[i] is +INF or NAN");
+                alglib.ap.assert(math.isfinite(bndu[i]) || Double.IsPositiveInfinity(bndu[i]), "ScaleShiftBC: BndU[i] is -INF or NAN");
+                hasbndl = math.isfinite(bndl[i]);
+                hasbndu = math.isfinite(bndu[i]);
+                if( (hasbndl && hasbndu) && (double)(bndl[i])==(double)(bndu[i]) )
+                {
+                    
+                    //
+                    // Make sure that BndL[I]=BndU[I] bit-to-bit
+                    // even with CRAZY optimizing compiler.
+                    //
+                    bndu[i] = (bndu[i]-xorigin[i])/s[i];
+                    bndl[i] = bndu[i];
+                    continue;
+                }
+                if( hasbndl )
+                {
+                    bndl[i] = (bndl[i]-xorigin[i])/s[i];
+                }
+                if( hasbndu )
+                {
+                    bndu[i] = (bndu[i]-xorigin[i])/s[i];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) and shifted (by XC) reformulation of
+        two-sided "lower-bound/range" constraints stored in dense format.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            XOrigin         -   origin term, array[N]. Can be zero.
+            N               -   number of variables.
+            DenseA          -   array[M,N], constraint matrix
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[M]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[M]
+            M               -   constraint count, M>=0
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by scaled/shifted constraints, array[M,N]
+            AB              -   replaced by scaled/shifted lower bounds, array[M]
+            AR              -   replaced by scaled/shifted ranges, array[M]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaleshiftdensebrlcinplace(double[] s,
+            double[] xorigin,
+            int n,
+            double[,] densea,
+            double[] ab,
+            double[] ar,
+            int m,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Scale/shift constraint; shift its lower bound
+                //
+                // NOTE: range is NOT scaled or shifted
+                //
+                v = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    vv = densea[i,j];
+                    v = v+vv*xorigin[j];
+                    densea[i,j] = vv*s[j];
+                }
+                ab[i] = ab[i]-v;
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) and shifted (by XC) reformulation of
+        two-sided "lower-bound/range" constraints stored in dense format.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            XOrigin         -   origin term, array[N]. Can be zero.
+            N               -   number of variables.
+            SparseA         -   sparse MSparse*N constraint matrix in CRS format;
+                                ignored if MSparse=0.
+            MSparse         -   dense constraint count, MSparse>=0
+            DenseA          -   array[MDense,N], constraint matrix;
+                                ignored if MDense=0.
+            MDense          -   dense constraint count, MDense>=0
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[MSparse+MDense]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[MSparse+MDense]
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by scaled/shifted constraints, array[MDense,N]
+            SparseA         -   replaced by scaled/shifted constraints, array[MSparse,N]
+            AB              -   replaced by scaled/shifted lower bounds, array[MDense+MSparse]
+            AR              -   replaced by scaled/shifted ranges, array[MDense+MSparse]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaleshiftmixedbrlcinplace(double[] s,
+            double[] xorigin,
+            int n,
+            sparse.sparsematrix sparsea,
+            int msparse,
+            double[,] densea,
+            int mdense,
+            double[] ab,
+            double[] ar,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double v = 0;
+            double vv = 0;
+
+            alglib.ap.assert(msparse==0 || ((sparsea.matrixtype==1 && sparsea.m==msparse) && sparsea.n==n), "ScaleShiftMixedBRLCInplace: non-CRS sparse constraint matrix!");
+            for(i=0; i<=msparse-1; i++)
+            {
+                
+                //
+                // Scale/shift constraint; shift its lower bound
+                //
+                // NOTE: range is NOT scaled or shifted
+                //
+                v = 0.0;
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    j = sparsea.idx[k];
+                    vv = sparsea.vals[k];
+                    v = v+vv*xorigin[j];
+                    sparsea.vals[k] = vv*s[j];
+                }
+                ab[i] = ab[i]-v;
+            }
+            for(i=0; i<=mdense-1; i++)
+            {
+                
+                //
+                // Scale/shift constraint; shift its lower bound
+                //
+                // NOTE: range is NOT scaled or shifted
+                //
+                v = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    vv = densea[i,j];
+                    v = v+vv*xorigin[j];
+                    densea[i,j] = vv*s[j];
+                }
+                ab[msparse+i] = ab[msparse+i]-v;
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) reformulation of dense quadratic and
+        linear terms in QP problem.
+
+        INPUT PARAMETERS:
+            N               -   number of variables.
+            DenseA          -   array[NMain,NMain], quadratic term
+            IsUpper         -   whether upper or lower triangle is present
+            NMain           -   number of nonslack vars, 1<=NMain<=NTotal
+            DenseB          -   array[NTotal], linear term
+            NTotal          -   total number of variables, NTotal>=1
+            S               -   scale vector, array[NTotal]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by scaled term, array[N,N]
+            DenseB          -   replaced by scaled term, array[N]
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scaledenseqpinplace(double[,] densea,
+            bool isupper,
+            int nmain,
+            double[] denseb,
+            int ntotal,
+            double[] s,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double si = 0;
+
+            for(i=0; i<=nmain-1; i++)
+            {
+                si = s[i];
+                if( isupper )
+                {
+                    j0 = i;
+                    j1 = nmain-1;
+                }
+                else
+                {
+                    j0 = 0;
+                    j1 = i;
+                }
+                for(j=j0; j<=j1; j++)
+                {
+                    densea[i,j] = densea[i,j]*si*s[j];
+                }
+            }
+            for(i=0; i<=ntotal-1; i++)
+            {
+                denseb[i] = denseb[i]*s[i];
+            }
+        }
+
+
+        /*************************************************************************
+        This function generates scaled (by S) reformulation of sparse quadratic and
+        linear terms in QP problem.
+
+        INPUT PARAMETERS:
+            S               -   scale vector, array[N]:
+                                * I-th element contains scale of I-th variable,
+                                * SC[I]>0
+            N               -   number of variables.
+            SparseA         -   NxN SparseMatrix in CRS format (any triangle can
+                                be present, we will scale everything)
+            DenseB          -   array[N], linear term
+
+        OUTPUT PARAMETERS:
+            SparseA         -   replaced by scaled term
+            DenseB          -   replaced by scaled term
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void scalesparseqpinplace(double[] s,
+            int n,
+            sparse.sparsematrix sparsea,
+            double[] denseb,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int k0 = 0;
+            int k1 = 0;
+            int k = 0;
+            double si = 0;
+
+            alglib.ap.assert((sparsea.matrixtype==1 && sparsea.m==n) && sparsea.n==n, "ScaleSparseQPInplace: SparseA in unexpected format");
+            for(i=0; i<=n-1; i++)
+            {
+                si = s[i];
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    sparsea.vals[k] = sparsea.vals[k]*si*s[sparsea.idx[k]];
+                }
+                denseb[i] = denseb[i]*si;
+            }
+        }
+
+
+        /*************************************************************************
+        This function normalizes two-sided "lower-bound/range" constraints  stored
+        in dense format in such a way that L2 norms of rows (right hand  side  NOT
+        included) become equal to 1.0. Exactly zero rows are handled correctly.
+
+        INPUT PARAMETERS:
+            DenseA          -   array[M,N], constraint matrix
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[M]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[M]
+            N               -   number of variables, N>=1.
+            M               -   constraint count, M>=0
+            NeedNorms       -   whether we need row norms or not
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized constraints, array[M,N]
+            AB              -   replaced by normalized lower bounds, array[M]
+            AR              -   replaced by normalized ranges, array[M]
+            RowNorms        -   if NeedNorms is true, leading M elements (resized
+                                if length is less than M) are filled by row norms
+                                before normalization was performed.
+            
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void normalizedensebrlcinplace(double[,] densea,
+            double[] ab,
+            double[] ar,
+            int n,
+            int m,
+            ref double[] rownorms,
+            bool neednorms,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            if( neednorms )
+            {
+                apserv.rvectorsetlengthatleast(ref rownorms, m, _params);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vv = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = densea[i,j];
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                if( neednorms )
+                {
+                    rownorms[i] = vv;
+                }
+                if( (double)(vv)>(double)(0) )
+                {
+                    vv = 1/vv;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        densea[i,j] = densea[i,j]*vv;
+                    }
+                    ab[i] = ab[i]*vv;
+                    if( math.isfinite(ar[i]) )
+                    {
+                        ar[i] = ar[i]*vv;
+                    }
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function normalizes two-sided "lower-bound/range" constraints  stored
+        in dense format in such a way that L2 norms of rows (right hand  side  NOT
+        included) become equal to 1.0. Exactly zero rows are handled correctly.
+
+        INPUT PARAMETERS:
+            SparseA         -   sparse MSparse*N constraint matrix in CRS format;
+                                ignored if MSparse=0.
+            MSparse         -   dense constraint count, MSparse>=0
+            DenseA          -   array[MDense,N], constraint matrix;
+                                ignored if MDense=0.
+            MDense          -   dense constraint count, MDense>=0
+            AB              -   lower bounds for constraints, always present and
+                                finite, array[MSparse+MDense]
+            AR              -   ranges for constraints, can be zero (equality
+                                constraint), positive (range constraint) or +INF
+                                (lower bound constraint), array[MSparse+MDense]
+            N               -   number of variables, N>=1.
+            LimitedAmplification-   whether row amplification is limited or not:
+                                * if False, rows with small norms (less than 1.0)
+                                  are always normalized
+                                * if True, we do not increase individual row norms
+                                  during normalization - only decrease. However,
+                                  we may apply one amplification rount to entire
+                                  constraint matrix, i.e. amplify all rows by same
+                                  coefficient. As result, we do not overamplify
+                                  any single row, but still make sure than entire
+                                  problem is well scaled.
+                                If True, only large rows are normalized.
+            NeedNorms       -   whether we need row norms or not
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized constraints, array[M,N]
+            AB              -   replaced by normalized lower bounds, array[M]
+            AR              -   replaced by normalized ranges, array[M]
+            RowNorms        -   if NeedNorms is true, leading M elements (resized
+                                if length is less than M) are filled by row norms
+                                before normalization was performed.
+            
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void normalizemixedbrlcinplace(sparse.sparsematrix sparsea,
+            int msparse,
+            double[,] densea,
+            int mdense,
+            double[] ab,
+            double[] ar,
+            int n,
+            bool limitedamplification,
+            ref double[] rownorms,
+            bool neednorms,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double v = 0;
+            double vv = 0;
+            double maxnrm2 = 0;
+
+            alglib.ap.assert(msparse==0 || ((sparsea.matrixtype==1 && sparsea.m==msparse) && sparsea.n==n), "ScaleShiftMixedBRLCInplace: non-CRS sparse constraint matrix!");
+            if( neednorms )
+            {
+                apserv.rvectorsetlengthatleast(ref rownorms, mdense+msparse, _params);
+            }
+            
+            //
+            // First round of normalization - normalize row 2-norms subject to limited amplification status
+            //
+            maxnrm2 = 0;
+            for(i=0; i<=msparse-1; i++)
+            {
+                vv = 0.0;
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    v = sparsea.vals[k];
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                maxnrm2 = Math.Max(maxnrm2, vv);
+                if( limitedamplification )
+                {
+                    vv = Math.Max(vv, 1.0);
+                }
+                if( neednorms )
+                {
+                    rownorms[i] = vv;
+                }
+                if( (double)(vv)>(double)(0) )
+                {
+                    vv = 1/vv;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        sparsea.vals[k] = sparsea.vals[k]*vv;
+                    }
+                    ab[i] = ab[i]*vv;
+                    if( math.isfinite(ar[i]) )
+                    {
+                        ar[i] = ar[i]*vv;
+                    }
+                }
+            }
+            for(i=0; i<=mdense-1; i++)
+            {
+                vv = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = densea[i,j];
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                maxnrm2 = Math.Max(maxnrm2, vv);
+                if( limitedamplification )
+                {
+                    vv = Math.Max(vv, 1.0);
+                }
+                if( neednorms )
+                {
+                    rownorms[msparse+i] = vv;
+                }
+                if( (double)(vv)>(double)(0) )
+                {
+                    vv = 1/vv;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        densea[i,j] = densea[i,j]*vv;
+                    }
+                    ab[msparse+i] = ab[msparse+i]*vv;
+                    if( math.isfinite(ar[msparse+i]) )
+                    {
+                        ar[msparse+i] = ar[msparse+i]*vv;
+                    }
+                }
+            }
+            
+            //
+            // If amplification was limited, perform second round of normalization
+            //
+            if( (limitedamplification && (double)(maxnrm2)<(double)(1.0)) && (double)(maxnrm2)>(double)(0) )
+            {
+                if( neednorms )
+                {
+                    ablasf.rmulv(mdense+msparse, maxnrm2, rownorms, _params);
+                }
+                vv = 1/maxnrm2;
+                for(i=0; i<=msparse-1; i++)
+                {
+                    k0 = sparsea.ridx[i];
+                    k1 = sparsea.ridx[i+1]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        sparsea.vals[k] = sparsea.vals[k]*vv;
+                    }
+                    ab[i] = ab[i]*vv;
+                    if( math.isfinite(ar[i]) )
+                    {
+                        ar[i] = ar[i]*vv;
+                    }
+                }
+                for(i=0; i<=mdense-1; i++)
+                {
+                    ablasf.rmulr(n, vv, densea, i, _params);
+                    ab[msparse+i] = ab[msparse+i]*vv;
+                    if( math.isfinite(ar[msparse+i]) )
+                    {
+                        ar[msparse+i] = ar[msparse+i]*vv;
+                    }
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function normalizes dense QP problem in such a way that maximum  over
+        its linear/quadratic coefficients max(max(A),max(B)) becomes equal to 1.0.
+
+        NOTE: completely zero A and B are handled correctly.
+
+        INPUT PARAMETERS:
+            DenseA          -   array[NMain,NMain], quadratic term
+            IsUpper         -   whether upper or lower triangle is present
+            NMain           -   number of nonslack vars, 1<=NMain<=NTotal
+            DenseB          -   array[NTotal], linear term
+            NTotal          -   total number of variables.
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized term
+            DenseB          -   replaced by normalized term
+            
+        RESULT:
+            max(max(A),max(B)) is returned
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double normalizedenseqpinplace(double[,] densea,
+            bool isupper,
+            int nmain,
+            double[] denseb,
+            int ntotal,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double mx = 0;
+            double v = 0;
+
+            mx = 0;
+            for(i=0; i<=nmain-1; i++)
+            {
+                if( isupper )
+                {
+                    j0 = i;
+                    j1 = nmain-1;
+                }
+                else
+                {
+                    j0 = 0;
+                    j1 = i;
+                }
+                for(j=j0; j<=j1; j++)
+                {
+                    mx = Math.Max(mx, Math.Abs(densea[i,j]));
+                }
+            }
+            for(i=0; i<=ntotal-1; i++)
+            {
+                mx = Math.Max(mx, Math.Abs(denseb[i]));
+            }
+            result = mx;
+            if( (double)(mx)==(double)(0) )
+            {
+                return result;
+            }
+            v = 1/mx;
+            for(i=0; i<=nmain-1; i++)
+            {
+                if( isupper )
+                {
+                    j0 = i;
+                    j1 = nmain-1;
+                }
+                else
+                {
+                    j0 = 0;
+                    j1 = i;
+                }
+                for(j=j0; j<=j1; j++)
+                {
+                    densea[i,j] = densea[i,j]*v;
+                }
+            }
+            for(i=0; i<=ntotal-1; i++)
+            {
+                denseb[i] = denseb[i]*v;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function normalizes sparse QP problem in such a way that maximum over
+        its linear/quadratic coefficients max(max(A),max(B)) becomes equal to 1.0.
+
+        NOTE: completely zero A and B are handled correctly.
+
+        INPUT PARAMETERS:
+            SparseA         -   Sparse NxN matrix, either upper or lower triangle,
+                                diagonal MUST be present
+            IsUpper         -   which triangle is present (other one is ignored)
+            DenseB          -   array[N], linear term
+            N               -   number of variables.
+
+        OUTPUT PARAMETERS:
+            DenseA          -   replaced by normalized term, array[N,N]
+            DenseB          -   replaced by normalized term, array[N]
+            
+        RESULT:
+            max(max(A),max(B)) is returned
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static double normalizesparseqpinplace(sparse.sparsematrix sparsea,
+            bool isupper,
+            double[] denseb,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double mx = 0;
+            double v = 0;
+
+            alglib.ap.assert((sparsea.matrixtype==1 && sparsea.m==n) && sparsea.n==n, "ScaleSparseQPInplace: SparseA in unexpected format");
+            mx = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(sparsea.didx[i]+1==sparsea.uidx[i], "NormalizeSparseQPInplace: critical integrity check failed, sparse diagonal not found");
+                if( isupper )
+                {
+                    k0 = sparsea.didx[i];
+                    k1 = sparsea.ridx[i+1]-1;
+                }
+                else
+                {
+                    k0 = sparsea.ridx[i];
+                    k1 = sparsea.didx[i];
+                }
+                for(k=k0; k<=k1; k++)
+                {
+                    mx = Math.Max(mx, Math.Abs(sparsea.vals[k]));
+                }
+                mx = Math.Max(mx, Math.Abs(denseb[i]));
+            }
+            result = mx;
+            if( (double)(mx)==(double)(0) )
+            {
+                return result;
+            }
+            v = 1/mx;
+            for(i=0; i<=n-1; i++)
+            {
+                k0 = sparsea.ridx[i];
+                k1 = sparsea.ridx[i+1]-1;
+                for(k=k0; k<=k1; k++)
+                {
+                    sparsea.vals[k] = sparsea.vals[k]*v;
+                }
+                denseb[i] = denseb[i]*v;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function performs transformation of X from scaled/shifted coordinates
+        to unscaled/unshifted ones, paying special attention to box constraints:
+        * points which were exactly at the boundary before scaling will be  mapped
+          to corresponding boundary after scaling
+        * in any case, unscaled box constraints will be satisfied
+
+          -- ALGLIB --
+             Copyright 02.06.2015 by Bochkanov Sergey
+        *************************************************************************/
+        public static void unscaleunshiftpointbc(double[] s,
+            double[] xorigin,
+            double[] rawbndl,
+            double[] rawbndu,
+            double[] sclsftbndl,
+            double[] sclsftbndu,
+            bool[] hasbndl,
+            bool[] hasbndu,
+            double[] x,
+            int n,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            for(i=0; i<=n-1; i++)
+            {
+                if( hasbndl[i] && (double)(x[i])<=(double)(sclsftbndl[i]) )
+                {
+                    x[i] = rawbndl[i];
+                    continue;
+                }
+                if( hasbndu[i] && (double)(x[i])>=(double)(sclsftbndu[i]) )
+                {
+                    x[i] = rawbndu[i];
+                    continue;
+                }
+                x[i] = x[i]*s[i]+xorigin[i];
+                if( hasbndl[i] && (double)(x[i])<=(double)(rawbndl[i]) )
+                {
+                    x[i] = rawbndl[i];
+                }
+                if( hasbndu[i] && (double)(x[i])>=(double)(rawbndu[i]) )
+                {
+                    x[i] = rawbndu[i];
+                }
+            }
+        }
+
+
+    }
+    public class vipmsolver
+    {
+        /*************************************************************************
+        Variables of IPM method (primal and dual, slacks)
+        *************************************************************************/
+        public class vipmvars : apobject
+        {
+            public int n;
+            public int m;
+            public double[] x;
+            public double[] g;
+            public double[] w;
+            public double[] t;
+            public double[] p;
+            public double[] y;
+            public double[] z;
+            public double[] v;
+            public double[] s;
+            public double[] q;
+            public vipmvars()
+            {
+                init();
+            }
+            public override void init()
+            {
+                x = new double[0];
+                g = new double[0];
+                w = new double[0];
+                t = new double[0];
+                p = new double[0];
+                y = new double[0];
+                z = new double[0];
+                v = new double[0];
+                s = new double[0];
+                q = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                vipmvars _result = new vipmvars();
+                _result.n = n;
+                _result.m = m;
+                _result.x = (double[])x.Clone();
+                _result.g = (double[])g.Clone();
+                _result.w = (double[])w.Clone();
+                _result.t = (double[])t.Clone();
+                _result.p = (double[])p.Clone();
+                _result.y = (double[])y.Clone();
+                _result.z = (double[])z.Clone();
+                _result.v = (double[])v.Clone();
+                _result.s = (double[])s.Clone();
+                _result.q = (double[])q.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        Right-hand side for KKT system:
+        * Rho           corresponds to Ax-w=b
+        * Nu            corresponds to x-g=l
+        * Tau           corresponds to x+t=u
+        * Alpha         corresponds to w+p=r
+        * Sigma         corresponds to A'y+z-s-Hx=c
+        * Beta          corresponds to y+q-v=0
+        * GammaZ, GammaS, GammaQ, GammaW correspond to complementarity conditions
+        *************************************************************************/
+        public class vipmrighthandside : apobject
+        {
+            public double[] sigma;
+            public double[] beta;
+            public double[] rho;
+            public double[] nu;
+            public double[] tau;
+            public double[] alpha;
+            public double[] gammaz;
+            public double[] gammas;
+            public double[] gammaw;
+            public double[] gammaq;
+            public vipmrighthandside()
+            {
+                init();
+            }
+            public override void init()
+            {
+                sigma = new double[0];
+                beta = new double[0];
+                rho = new double[0];
+                nu = new double[0];
+                tau = new double[0];
+                alpha = new double[0];
+                gammaz = new double[0];
+                gammas = new double[0];
+                gammaw = new double[0];
+                gammaq = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                vipmrighthandside _result = new vipmrighthandside();
+                _result.sigma = (double[])sigma.Clone();
+                _result.beta = (double[])beta.Clone();
+                _result.rho = (double[])rho.Clone();
+                _result.nu = (double[])nu.Clone();
+                _result.tau = (double[])tau.Clone();
+                _result.alpha = (double[])alpha.Clone();
+                _result.gammaz = (double[])gammaz.Clone();
+                _result.gammas = (double[])gammas.Clone();
+                _result.gammaw = (double[])gammaw.Clone();
+                _result.gammaq = (double[])gammaq.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        VIPM state
+        *************************************************************************/
+        public class vipmstate : apobject
+        {
+            public bool slacksforequalityconstraints;
+            public int n;
+            public int nmain;
+            public double epsp;
+            public double epsd;
+            public double epsgap;
+            public bool islinear;
+            public double[] scl;
+            public double[] invscl;
+            public double[] xorigin;
+            public double targetscale;
+            public double[] c;
+            public double[,] denseh;
+            public sparse.sparsematrix sparseh;
+            public double[] diagr;
+            public int hkind;
+            public double[] bndl;
+            public double[] bndu;
+            public double[] rawbndl;
+            public double[] rawbndu;
+            public bool[] hasbndl;
+            public bool[] hasbndu;
+            public double[,] denseafull;
+            public double[,] denseamain;
+            public sparse.sparsematrix sparseafull;
+            public sparse.sparsematrix sparseamain;
+            public sparse.sparsematrix combinedaslack;
+            public double[] ascales;
+            public bool[] aflips;
+            public double[] b;
+            public double[] r;
+            public bool[] hasr;
+            public int mdense;
+            public int msparse;
+            public vipmvars x0;
+            public vipmvars current;
+            public vipmvars best;
+            public vipmvars trial;
+            public vipmvars deltaaff;
+            public vipmvars deltacorr;
+            public bool[] isfrozen;
+            public bool[] hasgz;
+            public bool[] hasts;
+            public bool[] haswv;
+            public bool[] haspq;
+            public int repiterationscount;
+            public int repncholesky;
+            public bool dotrace;
+            public bool dodetailedtrace;
+            public int factorizationtype;
+            public bool factorizationpoweredup;
+            public bool factorizationpresent;
+            public double[] diagdz;
+            public double[] diagdzi;
+            public double[] diagdziri;
+            public double[] diagds;
+            public double[] diagdsi;
+            public double[] diagdsiri;
+            public double[] diagdw;
+            public double[] diagdwi;
+            public double[] diagdwir;
+            public double[] diagdq;
+            public double[] diagdqi;
+            public double[] diagdqiri;
+            public double[] diagddr;
+            public double[] diagde;
+            public double[] diagder;
+            public double[,] factdensehaug;
+            public double[] factregdhrh;
+            public double[] factinvregdzrz;
+            public double[] factregewave;
+            public sparse.sparsematrix factsparsekkttmpl;
+            public sparse.sparsematrix factsparsekkt;
+            public int[] factsparsekktpivp;
+            public double[] facttmpdiag;
+            public spchol.spcholanalysis ldltanalysis;
+            public double[] factsparsediagd;
+            public vipmrighthandside rhs;
+            public double[] rhsalphacap;
+            public double[] rhsbetacap;
+            public double[] rhsnucap;
+            public double[] rhstaucap;
+            public double[] deltaxy;
+            public double[] tmphx;
+            public double[] tmpax;
+            public double[] tmpaty;
+            public vipmvars zerovars;
+            public double[] dummyr;
+            public double[] tmpy;
+            public double[] tmp0;
+            public double[] tmp1;
+            public double[] tmp2;
+            public double[,] tmpr2;
+            public double[] tmplaggrad;
+            public int[] tmpi;
+            public sparse.sparsematrix tmpsparse0;
+            public vipmstate()
+            {
+                init();
+            }
+            public override void init()
+            {
+                scl = new double[0];
+                invscl = new double[0];
+                xorigin = new double[0];
+                c = new double[0];
+                denseh = new double[0,0];
+                sparseh = new sparse.sparsematrix();
+                diagr = new double[0];
+                bndl = new double[0];
+                bndu = new double[0];
+                rawbndl = new double[0];
+                rawbndu = new double[0];
+                hasbndl = new bool[0];
+                hasbndu = new bool[0];
+                denseafull = new double[0,0];
+                denseamain = new double[0,0];
+                sparseafull = new sparse.sparsematrix();
+                sparseamain = new sparse.sparsematrix();
+                combinedaslack = new sparse.sparsematrix();
+                ascales = new double[0];
+                aflips = new bool[0];
+                b = new double[0];
+                r = new double[0];
+                hasr = new bool[0];
+                x0 = new vipmvars();
+                current = new vipmvars();
+                best = new vipmvars();
+                trial = new vipmvars();
+                deltaaff = new vipmvars();
+                deltacorr = new vipmvars();
+                isfrozen = new bool[0];
+                hasgz = new bool[0];
+                hasts = new bool[0];
+                haswv = new bool[0];
+                haspq = new bool[0];
+                diagdz = new double[0];
+                diagdzi = new double[0];
+                diagdziri = new double[0];
+                diagds = new double[0];
+                diagdsi = new double[0];
+                diagdsiri = new double[0];
+                diagdw = new double[0];
+                diagdwi = new double[0];
+                diagdwir = new double[0];
+                diagdq = new double[0];
+                diagdqi = new double[0];
+                diagdqiri = new double[0];
+                diagddr = new double[0];
+                diagde = new double[0];
+                diagder = new double[0];
+                factdensehaug = new double[0,0];
+                factregdhrh = new double[0];
+                factinvregdzrz = new double[0];
+                factregewave = new double[0];
+                factsparsekkttmpl = new sparse.sparsematrix();
+                factsparsekkt = new sparse.sparsematrix();
+                factsparsekktpivp = new int[0];
+                facttmpdiag = new double[0];
+                ldltanalysis = new spchol.spcholanalysis();
+                factsparsediagd = new double[0];
+                rhs = new vipmrighthandside();
+                rhsalphacap = new double[0];
+                rhsbetacap = new double[0];
+                rhsnucap = new double[0];
+                rhstaucap = new double[0];
+                deltaxy = new double[0];
+                tmphx = new double[0];
+                tmpax = new double[0];
+                tmpaty = new double[0];
+                zerovars = new vipmvars();
+                dummyr = new double[0];
+                tmpy = new double[0];
+                tmp0 = new double[0];
+                tmp1 = new double[0];
+                tmp2 = new double[0];
+                tmpr2 = new double[0,0];
+                tmplaggrad = new double[0];
+                tmpi = new int[0];
+                tmpsparse0 = new sparse.sparsematrix();
+            }
+            public override alglib.apobject make_copy()
+            {
+                vipmstate _result = new vipmstate();
+                _result.slacksforequalityconstraints = slacksforequalityconstraints;
+                _result.n = n;
+                _result.nmain = nmain;
+                _result.epsp = epsp;
+                _result.epsd = epsd;
+                _result.epsgap = epsgap;
+                _result.islinear = islinear;
+                _result.scl = (double[])scl.Clone();
+                _result.invscl = (double[])invscl.Clone();
+                _result.xorigin = (double[])xorigin.Clone();
+                _result.targetscale = targetscale;
+                _result.c = (double[])c.Clone();
+                _result.denseh = (double[,])denseh.Clone();
+                _result.sparseh = (sparse.sparsematrix)sparseh.make_copy();
+                _result.diagr = (double[])diagr.Clone();
+                _result.hkind = hkind;
+                _result.bndl = (double[])bndl.Clone();
+                _result.bndu = (double[])bndu.Clone();
+                _result.rawbndl = (double[])rawbndl.Clone();
+                _result.rawbndu = (double[])rawbndu.Clone();
+                _result.hasbndl = (bool[])hasbndl.Clone();
+                _result.hasbndu = (bool[])hasbndu.Clone();
+                _result.denseafull = (double[,])denseafull.Clone();
+                _result.denseamain = (double[,])denseamain.Clone();
+                _result.sparseafull = (sparse.sparsematrix)sparseafull.make_copy();
+                _result.sparseamain = (sparse.sparsematrix)sparseamain.make_copy();
+                _result.combinedaslack = (sparse.sparsematrix)combinedaslack.make_copy();
+                _result.ascales = (double[])ascales.Clone();
+                _result.aflips = (bool[])aflips.Clone();
+                _result.b = (double[])b.Clone();
+                _result.r = (double[])r.Clone();
+                _result.hasr = (bool[])hasr.Clone();
+                _result.mdense = mdense;
+                _result.msparse = msparse;
+                _result.x0 = (vipmvars)x0.make_copy();
+                _result.current = (vipmvars)current.make_copy();
+                _result.best = (vipmvars)best.make_copy();
+                _result.trial = (vipmvars)trial.make_copy();
+                _result.deltaaff = (vipmvars)deltaaff.make_copy();
+                _result.deltacorr = (vipmvars)deltacorr.make_copy();
+                _result.isfrozen = (bool[])isfrozen.Clone();
+                _result.hasgz = (bool[])hasgz.Clone();
+                _result.hasts = (bool[])hasts.Clone();
+                _result.haswv = (bool[])haswv.Clone();
+                _result.haspq = (bool[])haspq.Clone();
+                _result.repiterationscount = repiterationscount;
+                _result.repncholesky = repncholesky;
+                _result.dotrace = dotrace;
+                _result.dodetailedtrace = dodetailedtrace;
+                _result.factorizationtype = factorizationtype;
+                _result.factorizationpoweredup = factorizationpoweredup;
+                _result.factorizationpresent = factorizationpresent;
+                _result.diagdz = (double[])diagdz.Clone();
+                _result.diagdzi = (double[])diagdzi.Clone();
+                _result.diagdziri = (double[])diagdziri.Clone();
+                _result.diagds = (double[])diagds.Clone();
+                _result.diagdsi = (double[])diagdsi.Clone();
+                _result.diagdsiri = (double[])diagdsiri.Clone();
+                _result.diagdw = (double[])diagdw.Clone();
+                _result.diagdwi = (double[])diagdwi.Clone();
+                _result.diagdwir = (double[])diagdwir.Clone();
+                _result.diagdq = (double[])diagdq.Clone();
+                _result.diagdqi = (double[])diagdqi.Clone();
+                _result.diagdqiri = (double[])diagdqiri.Clone();
+                _result.diagddr = (double[])diagddr.Clone();
+                _result.diagde = (double[])diagde.Clone();
+                _result.diagder = (double[])diagder.Clone();
+                _result.factdensehaug = (double[,])factdensehaug.Clone();
+                _result.factregdhrh = (double[])factregdhrh.Clone();
+                _result.factinvregdzrz = (double[])factinvregdzrz.Clone();
+                _result.factregewave = (double[])factregewave.Clone();
+                _result.factsparsekkttmpl = (sparse.sparsematrix)factsparsekkttmpl.make_copy();
+                _result.factsparsekkt = (sparse.sparsematrix)factsparsekkt.make_copy();
+                _result.factsparsekktpivp = (int[])factsparsekktpivp.Clone();
+                _result.facttmpdiag = (double[])facttmpdiag.Clone();
+                _result.ldltanalysis = (spchol.spcholanalysis)ldltanalysis.make_copy();
+                _result.factsparsediagd = (double[])factsparsediagd.Clone();
+                _result.rhs = (vipmrighthandside)rhs.make_copy();
+                _result.rhsalphacap = (double[])rhsalphacap.Clone();
+                _result.rhsbetacap = (double[])rhsbetacap.Clone();
+                _result.rhsnucap = (double[])rhsnucap.Clone();
+                _result.rhstaucap = (double[])rhstaucap.Clone();
+                _result.deltaxy = (double[])deltaxy.Clone();
+                _result.tmphx = (double[])tmphx.Clone();
+                _result.tmpax = (double[])tmpax.Clone();
+                _result.tmpaty = (double[])tmpaty.Clone();
+                _result.zerovars = (vipmvars)zerovars.make_copy();
+                _result.dummyr = (double[])dummyr.Clone();
+                _result.tmpy = (double[])tmpy.Clone();
+                _result.tmp0 = (double[])tmp0.Clone();
+                _result.tmp1 = (double[])tmp1.Clone();
+                _result.tmp2 = (double[])tmp2.Clone();
+                _result.tmpr2 = (double[,])tmpr2.Clone();
+                _result.tmplaggrad = (double[])tmplaggrad.Clone();
+                _result.tmpi = (int[])tmpi.Clone();
+                _result.tmpsparse0 = (sparse.sparsematrix)tmpsparse0.make_copy();
+                return _result;
+            }
+        };
+
+
+
+
+        public const int maxipmits = 200;
+        public const double initslackval = 100.0;
+        public const double steplengthdecay = 0.95;
+        public const double stagnationdelta = 0.99999;
+        public const double primalinfeasible1 = 1.0E-3;
+        public const double dualinfeasible1 = 1.0E-3;
+        public const double bigy = 1.0E8;
+        public const double ygrowth = 1.0E6;
+        public const int itersfortoostringentcond = 25;
+        public const int minitersbeforedroppingbounds = 3;
+        public const int minitersbeforeinfeasible = 3;
+        public const int minitersbeforestagnation = 5;
+        public const int minitersbeforeeworststagnation = 50;
+        public const int primalstagnationlen = 5;
+        public const int dualstagnationlen = 7;
+        public const double bigconstrxtol = 1.0E-5;
+        public const double bigconstrmag = 1.0E3;
+        public const double minitersbeforesafeguards = 5;
+        public const double badsteplength = 1.0E-3;
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The solver is configured to work internally with dense NxN  factorization,
+        no matter what exactly is passed - dense or sparse matrices.
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipminitdense(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int n,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(n>=1, "VIPMInitDense: N<1");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitDense: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitDense: XOrigin contains infinite or NaN elements");
+            vipminit(state, s, xorigin, n, n, 0, _params);
+        }
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The solver is configured to work internally with dense NxN problem divided
+        into two distinct parts - "main" and slack one:
+        * dense quadratic term  is  a  NMain*NMain  matrix  (NMain<=N),  quadratic
+          coefficients are zero for variables outside of [0,NMain) range)
+        * linear term is general vector of length N
+        * linear constraints have special structure for variable with  indexes  in
+          [NMain,N) range: at most one element per column can be nonzero.
+
+        This mode is intended for problems arising during SL1QP nonlinear programming.
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+            NMain       -   number of "main" variables, 1<=NMain<=N
+            N           -   total number of variables including slack ones
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipminitdensewithslacks(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int nmain,
+            int n,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(nmain>=1, "VIPMInitDense: NMain<1");
+            alglib.ap.assert(n>=1, "VIPMInitDense: N<1");
+            alglib.ap.assert(nmain<=n, "VIPMInitDense: NMain>N");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitDense: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitDense: XOrigin contains infinite or NaN elements");
+            vipminit(state, s, xorigin, n, nmain, 0, _params);
+        }
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The  solver  is configured  to  work  internally  with  sparse (N+M)x(N+M)
+        factorization no matter what exactly is passed - dense or sparse matrices.
+        Dense quadratic term will be sparsified prior to storage.
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+            N           -   total number of variables, N>=1
+            
+        This optimization mode assumes that no slack variables is present.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipminitsparse(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int n,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(n>=1, "VIPMInitSparse: N<1");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInitSparse: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInitSparse: XOrigin contains infinite or NaN elements");
+            vipminit(state, s, xorigin, n, n, 1, _params);
+        }
+
+
+        /*************************************************************************
+        Sets linear/quadratic terms for QP-IPM solver
+
+        If you initialized solver with VIMPInitDenseWithSlacks(), NMain below is a
+        number of non-slack variables. In other cases, NMain=N.
+
+        INPUT PARAMETERS:
+            State               -   instance initialized with one of the initialization
+                                    functions
+            DenseH              -   if HKind=0: array[NMain,NMain], dense quadratic term
+                                    (either upper or lower triangle)
+            SparseH             -   if HKind=1: array[NMain,NMain], sparse quadratic term
+                                    (either upper or lower triangle)
+            HKind               -   0 or 1, quadratic term format
+            IsUpper             -   whether dense/sparse H contains lower or upper
+                                    triangle of the quadratic term
+            C                   -   array[N], linear term
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmsetquadraticlinear(vipmstate state,
+            double[,] denseh,
+            sparse.sparsematrix sparseh,
+            int hkind,
+            bool isupper,
+            double[] c,
+            alglib.xparams _params)
+        {
+            int nmain = 0;
+            int n = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double v = 0;
+            double vv = 0;
+            int nnz = 0;
+            int offs = 0;
+
+            nmain = state.nmain;
+            n = state.n;
+            alglib.ap.assert(hkind==0 || hkind==1, "VIPMSetQuadraticLinear: incorrect HKind");
+            alglib.ap.assert(apserv.isfinitevector(c, n, _params), "VIPMSetQuadraticLinear: C contains infinite or NaN elements");
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMSetQuadraticLinear: unexpected factorization type");
+            
+            //
+            // Set problem info, reset factorization flag
+            //
+            state.islinear = false;
+            state.factorizationpresent = false;
+            state.factorizationpoweredup = false;
+            
+            //
+            // Linear term
+            //
+            apserv.rvectorsetlengthatleast(ref state.c, n, _params);
+            ablas.rvectorcopy(n, c, 0, state.c, 0, _params);
+            
+            //
+            // Quadratic term and normalization
+            //
+            // NOTE: we perform integrity check for inifinities/NANs by
+            //       computing sum of all matrix elements and checking its
+            //       value for being finite. It is a bit faster than checking
+            //       each element individually.
+            //
+            state.hkind = -1;
+            state.targetscale = 1.0;
+            if( state.factorizationtype==0 )
+            {
+                
+                //
+                // Quadratic term is stored in dense format: either copy dense
+                // term of densify sparse one
+                //
+                state.hkind = 0;
+                apserv.rmatrixsetlengthatleast(ref state.denseh, nmain, nmain, _params);
+                if( hkind==0 )
+                {
+                    
+                    //
+                    // Copy dense quadratic term
+                    //
+                    if( isupper )
+                    {
+                        ablas.rmatrixtranspose(nmain, nmain, denseh, 0, 0, state.denseh, 0, 0, _params);
+                    }
+                    else
+                    {
+                        ablas.rmatrixcopy(nmain, nmain, denseh, 0, 0, state.denseh, 0, 0, _params);
+                    }
+                }
+                if( hkind==1 )
+                {
+                    
+                    //
+                    // Extract sparse quadratic term
+                    //
+                    alglib.ap.assert(sparseh.matrixtype==1, "VIPMSetQuadraticLinear: unexpected sparse matrix format");
+                    alglib.ap.assert(sparseh.m==nmain, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    alglib.ap.assert(sparseh.n==nmain, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    for(i=0; i<=nmain-1; i++)
+                    {
+                        for(j=0; j<=i; j++)
+                        {
+                            state.denseh[i,j] = 0;
+                        }
+                    }
+                    for(i=0; i<=nmain-1; i++)
+                    {
+                        
+                        //
+                        // diagonal element
+                        //
+                        if( sparseh.didx[i]!=sparseh.uidx[i] )
+                        {
+                            state.denseh[i,i] = sparseh.vals[sparseh.didx[i]];
+                        }
+                        
+                        //
+                        // Off-diagonal elements
+                        //
+                        if( isupper )
+                        {
+                            
+                            //
+                            // superdiagonal elements are moved to subdiagonal part
+                            //
+                            j0 = sparseh.uidx[i];
+                            j1 = sparseh.ridx[i+1]-1;
+                            for(j=j0; j<=j1; j++)
+                            {
+                                state.denseh[sparseh.idx[j],i] = sparseh.vals[j];
+                            }
+                        }
+                        else
+                        {
+                            
+                            //
+                            // subdiagonal elements are moved to subdiagonal part
+                            //
+                            j0 = sparseh.ridx[i];
+                            j1 = sparseh.didx[i]-1;
+                            for(j=j0; j<=j1; j++)
+                            {
+                                state.denseh[i,sparseh.idx[j]] = sparseh.vals[j];
+                            }
+                        }
+                    }
+                }
+                vv = 0;
+                for(i=0; i<=nmain-1; i++)
+                {
+                    for(j=0; j<=i; j++)
+                    {
+                        vv = vv+state.denseh[i,j];
+                    }
+                }
+                alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: DenseH contains infinite or NaN values!");
+                lpqpserv.scaledenseqpinplace(state.denseh, false, nmain, state.c, n, state.scl, _params);
+                state.targetscale = lpqpserv.normalizedenseqpinplace(state.denseh, false, nmain, state.c, n, _params);
+            }
+            if( state.factorizationtype==1 )
+            {
+                alglib.ap.assert(nmain==n, "VIPMSetQuadraticLinear: critical integrity check failed, NMain!=N");
+                
+                //
+                // Quadratic term is stored in sparse format: either sparsify dense
+                // term of copy sparse one
+                //
+                state.hkind = 1;
+                state.sparseh.matrixtype = 1;
+                state.sparseh.m = n;
+                state.sparseh.n = n;
+                if( hkind==0 )
+                {
+                    
+                    //
+                    // Sparsify dense term
+                    //
+                    nnz = 0;
+                    for(i=0; i<=n-1; i++)
+                    {
+                        nnz = nnz+1;
+                        if( isupper )
+                        {
+                            j0 = i+1;
+                            j1 = n-1;
+                        }
+                        else
+                        {
+                            j0 = 0;
+                            j1 = i-1;
+                        }
+                        for(j=j0; j<=j1; j++)
+                        {
+                            if( denseh[i,j]!=0 )
+                            {
+                                nnz = nnz+1;
+                            }
+                        }
+                    }
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.idx, nnz, _params);
+                    apserv.rvectorsetlengthatleast(ref state.sparseh.vals, nnz, _params);
+                    state.sparseh.ridx[0] = 0;
+                    offs = 0;
+                    vv = 0;
+                    for(i=0; i<=n-1; i++)
+                    {
+                        
+                        //
+                        // Off-diagonal elements are copied only when nonzero
+                        //
+                        if( !isupper )
+                        {
+                            for(j=0; j<=i-1; j++)
+                            {
+                                if( denseh[i,j]!=0 )
+                                {
+                                    v = denseh[i,j];
+                                    state.sparseh.idx[offs] = j;
+                                    state.sparseh.vals[offs] = v;
+                                    vv = vv+v;
+                                    offs = offs+1;
+                                }
+                            }
+                        }
+                        
+                        //
+                        // Diagonal element is always copied
+                        //
+                        v = denseh[i,i];
+                        state.sparseh.idx[offs] = i;
+                        state.sparseh.vals[offs] = v;
+                        vv = vv+v;
+                        offs = offs+1;
+                        
+                        //
+                        // Off-diagonal elements are copied only when nonzero
+                        //
+                        if( isupper )
+                        {
+                            for(j=i+1; j<=n-1; j++)
+                            {
+                                if( denseh[i,j]!=0 )
+                                {
+                                    v = denseh[i,j];
+                                    state.sparseh.idx[offs] = j;
+                                    state.sparseh.vals[offs] = v;
+                                    vv = vv+v;
+                                    offs = offs+1;
+                                }
+                            }
+                        }
+                        
+                        //
+                        // Finalize row
+                        //
+                        state.sparseh.ridx[i+1] = offs;
+                    }
+                    alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: DenseH contains infinite or NaN values!");
+                    alglib.ap.assert(offs==nnz, "VIPMSetQuadraticLinear: integrity check failed");
+                    sparse.sparsecreatecrsinplace(state.sparseh, _params);
+                }
+                if( hkind==1 )
+                {
+                    
+                    //
+                    // Copy sparse quadratic term, but make sure that we have diagonal elements
+                    // present (we add diagonal if it is not present)
+                    //
+                    alglib.ap.assert(sparseh.matrixtype==1, "VIPMSetQuadraticLinear: unexpected sparse matrix format");
+                    alglib.ap.assert(sparseh.m==n, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    alglib.ap.assert(sparseh.n==n, "VIPMSetQuadraticLinear: unexpected sparse matrix size");
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
+                    apserv.ivectorsetlengthatleast(ref state.sparseh.idx, sparseh.ridx[n]+n, _params);
+                    apserv.rvectorsetlengthatleast(ref state.sparseh.vals, sparseh.ridx[n]+n, _params);
+                    state.sparseh.ridx[0] = 0;
+                    offs = 0;
+                    vv = 0;
+                    for(i=0; i<=n-1; i++)
+                    {
+                        
+                        //
+                        // Copy subdiagonal elements (if needed)
+                        //
+                        if( !isupper )
+                        {
+                            j0 = sparseh.ridx[i];
+                            j1 = sparseh.didx[i]-1;
+                            for(k=j0; k<=j1; k++)
+                            {
+                                v = sparseh.vals[k];
+                                state.sparseh.idx[offs] = sparseh.idx[k];
+                                state.sparseh.vals[offs] = v;
+                                vv = vv+v;
+                                offs = offs+1;
+                            }
+                        }
+                        
+                        //
+                        // Diagonal element is always copied
+                        //
+                        v = 0;
+                        if( sparseh.uidx[i]!=sparseh.didx[i] )
+                        {
+                            v = sparseh.vals[sparseh.didx[i]];
+                        }
+                        state.sparseh.idx[offs] = i;
+                        state.sparseh.vals[offs] = v;
+                        vv = vv+v;
+                        offs = offs+1;
+                        
+                        //
+                        // Copy superdiagonal elements (if needed)
+                        //
+                        if( isupper )
+                        {
+                            j0 = sparseh.uidx[i];
+                            j1 = sparseh.ridx[i+1]-1;
+                            for(k=j0; k<=j1; k++)
+                            {
+                                v = sparseh.vals[k];
+                                state.sparseh.idx[offs] = sparseh.idx[k];
+                                state.sparseh.vals[offs] = v;
+                                vv = vv+v;
+                                offs = offs+1;
+                            }
+                        }
+                        
+                        //
+                        // Finalize row
+                        //
+                        state.sparseh.ridx[i+1] = offs;
+                    }
+                    alglib.ap.assert(math.isfinite(vv), "VIPMSetQuadraticLinear: SparseH contains infinite or NaN values!");
+                    alglib.ap.assert(offs<=alglib.ap.len(state.sparseh.vals) && offs<=alglib.ap.len(state.sparseh.idx), "VIPMSetQuadraticLinear: integrity check failed");
+                    sparse.sparsecreatecrsinplace(state.sparseh, _params);
+                    if( isupper )
+                    {
+                        sparse.sparsecopytransposecrsbuf(state.sparseh, state.tmpsparse0, _params);
+                        sparse.sparsecopybuf(state.tmpsparse0, state.sparseh, _params);
+                    }
+                }
+                lpqpserv.scalesparseqpinplace(state.scl, n, state.sparseh, state.c, _params);
+                state.targetscale = lpqpserv.normalizesparseqpinplace(state.sparseh, false, state.c, n, _params);
+            }
+            alglib.ap.assert(state.hkind>=0, "VIPMSetQuadraticLinear: integrity check failed");
+        }
+
+
+        /*************************************************************************
+        Sets constraints for QP-IPM solver
+
+        INPUT PARAMETERS:
+            State               -   instance initialized with one of the initialization
+                                    functions
+            BndL, BndU          -   lower and upper bound. BndL[] can be -INF,
+                                    BndU[] can be +INF.
+            SparseA             -   sparse constraint matrix, CRS format
+            MSparse             -   number of sparse constraints
+            DenseA              -   array[MDense,N], dense part of the constraints
+            MDense              -   number of dense constraints
+            CL, CU              -   lower and upper bounds for constraints, first
+                                    MSparse are bounds for sparse part, following
+                                    MDense ones are bounds for dense part,
+                                    MSparse+MDense in total.
+                                    -INF <= CL[I] <= CU[I] <= +INF.
+                                    
+        This function throws exception if constraints have inconsistent bounds, i.e.
+        either BndL[I]>BndU[I] or CL[I]>CU[I]. In all other cases it succeeds.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmsetconstraints(vipmstate state,
+            double[] bndl,
+            double[] bndu,
+            sparse.sparsematrix sparsea,
+            int msparse,
+            double[,] densea,
+            int mdense,
+            double[] cl,
+            double[] cu,
+            alglib.xparams _params)
+        {
+            int m = 0;
+            int n = 0;
+            int nmain = 0;
+            int nslack = 0;
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            int k = 0;
+            int offsmain = 0;
+            int offscombined = 0;
+            double vs = 0;
+            double v = 0;
+
+            n = state.n;
+            nmain = state.nmain;
+            nslack = n-nmain;
+            alglib.ap.assert(mdense>=0, "VIPMSetConstraints: MDense<0");
+            alglib.ap.assert(msparse>=0, "VIPMSetConstraints: MSparse<0");
+            alglib.ap.assert(apserv.apservisfinitematrix(densea, mdense, n, _params), "VIPMSetConstraints: DenseA contains infinite or NaN values!");
+            alglib.ap.assert(msparse==0 || sparsea.matrixtype==1, "VIPMSetConstraints: non-CRS constraint matrix!");
+            alglib.ap.assert(msparse==0 || (sparsea.m==msparse && sparsea.n==n), "VIPMSetConstraints: constraint matrix has incorrect size");
+            alglib.ap.assert(alglib.ap.len(cl)>=mdense+msparse, "VIPMSetConstraints: CL is too short!");
+            alglib.ap.assert(alglib.ap.len(cu)>=mdense+msparse, "VIPMSetConstraints: CU is too short!");
+            
+            //
+            // Reset factorization flag
+            //
+            state.factorizationpresent = false;
+            state.factorizationpoweredup = false;
+            
+            //
+            // Box constraints
+            //
+            apserv.rvectorsetlengthatleast(ref state.bndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.bndu, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rawbndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.rawbndu, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.hasbndl[i] = math.isfinite(bndl[i]);
+                state.hasbndu[i] = math.isfinite(bndu[i]);
+                alglib.ap.assert(!((state.hasbndl[i] && state.hasbndu[i]) && (double)(bndl[i])>(double)(bndu[i])), "VIPMInitDenseQuadratic: inconsistent range for box constraints");
+                state.bndl[i] = bndl[i];
+                state.bndu[i] = bndu[i];
+                state.rawbndl[i] = bndl[i];
+                state.rawbndu[i] = bndu[i];
+            }
+            lpqpserv.scaleshiftbcinplace(state.scl, state.xorigin, state.bndl, state.bndu, n, _params);
+            
+            //
+            // Linear constraints (full matrices)
+            //
+            m = mdense+msparse;
+            apserv.rvectorsetlengthatleast(ref state.b, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.r, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.ascales, m, _params);
+            apserv.bvectorsetlengthatleast(ref state.aflips, m, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasr, m, _params);
+            apserv.rmatrixsetlengthatleast(ref state.denseafull, mdense, n, _params);
+            if( msparse>0 )
+            {
+                sparse.sparsecopytocrsbuf(sparsea, state.sparseafull, _params);
+            }
+            if( mdense>0 )
+            {
+                ablas.rmatrixcopy(mdense, n, densea, 0, 0, state.denseafull, 0, 0, _params);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                alglib.ap.assert(math.isfinite(cl[i]) || Double.IsNegativeInfinity(cl[i]), "VIPMInitDenseQuadratic: CL is not finite number or -INF");
+                alglib.ap.assert(math.isfinite(cu[i]) || Double.IsPositiveInfinity(cu[i]), "VIPMInitDenseQuadratic: CU is not finite number or +INF");
+                
+                //
+                // Store range
+                //
+                if( math.isfinite(cl[i]) || math.isfinite(cu[i]) )
+                {
+                    
+                    //
+                    // Non-degenerate constraint, at least one of bounds is present
+                    //
+                    if( math.isfinite(cl[i]) )
+                    {
+                        alglib.ap.assert(!math.isfinite(cu[i]) || (double)(cu[i])>=(double)(cl[i]), "VIPMInitDenseQuadratic: inconsistent range (right-hand side) for linear constraint");
+                        if( math.isfinite(cu[i]) )
+                        {
+                            
+                            //
+                            // We have both CL and CU, i.e. CL <= A*x <= CU.
+                            //
+                            // It can be either equality constraint (no slacks) or range constraint
+                            // (two pairs of slacks variables).
+                            //
+                            // Try to arrange things in such a way that |CU|>=|CL| (it can be done
+                            // by multiplication by -1 and boundaries swap).
+                            // 
+                            // Having |CU|>=|CL| will allow us to drop huge irrelevant bound CU,
+                            // if we find it irrelevant during computations. Due to limitations
+                            // of our slack variable substitution, it can be done only for CU.
+                            //
+                            if( (double)(Math.Abs(cu[i]))>=(double)(Math.Abs(cl[i])) )
+                            {
+                                state.b[i] = cl[i];
+                                state.r[i] = cu[i]-cl[i];
+                                state.hasr[i] = true;
+                                state.aflips[i] = false;
+                                vs = 1;
+                            }
+                            else
+                            {
+                                state.b[i] = -cu[i];
+                                state.r[i] = cu[i]-cl[i];
+                                state.hasr[i] = true;
+                                state.aflips[i] = true;
+                                vs = -1;
+                            }
+                        }
+                        else
+                        {
+                            
+                            //
+                            // Only lower bound: CL <= A*x.
+                            //
+                            // One pair of slack variables added.
+                            //
+                            state.b[i] = cl[i];
+                            state.r[i] = Double.PositiveInfinity;
+                            state.hasr[i] = false;
+                            state.aflips[i] = false;
+                            vs = 1;
+                        }
+                    }
+                    else
+                    {
+                        
+                        //
+                        // Only upper bound: A*x <= CU
+                        //
+                        // One pair of slack variables added.
+                        //
+                        state.b[i] = -cu[i];
+                        state.r[i] = Double.PositiveInfinity;
+                        state.hasr[i] = false;
+                        state.aflips[i] = true;
+                        vs = -1;
+                    }
+                }
+                else
+                {
+                    
+                    //
+                    // Degenerate constraint -inf <= Ax <= +inf.
+                    // Generate dummy formulation.
+                    //
+                    state.b[i] = -1;
+                    state.r[i] = 2;
+                    state.hasr[i] = true;
+                    state.aflips[i] = false;
+                    vs = 0;
+                }
+                
+                //
+                // Store matrix row and its scaling coefficient
+                //
+                if( i<msparse )
+                {
+                    j0 = state.sparseafull.ridx[i];
+                    j1 = state.sparseafull.ridx[i+1]-1;
+                    for(j=j0; j<=j1; j++)
+                    {
+                        state.sparseafull.vals[j] = state.sparseafull.vals[j]*vs;
+                    }
+                }
+                else
+                {
+                    for(j=0; j<=n-1; j++)
+                    {
+                        state.denseafull[i-msparse,j] = state.denseafull[i-msparse,j]*vs;
+                    }
+                }
+                state.ascales[i] = vs;
+            }
+            lpqpserv.scaleshiftmixedbrlcinplace(state.scl, state.xorigin, n, state.sparseafull, msparse, state.denseafull, mdense, state.b, state.r, _params);
+            lpqpserv.normalizemixedbrlcinplace(state.sparseafull, msparse, state.denseafull, mdense, state.b, state.r, n, true, ref state.tmp0, true, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                state.ascales[i] = state.ascales[i]*state.tmp0[i];
+            }
+            state.mdense = mdense;
+            state.msparse = msparse;
+            
+            //
+            // Separate main and slack parts of the constraint matrices
+            //
+            apserv.ivectorsetlengthatleast(ref state.tmpi, nslack, _params);
+            for(i=0; i<=nslack-1; i++)
+            {
+                state.tmpi[i] = 0;
+            }
+            state.combinedaslack.m = mdense+msparse;
+            state.combinedaslack.n = nslack;
+            apserv.ivectorsetlengthatleast(ref state.combinedaslack.ridx, mdense+msparse+1, _params);
+            apserv.ivectorsetlengthatleast(ref state.combinedaslack.idx, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref state.combinedaslack.vals, nslack, _params);
+            state.combinedaslack.ridx[0] = 0;
+            state.sparseamain.m = msparse;
+            state.sparseamain.n = nmain;
+            if( msparse>0 )
+            {
+                apserv.ivectorsetlengthatleast(ref state.sparseamain.ridx, msparse+1, _params);
+                apserv.ivectorsetlengthatleast(ref state.sparseamain.idx, sparsea.ridx[msparse], _params);
+                apserv.rvectorsetlengthatleast(ref state.sparseamain.vals, sparsea.ridx[msparse], _params);
+                state.sparseamain.ridx[0] = 0;
+                for(i=0; i<=msparse-1; i++)
+                {
+                    offsmain = state.sparseamain.ridx[i];
+                    offscombined = state.combinedaslack.ridx[i];
+                    j0 = state.sparseafull.ridx[i];
+                    j1 = state.sparseafull.ridx[i+1]-1;
+                    for(j=j0; j<=j1; j++)
+                    {
+                        v = state.sparseafull.vals[j];
+                        k = state.sparseafull.idx[j];
+                        if( k<nmain )
+                        {
+                            state.sparseamain.idx[offsmain] = k;
+                            state.sparseamain.vals[offsmain] = v;
+                            offsmain = offsmain+1;
+                        }
+                        else
+                        {
+                            alglib.ap.assert(state.tmpi[k-nmain]==0, "VIPMSetConstraints: slack column contains more than one nonzero element");
+                            state.combinedaslack.idx[offscombined] = k-nmain;
+                            state.combinedaslack.vals[offscombined] = v;
+                            state.tmpi[k-nmain] = state.tmpi[k-nmain]+1;
+                            offscombined = offscombined+1;
+                        }
+                    }
+                    state.sparseamain.ridx[i+1] = offsmain;
+                    state.combinedaslack.ridx[i+1] = offscombined;
+                }
+            }
+            sparse.sparsecreatecrsinplace(state.sparseamain, _params);
+            if( mdense>0 )
+            {
+                apserv.rmatrixsetlengthatleast(ref state.denseamain, mdense, nmain, _params);
+                ablas.rmatrixcopy(mdense, nmain, state.denseafull, 0, 0, state.denseamain, 0, 0, _params);
+                for(i=0; i<=mdense-1; i++)
+                {
+                    offscombined = state.combinedaslack.ridx[msparse+i];
+                    for(k=nmain; k<=n-1; k++)
+                    {
+                        if( state.denseafull[i,k]!=0 )
+                        {
+                            alglib.ap.assert(state.tmpi[k-nmain]==0, "VIPMSetConstraints: slack column contains more than one nonzero element");
+                            state.combinedaslack.idx[offscombined] = k-nmain;
+                            state.combinedaslack.vals[offscombined] = state.denseafull[i,k];
+                            state.tmpi[k-nmain] = state.tmpi[k-nmain]+1;
+                            offscombined = offscombined+1;
+                        }
+                    }
+                    state.combinedaslack.ridx[msparse+i+1] = offscombined;
+                }
+            }
+            sparse.sparsecreatecrsinplace(state.combinedaslack, _params);
+        }
+
+
+        /*************************************************************************
+        Sets stopping criteria for QP-IPM solver.
+
+        You can set all epsilon-values to one small value, about 1.0E-6.
+
+        INPUT PARAMETERS:
+            State               -   instance initialized with one of the initialization
+                                    functions
+            EpsP                -   maximum primal error allowed in the  solution,
+                                    EpsP>=0. Zero will be  automatically  replaced
+                                    by recommended default value,  which is  equal
+                                    to 10*Sqrt(Epsilon) in the current version
+            EpsD                -   maximum  dual  error allowed in the  solution,
+                                    EpsP>=0. Zero will be  automatically  replaced
+                                    by recommended default value,  which is  equal
+                                    to 10*Sqrt(Epsilon) in the current version
+            EpsGap              -   maximum  duality gap allowed in the  solution,
+                                    EpsP>=0. Zero will be  automatically  replaced
+                                    by recommended default value,  which is  equal
+                                    to 10*Sqrt(Epsilon) in the current version
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmsetcond(vipmstate state,
+            double epsp,
+            double epsd,
+            double epsgap,
+            alglib.xparams _params)
+        {
+            double sml = 0;
+
+            alglib.ap.assert(math.isfinite(epsp) && (double)(epsp)>=(double)(0), "VIPMSetCond: EpsP is infinite or negative");
+            alglib.ap.assert(math.isfinite(epsd) && (double)(epsd)>=(double)(0), "VIPMSetCond: EpsD is infinite or negative");
+            alglib.ap.assert(math.isfinite(epsgap) && (double)(epsgap)>=(double)(0), "VIPMSetCond: EpsP is infinite or negative");
+            sml = Math.Sqrt(math.machineepsilon);
+            state.epsp = apserv.coalesce(epsp, sml, _params);
+            state.epsd = apserv.coalesce(epsd, sml, _params);
+            state.epsgap = apserv.coalesce(epsgap, sml, _params);
+        }
+
+
+        /*************************************************************************
+        Solve QP problem.
+
+        INPUT PARAMETERS:
+            State               -   solver instance
+            DropBigBounds       -   If True, algorithm may drop box and linear constraints
+                                    with huge bound values that destabilize algorithm.
+            
+        OUTPUT PARAMETERS:
+            XS                  -   array[N], solution
+            LagBC               -   array[N], Lagrange multipliers for box constraints
+            LagLC               -   array[M], Lagrange multipliers for linear constraints
+            TerminationType     -   completion code, positive values for success,
+                                    negative for failures (XS constrains best point
+                                    found so far):
+                                    * -2    the task is either unbounded or infeasible;
+                                            the IPM solver has difficulty distinguishing between these two.
+                                    * +1    stopping criteria are met
+                                    * +7    stopping criteria are too stringent
+
+        RESULT:
+
+        This function ALWAYS returns something  meaningful in XS, LagBC, LagLC - 
+        either solution or the best point so far, even for negative TerminationType.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        public static void vipmoptimize(vipmstate state,
+            bool dropbigbounds,
+            ref double[] xs,
+            ref double[] lagbc,
+            ref double[] laglc,
+            ref int terminationtype,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            int iteridx = 0;
+            double mu = 0;
+            double muaff = 0;
+            double sigma = 0;
+            double alphaaffp = 0;
+            double alphaaffd = 0;
+            double alphap = 0;
+            double alphad = 0;
+            int primalstagnationcnt = 0;
+            int dualstagnationcnt = 0;
+            double regeps = 0;
+            double dampeps = 0;
+            double safedampeps = 0;
+            double modeps = 0;
+            double maxdampeps = 0;
+            double regfree = 0;
+            double dampfree = 0;
+            int droppedbounds = 0;
+            double primalxscale = 0;
+            double errp2 = 0;
+            double errd2 = 0;
+            double errpinf = 0;
+            double errdinf = 0;
+            double preverrp2 = 0;
+            double preverrd2 = 0;
+            double errgap = 0;
+            double eprimal = 0;
+            double edual = 0;
+            double egap = 0;
+            double mumin = 0;
+            double mustop = 0;
+            double y0nrm = 0;
+            double bady = 0;
+            double mxprimal = 0;
+            double mxdeltaprimal = 0;
+            int bestiteridx = 0;
+            double besterr = 0;
+            double bestegap = 0;
+            double besteprimal = 0;
+            double bestedual = 0;
+            bool loadbest = new bool();
+
+            terminationtype = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            state.dotrace = ap.istraceenabled("IPM", _params);
+            state.dodetailedtrace = state.dotrace && ap.istraceenabled("IPM.DETAILED", _params);
+            
+            //
+            // Prepare outputs
+            //
+            ablasf.rsetallocv(n, 0.0, ref xs, _params);
+            ablasf.rsetallocv(n, 0.0, ref lagbc, _params);
+            ablasf.rsetallocv(m, 0.0, ref laglc, _params);
+            
+            //
+            // Some integrity checks:
+            // * we need PrimalStagnationLen<DualStagnationLen in order to be able to correctly
+            //   detect infeasible instances (stagnated dual error is present in both infeasible
+            //   and unbounded instances, so we should check for primal stagnation a few iters
+            //   before checking for dual stagnation)
+            //
+            alglib.ap.assert(primalstagnationlen<dualstagnationlen, "VIPM: critical integrity failure - incorrect configuration parameters");
+            
+            //
+            // Trace output (if needed)
+            //
+            if( state.dotrace )
+            {
+                alglib.ap.trace("\n\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+                alglib.ap.trace("// IPM SOLVER STARTED                                                                             //\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            }
+            
+            //
+            // Prepare regularization coefficients:
+            // * RegEps - one that is applied to initial (5N+5M)x(5N+5M) KKT system. This one has to be
+            //   small because it perturbs solution returned by the algorithm. Essential in order to
+            //   avoid stalling at extremely large points.
+            // * ModEps - small modification applied to LDLT decomposition in order to preserve sign
+            //   of diagonal elements
+            // * DampEps - damping coefficient for damped Newton step. Comes along with SafeDampEps 
+            //   (threshold value when some safeguards are turned off in order to preserve convergence
+            //   speed) and MaxDampEps - threshold value when we consider problem overregularized and stop.
+            // * DampFree - additional damping coefficient for free variables
+            //
+            regfree = Math.Pow(math.machineepsilon, 0.75);
+            dampfree = 0;
+            regeps = 100*math.machineepsilon;
+            modeps = (100+Math.Sqrt(n))*math.machineepsilon;
+            dampeps = (100+Math.Sqrt(n))*math.machineepsilon;
+            safedampeps = Math.Sqrt(math.machineepsilon);
+            maxdampeps = Math.Sqrt(Math.Sqrt(math.machineepsilon));
+            
+            //
+            // Set up initial state
+            //
+            state.repiterationscount = 0;
+            state.repncholesky = 0;
+            mustop = (100+Math.Sqrt(n))*math.machineepsilon;
+            mumin = 0.01*mustop;
+            vipmpowerup(state, regfree, _params);
+            varsinitfrom(state.x0, state.current, _params);
+            varsinitfrom(state.best, state.current, _params);
+            varsinitbyzero(state.zerovars, n, m, _params);
+            bestiteridx = -1;
+            besterr = math.maxrealnumber;
+            bestegap = math.maxrealnumber;
+            besteprimal = math.maxrealnumber;
+            bestedual = math.maxrealnumber;
+            traceprogress(state, 0.0, 0.0, 0.0, 0.0, 0.0, _params);
+            y0nrm = 0;
+            y0nrm = Math.Max(y0nrm, ablasf.rmaxabsv(m, state.current.y, _params));
+            y0nrm = Math.Max(y0nrm, ablasf.rmaxabsv(m, state.current.v, _params));
+            y0nrm = Math.Max(y0nrm, ablasf.rmaxabsv(m, state.current.q, _params));
+            y0nrm = Math.Max(y0nrm, ablasf.rmaxabsv(n, state.current.z, _params));
+            y0nrm = Math.Max(y0nrm, ablasf.rmaxabsv(n, state.current.s, _params));
+            
+            //
+            // Start iteration
+            //
+            loadbest = true;
+            primalstagnationcnt = 0;
+            dualstagnationcnt = 0;
+            terminationtype = 7;
+            errp2 = math.maxrealnumber;
+            errd2 = math.maxrealnumber;
+            for(iteridx=0; iteridx<=maxipmits-1; iteridx++)
+            {
+                varsinitfrom(state.x0, state.current, _params);
+                
+                //
+                // Trace beginning
+                //
+                if( state.dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("=== PREDICTOR-CORRECTOR STEP {0,2:d} ====================================================================\n", iteridx));
+                }
+                
+                //
+                // Check regularization status, terminate if overregularized
+                //
+                if( (double)(dampeps)>=(double)(maxdampeps) )
+                {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> tried to increase regularization parameter, but it is too large\n");
+                        alglib.ap.trace("> it is likely that stopping conditions are too stringent, stopping at the best point found so far\n");
+                    }
+                    terminationtype = 7;
+                    break;
+                }
+                
+                //
+                // Precompute factorization
+                //
+                // NOTE: we use "solver" regularization coefficient at this moment
+                //
+                if( !vipmprecomputenewtonfactorization(state, state.current, regeps, modeps, dampeps, dampfree, _params) )
+                {
+                    
+                    //
+                    // KKT factorization failed.
+                    // Increase regularization parameter and skip this iteration.
+                    //
+                    dampeps = 10*dampeps;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> LDLT factorization failed due to rounding errors\n");
+                        alglib.ap.trace(System.String.Format("> increasing damping coefficient to {0,0:E2}, skipping iteration\n", dampeps));
+                    }
+                    continue;
+                }
+                
+                //
+                // Compute Mu
+                //
+                mu = varscomputemu(state.current, _params);
+                
+                //
+                // Compute affine scaling step for Mehrotra's predictor-corrector algorithm
+                //
+                varsinitbyzero(state.deltaaff, n, m, _params);
+                if( !vipmcomputestepdirection(state, state.current, 0.0, state.zerovars, state.deltaaff, regeps, (double)(dampeps)>=(double)(safedampeps), _params) )
+                {
+                    
+                    //
+                    // Affine scaling step failed due to numerical errors.
+                    // Increase regularization parameter and skip this iteration.
+                    //
+                    dampeps = 10*dampeps;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> affine scaling step failed to decrease residual due to rounding errors\n");
+                        alglib.ap.trace(System.String.Format("> increasing damping coefficient to {0,0:E2}, skipping iteration\n", dampeps));
+                    }
+                    continue;
+                }
+                vipmcomputesteplength(state, state.current, state.deltaaff, steplengthdecay, ref alphaaffp, ref alphaaffd, _params);
+                
+                //
+                // Compute MuAff and centering parameter
+                //
+                varsinitfrom(state.trial, state.current, _params);
+                varsaddstep(state.trial, state.deltaaff, alphaaffp, alphaaffd, _params);
+                muaff = varscomputemu(state.trial, _params);
+                sigma = Math.Min(Math.Pow((muaff+mumin)/(mu+mumin), 3), 1.0);
+                alglib.ap.assert(math.isfinite(sigma) && (double)(sigma)<=(double)(1), "VIPMOptimize: critical integrity check failed for Sigma (infinite or greater than 1)");
+                
+                //
+                // Compute corrector step
+                //
+                varsinitbyzero(state.deltacorr, n, m, _params);
+                if( !vipmcomputestepdirection(state, state.current, sigma*mu+mumin, state.deltaaff, state.deltacorr, regeps, (double)(dampeps)>=(double)(safedampeps), _params) )
+                {
+                    
+                    //
+                    // Affine scaling step failed due to numerical errors.
+                    // Increase regularization parameter and skip this iteration.
+                    //
+                    dampeps = 10*dampeps;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> corrector step failed to decrease residual due to rounding errors\n");
+                        alglib.ap.trace(System.String.Format("> increasing damping coefficient to {0,0:E2}, skipping iteration\n", dampeps));
+                    }
+                    continue;
+                }
+                vipmcomputesteplength(state, state.current, state.deltacorr, steplengthdecay, ref alphap, ref alphad, _params);
+                if( (double)(iteridx)>=(double)(minitersbeforesafeguards) && ((double)(alphap)<=(double)(badsteplength) || (double)(alphad)<=(double)(badsteplength)) )
+                {
+                    
+                    //
+                    // Affine scaling step failed due to numerical errors.
+                    // Increase regularization parameter and skip this iteration.
+                    //
+                    dampeps = 10*dampeps;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> step length is too short, suspecting rounding errors\n");
+                        alglib.ap.trace(System.String.Format("> increasing damping coefficient to {0,0:E2}, skipping iteration\n", dampeps));
+                    }
+                    continue;
+                }
+                
+                //
+                // Perform a step
+                //
+                runintegritychecks(state, state.current, state.deltacorr, alphap, alphad, _params);
+                vipmperformstep(state, alphap, alphad, _params);
+                traceprogress(state, mu, muaff, sigma, alphap, alphad, _params);
+                
+                //
+                // Check for excessive bounds (one that are so large that they are both irrelevant
+                // and destabilizing due to their magnitude)
+                //
+                if( dropbigbounds && iteridx>=minitersbeforedroppingbounds )
+                {
+                    alglib.ap.assert((double)(10*bigconstrmag)<=(double)(1/bigconstrxtol), "VIPMOptimize: integrity check failed (incorrect BigConstr settings)");
+                    droppedbounds = 0;
+                    
+                    //
+                    // Determine variable and step scales.
+                    // Both quantities are bounded from below by 1.0
+                    //
+                    mxprimal = 1.0;
+                    mxprimal = Math.Max(mxprimal, ablasf.rmaxabsv(n, state.current.x, _params));
+                    mxprimal = Math.Max(mxprimal, ablasf.rmaxabsv(n, state.current.g, _params));
+                    mxprimal = Math.Max(mxprimal, ablasf.rmaxabsv(n, state.current.t, _params));
+                    mxprimal = Math.Max(mxprimal, ablasf.rmaxabsv(m, state.current.w, _params));
+                    mxprimal = Math.Max(mxprimal, ablasf.rmaxabsv(m, state.current.p, _params));
+                    mxdeltaprimal = 1.0;
+                    mxdeltaprimal = Math.Max(mxdeltaprimal, alphap*ablasf.rmaxabsv(n, state.deltacorr.x, _params));
+                    mxdeltaprimal = Math.Max(mxdeltaprimal, alphap*ablasf.rmaxabsv(n, state.deltacorr.g, _params));
+                    mxdeltaprimal = Math.Max(mxdeltaprimal, alphap*ablasf.rmaxabsv(n, state.deltacorr.t, _params));
+                    mxdeltaprimal = Math.Max(mxdeltaprimal, alphap*ablasf.rmaxabsv(m, state.deltacorr.w, _params));
+                    mxdeltaprimal = Math.Max(mxdeltaprimal, alphap*ablasf.rmaxabsv(m, state.deltacorr.p, _params));
+                    
+                    //
+                    // If changes in primal variables are small enough, try dropping too large bounds
+                    //
+                    if( (double)(mxdeltaprimal)<(double)(mxprimal*bigconstrxtol) )
+                    {
+                        
+                        //
+                        // Drop irrelevant box constraints
+                        //
+                        primalxscale = 1.0;
+                        primalxscale = Math.Max(primalxscale, ablasf.rmaxabsv(n, state.current.x, _params));
+                        for(i=0; i<=n-1; i++)
+                        {
+                            if( (state.hasbndl[i] && state.hasgz[i]) && (double)(Math.Abs(state.bndl[i]))>(double)(bigconstrmag*primalxscale) )
+                            {
+                                state.hasgz[i] = false;
+                                state.current.g[i] = 0;
+                                state.current.z[i] = 0;
+                                apserv.inc(ref droppedbounds, _params);
+                            }
+                            if( (state.hasbndu[i] && state.hasts[i]) && (double)(Math.Abs(state.bndu[i]))>(double)(bigconstrmag*primalxscale) )
+                            {
+                                state.hasts[i] = false;
+                                state.current.t[i] = 0;
+                                state.current.s[i] = 0;
+                                apserv.inc(ref droppedbounds, _params);
+                            }
+                        }
+                        
+                        //
+                        // Drop irrelevant linear constraints. Due to specifics of the solver
+                        // we can drop only right part part of b<=Ax<=b+r.
+                        //
+                        // We can't drop b<=A from b<=A<=b+r because it impossible with our choice of
+                        // slack variables. Usually we do not need to do so because we reorder constraints
+                        // during initialization in such a way that |b+r|>|b| and because typical
+                        // applications do not have excessively large lower AND upper bound (user may
+                        // specify large value for 'absent' bound, but usually he does not mark both bounds as absent).
+                        //
+                        multiplygeax(state, 1.0, state.current.x, 0, 0.0, ref state.tmpax, 0, _params);
+                        primalxscale = 1.0;
+                        primalxscale = Math.Max(primalxscale, ablasf.rmaxabsv(n, state.current.x, _params));
+                        primalxscale = Math.Max(primalxscale, ablasf.rmaxabsv(m, state.tmpax, _params));
+                        for(i=0; i<=m-1; i++)
+                        {
+                            if( ((state.hasr[i] && state.haspq[i]) && (double)(Math.Abs(state.b[i]+state.r[i]))>(double)(bigconstrmag*primalxscale)) && (double)(Math.Abs(state.b[i]))<(double)(bigconstrmag*primalxscale) )
+                            {
+                                alglib.ap.assert(state.haswv[i] && state.haspq[i], "VIPMOptimize: unexpected integrity check failure (4y64)");
+                                state.haspq[i] = false;
+                                state.current.p[i] = 0;
+                                state.current.q[i] = 0;
+                                apserv.inc(ref droppedbounds, _params);
+                            }
+                        }
+                        
+                        //
+                        // Trace output
+                        //
+                        if( droppedbounds>0 )
+                        {
+                            if( state.dotrace )
+                            {
+                                alglib.ap.trace(System.String.Format("[NOTICE] detected {0,0:d} irrelevant constraints with huge bounds, X converged to values well below them, dropping...\n", droppedbounds));
+                            }
+                        }
+                    }
+                }
+                
+                //
+                // Check stopping criteria
+                // * primal and dual stagnation are checked only when following criteria are met:
+                //   1) Mu is smaller than 1 (we already converged close enough)
+                //   2) we performed more than MinItersBeforeStagnation iterations
+                //
+                preverrp2 = errp2;
+                preverrd2 = errd2;
+                computeerrors(state, ref errp2, ref errd2, ref errpinf, ref errdinf, ref errgap, _params);
+                mu = varscomputemu(state.current, _params);
+                egap = errgap;
+                eprimal = errpinf;
+                edual = errdinf;
+                if( (double)(apserv.rmax3(egap, eprimal, edual, _params))<(double)(besterr) )
+                {
+                    
+                    //
+                    // Save best point found so far
+                    //
+                    varsinitfrom(state.best, state.current, _params);
+                    bestiteridx = iteridx;
+                    besterr = apserv.rmax3(egap, eprimal, edual, _params);
+                    bestegap = egap;
+                    besteprimal = eprimal;
+                    bestedual = edual;
+                }
+                if( bestiteridx>0 && iteridx>bestiteridx+minitersbeforeeworststagnation )
+                {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("> worst of primal/dual/gap errors stagnated for {0,0:d} its, stopping at the best point found so far\n", minitersbeforeeworststagnation));
+                    }
+                    break;
+                }
+                if( (((double)(egap)<=(double)(state.epsgap) && (double)(errp2)>=(double)(stagnationdelta*preverrp2)) && (double)(errpinf)>=(double)(primalinfeasible1)) && iteridx>=minitersbeforestagnation )
+                {
+                    apserv.inc(ref primalstagnationcnt, _params);
+                    if( primalstagnationcnt>=primalstagnationlen )
+                    {
+                        if( state.dotrace )
+                        {
+                            alglib.ap.trace(System.String.Format("> primal error stagnated for {0,0:d} its, stopping at the best point found so far\n", primalstagnationlen));
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    primalstagnationcnt = 0;
+                }
+                if( (((double)(egap)<=(double)(state.epsgap) && (double)(errd2)>=(double)(stagnationdelta*preverrd2)) && (double)(errdinf)>=(double)(dualinfeasible1)) && iteridx>=minitersbeforestagnation )
+                {
+                    apserv.inc(ref dualstagnationcnt, _params);
+                    if( dualstagnationcnt>=dualstagnationlen )
+                    {
+                        if( state.dotrace )
+                        {
+                            alglib.ap.trace(System.String.Format("> dual error stagnated for {0,0:d} its, stopping at the best point found so far\n", dualstagnationlen));
+                        }
+                        break;
+                    }
+                }
+                else
+                {
+                    dualstagnationcnt = 0;
+                }
+                if( (double)(mu)<=(double)(mustop) && iteridx>=itersfortoostringentcond )
+                {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> stopping conditions are too stringent, stopping at the best point found so far\n");
+                    }
+                    terminationtype = 7;
+                    break;
+                }
+                if( ((double)(egap)<=(double)(state.epsgap) && (double)(eprimal)<=(double)(state.epsp)) && (double)(edual)<=(double)(state.epsd) )
+                {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> stopping criteria are met\n");
+                    }
+                    terminationtype = 1;
+                    loadbest = false;
+                    break;
+                }
+                bady = bigy;
+                bady = Math.Max(bady, ygrowth*y0nrm);
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(n, state.current.x, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(n, state.current.g, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(n, state.current.t, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(m, state.current.w, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(m, state.current.p, _params));
+                if( (double)(ablasf.rmaxabsv(m, state.current.y, _params))>=(double)(bady) && iteridx>=minitersbeforeinfeasible )
+                {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("> |Y| increased beyond {0,0:E1}, stopping at the best point found so far\n", bady));
+                    }
+                    break;
+                }
+            }
+            
+            //
+            // Load best point, perform some checks
+            //
+            if( loadbest )
+            {
+                
+                //
+                // Load best point
+                //
+                // NOTE: TouchReal() is used to avoid spurious compiler warnings about 'set but unused'
+                //
+                if( state.dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> the best point so far is one from iteration {0,0:d}\n", bestiteridx));
+                }
+                varsinitfrom(state.current, state.best, _params);
+                apserv.touchreal(ref besteprimal, _params);
+                apserv.touchreal(ref bestedual, _params);
+                apserv.touchreal(ref bestegap, _params);
+                
+                //
+                // If no error flags were set yet, check solution quality
+                //
+                bady = bigy;
+                bady = Math.Max(bady, ygrowth*y0nrm);
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(n, state.current.x, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(n, state.current.g, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(n, state.current.t, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(m, state.current.w, _params));
+                bady = Math.Max(bady, ygrowth*ablasf.rmaxabsv(m, state.current.p, _params));
+                if( terminationtype>0 && (double)(ablasf.rmaxabsv(m, state.current.y, _params))>=(double)(bady) )
+                {
+                    terminationtype = -2;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("> |Y| increased beyond {0,0:E1}, declaring infeasibility/unboundedness\n", bady));
+                    }
+                }
+                if( terminationtype>0 && (double)(besteprimal)>=(double)(primalinfeasible1) )
+                {
+                    terminationtype = -2;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> primal error at the best point is too high, declaring infeasibility/unboundedness\n");
+                    }
+                }
+                if( terminationtype>0 && (double)(bestedual)>=(double)(dualinfeasible1) )
+                {
+                    terminationtype = -2;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> dual error at the best point is too high, declaring infeasibility/unboundedness\n");
+                    }
+                }
+            }
+            
+            //
+            // Output
+            //
+            multiplyhx(state, state.current.x, ref state.tmp0, _params);
+            ablasf.raddv(n, 1.0, state.c, state.tmp0, _params);
+            multiplygeatx(state, -1.0, state.current.y, 0, 1.0, ref state.tmp0, 0, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.isfrozen[i] )
+                {
+                    
+                    //
+                    // I-th variable is frozen, use its frozen value.
+                    // By the definition, I-th Lagrangian multiplier is an I-th component of Lagrangian gradient
+                    //
+                    xs[i] = state.current.x[i];
+                    lagbc[i] = -state.tmp0[i];
+                }
+                else
+                {
+                    xs[i] = state.current.x[i];
+                    lagbc[i] = 0.0;
+                    if( state.hasgz[i] )
+                    {
+                        lagbc[i] = lagbc[i]-state.current.z[i];
+                    }
+                    if( state.hasts[i] )
+                    {
+                        lagbc[i] = lagbc[i]+state.current.s[i];
+                    }
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                laglc[i] = -state.current.y[i];
+            }
+            
+            //
+            // Unscale point and Lagrange multipliers
+            //
+            lpqpserv.unscaleunshiftpointbc(state.scl, state.xorigin, state.rawbndl, state.rawbndu, state.bndl, state.bndu, state.hasbndl, state.hasbndu, xs, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                lagbc[i] = lagbc[i]*state.targetscale/state.scl[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                laglc[i] = laglc[i]*state.targetscale/apserv.coalesce(state.ascales[i], 1.0, _params);
+            }
+        }
+
+
+        /*************************************************************************
+        Allocates place for variables of IPM and fills by zeros.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void varsinitbyzero(vipmvars vstate,
+            int n,
+            int m,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(n>=1, "VarsInitByZero: N<1");
+            alglib.ap.assert(m>=0, "VarsInitByZero: M<0");
+            vstate.n = n;
+            vstate.m = m;
+            ablasf.rsetallocv(n, 0.0, ref vstate.x, _params);
+            ablasf.rsetallocv(n, 0.0, ref vstate.g, _params);
+            ablasf.rsetallocv(n, 0.0, ref vstate.t, _params);
+            ablasf.rsetallocv(n, 0.0, ref vstate.z, _params);
+            ablasf.rsetallocv(n, 0.0, ref vstate.s, _params);
+            ablasf.rsetallocv(m, 0.0, ref vstate.y, _params);
+            ablasf.rsetallocv(m, 0.0, ref vstate.w, _params);
+            ablasf.rsetallocv(m, 0.0, ref vstate.p, _params);
+            ablasf.rsetallocv(m, 0.0, ref vstate.v, _params);
+            ablasf.rsetallocv(m, 0.0, ref vstate.q, _params);
+        }
+
+
+        /*************************************************************************
+        Allocates place for variables of IPM and fills them by values of
+        the source
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void varsinitfrom(vipmvars vstate,
+            vipmvars vsrc,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int m = 0;
+
+            n = vsrc.n;
+            m = vsrc.m;
+            alglib.ap.assert(n>=1, "VarsInitFrom: N<1");
+            alglib.ap.assert(m>=0, "VarsInitFrom: M<0");
+            vstate.n = n;
+            vstate.m = m;
+            apserv.rvectorsetlengthatleast(ref vstate.x, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.g, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.t, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.w, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.p, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.z, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.s, n, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.y, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.v, m, _params);
+            apserv.rvectorsetlengthatleast(ref vstate.q, m, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                vstate.x[i] = vsrc.x[i];
+                vstate.g[i] = vsrc.g[i];
+                vstate.t[i] = vsrc.t[i];
+                vstate.z[i] = vsrc.z[i];
+                vstate.s[i] = vsrc.s[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vstate.w[i] = vsrc.w[i];
+                vstate.p[i] = vsrc.p[i];
+                vstate.y[i] = vsrc.y[i];
+                vstate.v[i] = vsrc.v[i];
+                vstate.q[i] = vsrc.q[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Adds to variables direction vector times step length. Different
+        lengths are used for primal and dual steps.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void varsaddstep(vipmvars vstate,
+            vipmvars vdir,
+            double stpp,
+            double stpd,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int m = 0;
+
+            n = vstate.n;
+            m = vstate.m;
+            alglib.ap.assert(n>=1, "VarsAddStep: N<1");
+            alglib.ap.assert(m>=0, "VarsAddStep: M<0");
+            alglib.ap.assert(n==vdir.n, "VarsAddStep: sizes mismatch");
+            alglib.ap.assert(m==vdir.m, "VarsAddStep: sizes mismatch");
+            for(i=0; i<=n-1; i++)
+            {
+                vstate.x[i] = vstate.x[i]+stpp*vdir.x[i];
+                vstate.g[i] = vstate.g[i]+stpp*vdir.g[i];
+                vstate.t[i] = vstate.t[i]+stpp*vdir.t[i];
+                vstate.z[i] = vstate.z[i]+stpd*vdir.z[i];
+                vstate.s[i] = vstate.s[i]+stpd*vdir.s[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                vstate.w[i] = vstate.w[i]+stpp*vdir.w[i];
+                vstate.p[i] = vstate.p[i]+stpp*vdir.p[i];
+                vstate.y[i] = vstate.y[i]+stpd*vdir.y[i];
+                vstate.v[i] = vstate.v[i]+stpd*vdir.v[i];
+                vstate.q[i] = vstate.q[i]+stpd*vdir.q[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Computes complementarity gap
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double varscomputecomplementaritygap(vipmvars vstate,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int n = 0;
+            int m = 0;
+
+            n = vstate.n;
+            m = vstate.m;
+            result = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                result = result+vstate.z[i]*vstate.g[i]+vstate.s[i]*vstate.t[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                result = result+vstate.v[i]*vstate.w[i]+vstate.p[i]*vstate.q[i];
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes empirical value of the barrier parameter Mu
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double varscomputemu(vipmvars vstate,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int k = 0;
+
+            k = 0;
+            result = 0;
+            for(i=0; i<=vstate.n-1; i++)
+            {
+                result = result+vstate.z[i]*vstate.g[i]+vstate.s[i]*vstate.t[i];
+                if( !(vstate.z[i]*vstate.g[i]==0.0) )
+                {
+                    k = k+1;
+                }
+                if( !(vstate.s[i]*vstate.t[i]==0.0) )
+                {
+                    k = k+1;
+                }
+            }
+            for(i=0; i<=vstate.m-1; i++)
+            {
+                result = result+vstate.v[i]*vstate.w[i]+vstate.p[i]*vstate.q[i];
+                if( !(vstate.v[i]*vstate.w[i]==0.0) )
+                {
+                    k = k+1;
+                }
+                if( !(vstate.p[i]*vstate.q[i]==0.0) )
+                {
+                    k = k+1;
+                }
+            }
+            result = result/apserv.coalesce(k, 1, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Initializes QP-IPM state and prepares it to receive quadratic/linear terms
+        and constraints.
+
+        The solver is configured to work internally with factorization FType
+
+        INPUT PARAMETERS:
+            State       -   solver  state  to  be configured; previously allocated
+                            memory is reused as much as possible
+            S           -   scale vector, array[N]:
+                            * I-th element contains scale of I-th variable,
+                            * S[I]>0
+            XOrigin     -   origin term, array[N]. Can be zero. The solver solves
+                            problem of the form
+                            
+                            >
+                            > min(0.5*(x-x_origin)'*A*(x-x_origin)+b'*(x-x_origin))
+                            >
+                            
+                            The terms A and b (as well as constraints) will be
+                            specified later with separate calls.
+            FType       -   factorization type:
+                            * 0 for dense NxN factorization (normal equations)
+                            * 1 for sparse (N+M)x(N+M) factorization
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipminit(vipmstate state,
+            double[] s,
+            double[] xorigin,
+            int n,
+            int nmain,
+            int ftype,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int nslack = 0;
+
+            alglib.ap.assert(n>=1, "VIPMInit: N<1");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "VIPMInit: S contains infinite or NaN elements");
+            alglib.ap.assert(apserv.isfinitevector(xorigin, n, _params), "VIPMInit: XOrigin contains infinite or NaN elements");
+            alglib.ap.assert(ftype==0 || ftype==1, "VIPMInit: unexpected FType");
+            alglib.ap.assert(nmain>=1, "VIPMInit: NMain<1");
+            alglib.ap.assert(nmain<=n, "VIPMInit: NMain>N");
+            nslack = n-nmain;
+            
+            //
+            // Problem metrics, settings and type
+            //
+            state.n = n;
+            state.nmain = nmain;
+            state.islinear = true;
+            state.factorizationtype = ftype;
+            state.factorizationpresent = false;
+            state.factorizationpoweredup = false;
+            vipmsetcond(state, 0.0, 0.0, 0.0, _params);
+            state.slacksforequalityconstraints = true;
+            
+            //
+            // Reports
+            //
+            state.repiterationscount = 0;
+            state.repncholesky = 0;
+            
+            //
+            // Trace
+            //
+            state.dotrace = false;
+            state.dodetailedtrace = false;
+            
+            //
+            // Scale and origin
+            //
+            apserv.rvectorsetlengthatleast(ref state.scl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.invscl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.xorigin, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(s[i]>0.0, "VIPMInit: S[i] is non-positive");
+                state.scl[i] = s[i];
+                state.invscl[i] = 1/s[i];
+                state.xorigin[i] = xorigin[i];
+            }
+            state.targetscale = 1.0;
+            
+            //
+            // Linear and quadratic terms - default value
+            //
+            apserv.rvectorsetlengthatleast(ref state.c, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.c[i] = 0;
+            }
+            state.hkind = -1;
+            if( ftype==0 )
+            {
+                
+                //
+                // Dense quadratic term
+                //
+                apserv.rmatrixsetlengthatleast(ref state.denseh, nmain, nmain, _params);
+                for(i=0; i<=nmain-1; i++)
+                {
+                    for(j=0; j<=i; j++)
+                    {
+                        state.denseh[i,j] = 0;
+                    }
+                }
+                state.hkind = 0;
+            }
+            if( ftype==1 )
+            {
+                
+                //
+                // Sparse quadratic term
+                //
+                state.sparseh.matrixtype = 1;
+                state.sparseh.m = n;
+                state.sparseh.n = n;
+                state.sparseh.ninitialized = n;
+                apserv.ivectorsetlengthatleast(ref state.sparseh.idx, n, _params);
+                apserv.rvectorsetlengthatleast(ref state.sparseh.vals, n, _params);
+                apserv.ivectorsetlengthatleast(ref state.sparseh.ridx, n+1, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    state.sparseh.idx[i] = i;
+                    state.sparseh.vals[i] = 0.0;
+                    state.sparseh.ridx[i] = i;
+                }
+                state.sparseh.ridx[n] = n;
+                sparse.sparsecreatecrsinplace(state.sparseh, _params);
+                state.hkind = 1;
+            }
+            alglib.ap.assert(state.hkind>=0, "VIPMInit: integrity check failed");
+            
+            //
+            // Box constraints - default values
+            //
+            apserv.rvectorsetlengthatleast(ref state.bndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.bndu, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.hasbndl[i] = false;
+                state.hasbndu[i] = false;
+                state.bndl[i] = Double.NegativeInfinity;
+                state.bndu[i] = Double.PositiveInfinity;
+            }
+            
+            //
+            // Linear constraints - empty
+            //
+            state.mdense = 0;
+            state.msparse = 0;
+            state.combinedaslack.m = 0;
+            state.combinedaslack.n = nslack;
+            state.sparseamain.m = 0;
+            state.sparseamain.n = nmain;
+            sparse.sparsecreatecrsinplace(state.sparseamain, _params);
+            sparse.sparsecreatecrsinplace(state.combinedaslack, _params);
+        }
+
+
+        /*************************************************************************
+        Computes target function 0.5*x'*H*x+c'*x
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static double vipmtarget(vipmstate state,
+            double[] x,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int n = 0;
+            int nmain = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double v = 0;
+
+            n = state.n;
+            nmain = state.nmain;
+            alglib.ap.assert(state.hkind==0 || state.hkind==1, "VIPMTarget: unexpected HKind");
+            result = 0;
+            
+            //
+            // Dense
+            //
+            if( state.hkind==0 )
+            {
+                for(i=0; i<=nmain-1; i++)
+                {
+                    for(j=0; j<=i-1; j++)
+                    {
+                        result = result+x[i]*state.denseh[i,j]*x[j];
+                    }
+                    result = result+0.5*x[i]*x[i]*state.denseh[i,i];
+                }
+                for(i=0; i<=n-1; i++)
+                {
+                    result = result+state.c[i]*x[i];
+                }
+                return result;
+            }
+            
+            //
+            // Sparse
+            //
+            if( state.hkind==1 )
+            {
+                for(i=0; i<=n-1; i++)
+                {
+                    result = result+state.c[i]*x[i];
+                    j0 = state.sparseh.ridx[i];
+                    j1 = state.sparseh.didx[i]-1;
+                    for(k=j0; k<=j1; k++)
+                    {
+                        v = state.sparseh.vals[k];
+                        j = state.sparseh.idx[k];
+                        result = result+v*x[i]*x[j];
+                    }
+                    alglib.ap.assert(state.sparseh.uidx[i]!=state.sparseh.didx[i], "VIPMTarget: sparse diagonal not found");
+                    v = state.sparseh.vals[state.sparseh.didx[i]];
+                    result = result+0.5*v*x[i]*x[i];
+                }
+                return result;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes
+
+            Y := alpha*A*x + beta*Y
+
+        where A is constraint matrix, X is user-specified source, Y is target.
+
+        Beta can be zero (in this case original contents of Y is ignored).
+        If Beta is nonzero, we expect that Y contains preallocated array.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void multiplygeax(vipmstate state,
+            double alpha,
+            double[] x,
+            int offsx,
+            double beta,
+            ref double[] y,
+            int offsax,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int mdense = 0;
+            int msparse = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            mdense = state.mdense;
+            msparse = state.msparse;
+            if( (double)(beta)==(double)(0) )
+            {
+                ablasf.rallocv(offsax+m, ref y, _params);
+            }
+            else
+            {
+                alglib.ap.assert(alglib.ap.len(y)>=offsax+m, "MultiplyGEAX: Y is too short");
+            }
+            if( msparse>0 )
+            {
+                sparse.sparsegemv(state.sparseafull, alpha, 0, x, offsx, beta, y, offsax, _params);
+            }
+            if( mdense>0 )
+            {
+                ablas.rmatrixgemv(mdense, n, alpha, state.denseafull, 0, 0, 0, x, offsx, beta, y, offsax+msparse, _params);
+            }
+        }
+
+
+        /*************************************************************************
+        Computes
+
+            Y := alpha*A'*x + beta*Y
+
+        where A is constraint matrix, X is user-specified source, Y is target.
+
+        Beta can be zero, in this case we automatically reallocate target if it is
+        too short (but do NOT reallocate it if its size is large enough).
+        If Beta is nonzero, we expect that Y contains preallocated array.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void multiplygeatx(vipmstate state,
+            double alpha,
+            double[] x,
+            int offsx,
+            double beta,
+            ref double[] y,
+            int offsy,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int mdense = 0;
+            int msparse = 0;
+
+            n = state.n;
+            mdense = state.mdense;
+            msparse = state.msparse;
+            if( (double)(beta)==(double)(0) )
+            {
+                ablasf.rallocv(offsy+n, ref y, _params);
+                ablasf.rsetvx(n, 0.0, y, offsy, _params);
+            }
+            else
+            {
+                alglib.ap.assert(alglib.ap.len(y)>=offsy+n, "MultiplyGEATX: Y is too short");
+                ablasf.rmulvx(n, beta, y, offsy, _params);
+            }
+            if( msparse>0 )
+            {
+                sparse.sparsegemv(state.sparseafull, alpha, 1, x, offsx, 1.0, y, offsy, _params);
+            }
+            if( mdense>0 )
+            {
+                ablas.rmatrixgemv(n, mdense, alpha, state.denseafull, 0, 0, 1, x, offsx+msparse, 1.0, y, offsy, _params);
+            }
+        }
+
+
+        /*************************************************************************
+        Computes H*x, does not support advanced functionality of GEAX/GEATX
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void multiplyhx(vipmstate state,
+            double[] x,
+            ref double[] hx,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int nmain = 0;
+            int i = 0;
+
+            n = state.n;
+            nmain = state.nmain;
+            apserv.rvectorsetlengthatleast(ref hx, n, _params);
+            alglib.ap.assert(state.hkind==0 || state.hkind==1, "VIPMMultiplyHX: unexpected HKind");
+            if( state.hkind==0 )
+            {
+                ablas.rmatrixsymv(nmain, 1.0, state.denseh, 0, 0, false, x, 0, 0.0, hx, 0, _params);
+                for(i=nmain; i<=n-1; i++)
+                {
+                    hx[i] = 0;
+                }
+            }
+            if( state.hkind==1 )
+            {
+                alglib.ap.assert(state.sparseh.n==n && state.sparseh.m==n, "VIPMMultiplyHX: sparse H has incorrect size");
+                sparse.sparsesmv(state.sparseh, false, x, ref hx, _params);
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                hx[i] = hx[i]+x[i]*state.diagr[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Computes products H*x, A*x, A^T*y
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmmultiply(vipmstate state,
+            double[] x,
+            double[] y,
+            ref double[] hx,
+            ref double[] ax,
+            ref double[] aty,
+            alglib.xparams _params)
+        {
+            multiplygeax(state, 1.0, x, 0, 0.0, ref ax, 0, _params);
+            multiplygeatx(state, 1.0, y, 0, 0.0, ref aty, 0, _params);
+            multiplyhx(state, x, ref hx, _params);
+        }
+
+
+        /*************************************************************************
+        This function "powers up" factorization, i.e. prepares some important
+        temporaries. It should be called once prior to the first call to
+        VIPMInitialPoint() or VIPMFactorize().
+
+        Parameters:
+            RegFree     -   regularization for free variables;
+                            good value sqrt(MachineEpsilon)
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmpowerup(vipmstate state,
+            double regfree,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int nnzmax = 0;
+            int offs = 0;
+            int rowoffs = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            double v = 0;
+            double vrhs = 0;
+            int factldlt = 0;
+            int permauto = 0;
+            double maxinitialnoncentrality = 0;
+            double maxinitialimbalance = 0;
+            double priorcoeff = 0;
+            double initprimslack = 0;
+            double initdualslack = 0;
+            double mu0 = 0;
+            double mumin = 0;
+            bool success = new bool();
+
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMPowerUp: unexpected factorization type");
+            n = state.n;
+            m = state.mdense+state.msparse;
+            alglib.ap.assert(!state.factorizationpoweredup, "VIPMPowerUp: repeated call");
+            maxinitialnoncentrality = 1.0E-6;
+            maxinitialimbalance = 1.0E-6;
+            
+            //
+            // Set up information about presence of slack variables.
+            // Decide which components of X should be frozen.
+            // Compute diagonal regularization matrix R.
+            //
+            ablasf.bcopyallocv(n, state.hasbndl, ref state.hasgz, _params);
+            ablasf.bcopyallocv(n, state.hasbndu, ref state.hasts, _params);
+            ablasf.bsetallocv(n, false, ref state.isfrozen, _params);
+            ablasf.rsetallocv(n, 0.0, ref state.diagr, _params);
+            varsinitbyzero(state.current, n, m, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                if( (state.hasbndl[i] && state.hasbndu[i]) && (double)(state.bndl[i])==(double)(state.bndu[i]) )
+                {
+                    state.isfrozen[i] = true;
+                    state.hasgz[i] = false;
+                    state.hasts[i] = false;
+                    state.current.x[i] = state.bndl[i];
+                }
+                if( !state.hasbndl[i] && !state.hasbndu[i] )
+                {
+                    state.diagr[i] = regfree;
+                }
+            }
+            ablasf.ballocv(m, ref state.haspq, _params);
+            ablasf.ballocv(m, ref state.haswv, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                state.haswv[i] = (state.slacksforequalityconstraints || !state.hasr[i]) || (double)(state.r[i])>(double)(0);
+                state.haspq[i] = state.hasr[i] && state.haswv[i];
+            }
+            
+            //
+            // Only sparse factorization needs special powering up
+            //
+            if( state.factorizationtype==1 )
+            {
+                alglib.ap.assert(state.hkind==1, "VIPMPowerUp: unexpected HKind");
+                nnzmax = state.sparseh.ridx[n];
+                if( state.msparse>0 )
+                {
+                    nnzmax = nnzmax+state.sparseafull.ridx[state.msparse];
+                }
+                if( state.mdense>0 )
+                {
+                    nnzmax = nnzmax+n*state.mdense;
+                }
+                nnzmax = nnzmax+(n+m);
+                
+                //
+                // Prepare strictly lower triangle of template KKT matrix (KKT system without D and E
+                // terms being added to diagonals)
+                //
+                state.factsparsekkttmpl.m = n+m;
+                state.factsparsekkttmpl.n = n+m;
+                apserv.ivectorsetlengthatleast(ref state.factsparsekkttmpl.idx, nnzmax, _params);
+                apserv.rvectorsetlengthatleast(ref state.factsparsekkttmpl.vals, nnzmax, _params);
+                apserv.ivectorsetlengthatleast(ref state.factsparsekkttmpl.ridx, n+m+1, _params);
+                state.factsparsekkttmpl.ridx[0] = 0;
+                offs = 0;
+                rowoffs = 0;
+                for(i=0; i<=n-1; i++)
+                {
+                    alglib.ap.assert(state.sparseh.didx[i]+1==state.sparseh.uidx[i], "VIPMPowerUp: critical integrity check failed for diagonal of H");
+                    if( !state.isfrozen[i] )
+                    {
+                        
+                        //
+                        // Entire row is not frozen, but some of its entries can be.
+                        // Output non-frozen offdiagonal entries.
+                        //
+                        k0 = state.sparseh.ridx[i];
+                        k1 = state.sparseh.didx[i]-1;
+                        for(k=k0; k<=k1; k++)
+                        {
+                            j = state.sparseh.idx[k];
+                            if( !state.isfrozen[j] )
+                            {
+                                state.factsparsekkttmpl.idx[offs] = j;
+                                state.factsparsekkttmpl.vals[offs] = -state.sparseh.vals[k];
+                                offs = offs+1;
+                            }
+                        }
+                        
+                        //
+                        // Output diagonal entry (it is always not frozen)
+                        //
+                        state.factsparsekkttmpl.idx[offs] = i;
+                        state.factsparsekkttmpl.vals[offs] = -state.sparseh.vals[state.sparseh.didx[i]];
+                        offs = offs+1;
+                    }
+                    else
+                    {
+                        
+                        //
+                        // Entire row is frozen, output just -1
+                        //
+                        state.factsparsekkttmpl.idx[offs] = i;
+                        state.factsparsekkttmpl.vals[offs] = -1.0;
+                        offs = offs+1;
+                    }
+                    rowoffs = rowoffs+1;
+                    state.factsparsekkttmpl.ridx[rowoffs] = offs;
+                }
+                for(i=0; i<=state.msparse-1; i++)
+                {
+                    k0 = state.sparseafull.ridx[i];
+                    k1 = state.sparseafull.ridx[i+1]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        j = state.sparseafull.idx[k];
+                        if( !state.isfrozen[j] )
+                        {
+                            state.factsparsekkttmpl.idx[offs] = j;
+                            state.factsparsekkttmpl.vals[offs] = state.sparseafull.vals[k];
+                            offs = offs+1;
+                        }
+                    }
+                    state.factsparsekkttmpl.idx[offs] = rowoffs;
+                    state.factsparsekkttmpl.vals[offs] = 0.0;
+                    offs = offs+1;
+                    rowoffs = rowoffs+1;
+                    state.factsparsekkttmpl.ridx[rowoffs] = offs;
+                }
+                for(i=0; i<=state.mdense-1; i++)
+                {
+                    for(k=0; k<=n-1; k++)
+                    {
+                        if( state.denseafull[i,k]!=0.0 && !state.isfrozen[k] )
+                        {
+                            state.factsparsekkttmpl.idx[offs] = k;
+                            state.factsparsekkttmpl.vals[offs] = state.denseafull[i,k];
+                            offs = offs+1;
+                        }
+                    }
+                    state.factsparsekkttmpl.idx[offs] = rowoffs;
+                    state.factsparsekkttmpl.vals[offs] = 0.0;
+                    offs = offs+1;
+                    rowoffs = rowoffs+1;
+                    state.factsparsekkttmpl.ridx[rowoffs] = offs;
+                }
+                alglib.ap.assert(rowoffs==m+n, "VIPMPowerUp: critical integrity check failed");
+                alglib.ap.assert(offs<=nnzmax, "VIPMPowerUp: critical integrity check failed");
+                sparse.sparsecreatecrsinplace(state.factsparsekkttmpl, _params);
+                factldlt = 1;
+                permauto = 0;
+                if( !spchol.spsymmanalyze(state.factsparsekkttmpl, factldlt, permauto, state.ldltanalysis, _params) )
+                {
+                    alglib.ap.assert(false, "VIPMPowerUp: critical integrity check failed, symbolically degenerate KKT system encountered");
+                }
+            }
+            state.factorizationpoweredup = true;
+            
+            //
+            // Set up initial values of primal and dual variables X and Y by solving
+            // modified KKT system which tries to enforce linear constraints (ignoring
+            // box constraints for a while) subject to minimization of additional prior
+            // term which moves solution towards some interior point.
+            //
+            // Here we expect that State.Current.X contains zeros in non-fixed variables
+            // and their fixed values for fixed ones.
+            //
+            priorcoeff = 1.0;
+            success = vipmfactorize(state, 0.0, state.diagddr, 0.0, state.diagder, priorcoeff, priorcoeff, math.machineepsilon, math.machineepsilon, _params);
+            alglib.ap.assert(success, "VIPMInitialPoint: impossible failure of LDLT factorization");
+            multiplyhx(state, state.current.x, ref state.tmp0, _params);
+            multiplygeax(state, 1.0, state.current.x, 0, 0.0, ref state.tmp1, 0, _params);
+            ablasf.rallocv(n+m, ref state.deltaxy, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.deltaxy[i] = state.c[i]+state.tmp0[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // We need to specify target right-hand sides for constraints.
+                //
+                // Ether zero, b or b+r is used (depending on presence of r and
+                // magnitudes of b and b+r, and subject to current state of frozen
+                // variables).
+                //
+                vrhs = state.b[i]-state.tmp1[i];
+                if( state.hasr[i] )
+                {
+                    
+                    //
+                    // Range constraint b<=Ax<=b+r
+                    //
+                    if( (double)(vrhs)>=(double)(0) )
+                    {
+                        
+                        //
+                        // 0<=b<=b+r, select target at lower bound
+                        //
+                        v = vrhs;
+                    }
+                    else
+                    {
+                        
+                        //
+                        // b<=0, b+r can have any sign.
+                        // Select zero target if possible, if not - one with smallest absolute value.
+                        //
+                        v = Math.Min(vrhs+state.r[i], 0.0);
+                    }
+                }
+                else
+                {
+                    
+                    //
+                    // Single-sided constraint Ax>=b.
+                    // Select zero target if possible, if not - one with smallest absolute value.
+                    //
+                    v = Math.Max(vrhs, 0.0);
+                }
+                state.deltaxy[n+i] = v;
+            }
+            solvereducedkktsystem(state, state.deltaxy, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                if( !state.isfrozen[i] )
+                {
+                    state.current.x[i] = state.deltaxy[i];
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                state.current.y[i] = state.deltaxy[n+i];
+            }
+            
+            //
+            // Set up slacks according to our own heuristic
+            //
+            initprimslack = Math.Max(initslackval, ablasf.rmaxabsv(n, state.current.x, _params));
+            initdualslack = Math.Max(initslackval, ablasf.rmaxabsv(m, state.current.y, _params));
+            multiplygeax(state, 1.0, state.current.x, 0, 0.0, ref state.tmpax, 0, _params);
+            mu0 = 1.0;
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] )
+                {
+                    state.current.g[i] = Math.Max(Math.Abs(state.current.x[i]-state.bndl[i]), initprimslack);
+                    state.current.z[i] = Math.Max(state.current.g[i]*maxinitialimbalance, initdualslack);
+                    mu0 = Math.Max(mu0, state.current.g[i]*state.current.z[i]);
+                }
+                if( state.hasts[i] )
+                {
+                    state.current.t[i] = Math.Max(Math.Abs(state.current.x[i]-state.bndu[i]), initprimslack);
+                    state.current.s[i] = Math.Max(state.current.t[i]*maxinitialimbalance, initdualslack);
+                    mu0 = Math.Max(mu0, state.current.t[i]*state.current.s[i]);
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haswv[i] )
+                {
+                    state.current.w[i] = Math.Max(Math.Abs(state.tmpax[i]-state.b[i]), initprimslack);
+                    state.current.v[i] = apserv.rmax3(state.current.w[i]*maxinitialimbalance, Math.Abs(state.current.y[i]), initslackval, _params);
+                    mu0 = Math.Max(mu0, state.current.w[i]*state.current.v[i]);
+                }
+                if( state.haspq[i] )
+                {
+                    state.current.p[i] = Math.Max(Math.Abs(state.r[i]-state.current.w[i]), initprimslack);
+                    state.current.q[i] = apserv.rmax3(state.current.p[i]*maxinitialimbalance, Math.Abs(state.current.y[i]), initslackval, _params);
+                    mu0 = Math.Max(mu0, state.current.p[i]*state.current.q[i]);
+                }
+            }
+            
+            //
+            // Additional shift to ensure that initial point is not too non-centered
+            //
+            mumin = mu0*maxinitialnoncentrality;
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] && (double)(state.current.g[i]*state.current.z[i])<(double)(mumin) )
+                {
+                    v = Math.Sqrt(mumin/(state.current.g[i]*state.current.z[i]));
+                    state.current.g[i] = state.current.g[i]*v;
+                    state.current.z[i] = state.current.z[i]*v;
+                }
+                if( state.hasts[i] && (double)(state.current.t[i]*state.current.s[i])<(double)(mumin) )
+                {
+                    v = Math.Sqrt(mumin/(state.current.t[i]*state.current.s[i]));
+                    state.current.t[i] = state.current.t[i]*v;
+                    state.current.s[i] = state.current.s[i]*v;
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haswv[i] && (double)(state.current.w[i]*state.current.v[i])<(double)(mumin) )
+                {
+                    v = Math.Sqrt(mumin/(state.current.w[i]*state.current.v[i]));
+                    state.current.w[i] = state.current.w[i]*v;
+                    state.current.v[i] = state.current.v[i]*v;
+                }
+                if( state.haspq[i] && (double)(state.current.p[i]*state.current.q[i])<(double)(mumin) )
+                {
+                    v = Math.Sqrt(mumin/(state.current.p[i]*state.current.q[i]));
+                    state.current.p[i] = state.current.p[i]*v;
+                    state.current.q[i] = state.current.q[i]*v;
+                }
+            }
+            
+            //
+            // Almost done
+            //
+            if( state.dotrace )
+            {
+                alglib.ap.trace("> initial point was generated\n");
+            }
+        }
+
+
+        /*************************************************************************
+        This function performs factorization of modified KKT system
+
+            (                        |                 )
+            ( -(H+alpha0*D+alpha1*I) |       A^T       )
+            (                        |                 )
+            (------------------------|-----------------)
+            (                        |                 )
+            (           A            | beta0*E+beta1*I )
+            (                        |                 )
+
+        where:
+        * H is an NxN quadratic term
+        * A is an MxN matrix of linear constraint
+        * alpha0, alpha1, beta0, beta1 are nonnegative scalars
+        * D and E are diagonal matrices with nonnegative entries (which are ignored
+          if alpha0 and beta0 are zero - arrays are not referenced at all)
+        * I is an NxN or MxM identity matrix
+
+        Additionally, regularizing term
+
+            (        |        )
+            ( -reg*I |        )
+            (        |        )
+            (--------|--------)
+            (        |        )
+            (        | +reg*I )
+            (        |        )
+
+        is added to the entire KKT system prior to factorization in order to
+        improve its numerical stability.
+
+        Returns True on success, False on falure of factorization (it is recommended
+        to increase regularization parameter and try one more time).
+
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool vipmfactorize(vipmstate state,
+            double alpha0,
+            double[] d,
+            double beta0,
+            double[] e,
+            double alpha11,
+            double beta11,
+            double modeps,
+            double dampeps,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int nmain = 0;
+            int nslack = 0;
+            int m = 0;
+            int mdense = 0;
+            int msparse = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int k0 = 0;
+            int k1 = 0;
+            int ka = 0;
+            int kb = 0;
+            int ja = 0;
+            int jb = 0;
+            double va = 0;
+            double vb = 0;
+            double v = 0;
+            double vv = 0;
+            double badchol = 0;
+            double sumsq = 0;
+            double errsq = 0;
+
+            alglib.ap.assert(math.isfinite(alpha0) && (double)(alpha0)>=(double)(0), "VIPMFactorize: Alpha0 is infinite or negative");
+            alglib.ap.assert(math.isfinite(alpha11) && (double)(alpha11)>=(double)(0), "VIPMFactorize: Alpha1 is infinite or negative");
+            alglib.ap.assert(math.isfinite(beta0) && (double)(beta0)>=(double)(0), "VIPMFactorize: Beta0 is infinite or negative");
+            alglib.ap.assert(math.isfinite(beta11) && (double)(beta11)>=(double)(0), "VIPMFactorize: Beta1 is infinite or negative");
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMFactorize: unexpected factorization type");
+            alglib.ap.assert(state.factorizationpoweredup, "VIPMFactorize: critical integrity check failed (no powerup stage)");
+            n = state.n;
+            nmain = state.nmain;
+            nslack = n-nmain;
+            m = state.mdense+state.msparse;
+            mdense = state.mdense;
+            msparse = state.msparse;
+            state.factorizationpresent = false;
+            badchol = 1.0E50;
+            result = true;
+            
+            //
+            // Dense NxN normal equations approach
+            //
+            if( state.factorizationtype==0 )
+            {
+                
+                //
+                // A problem formulation with possible slacks.
+                //
+                // === A FORMULATION WITHOUT FROZEN VARIABLES ===
+                //
+                // We have to solve following system:
+                //
+                //     [ -(H+Dh+Rh)         Ah'  ] [ Xh ]   [ Bh ]
+                //     [          -(Dz+Rz)  Az'  ] [ Xz ] = [ Bz ]
+                //     [   Ah     Az         E   ] [ Y  ]   [ By ]
+                //
+                // with Xh being NMain-dimensional vector, Xz being NSlack-dimensional vector, constraint
+                // matrix A being divided into non-slack and slack parts Ah and Az (and Ah, in turn, being
+                // divided into sparse and dense parts), Rh and Rz being diagonal regularization matrix,
+                // Y being M-dimensional vector.
+                //
+                // NOTE: due to definition of slack variables following holds: for any diagonal matrix W
+                //       a product Az*W*Az' is a diagonal matrix.
+                //
+                // From the second line we get
+                //
+                //     Xz = inv(Dz+Rz)*Az'*y - inv(Dz+Rz)*Bz
+                //        = inv(Dz+Rz)*Az'*y - BzWave
+                //
+                // Using this value for Zx, third line gives us 
+                //
+                //     Y  = inv(E+Az*inv(Dz+Rz)*Az')*(By+Az*BzWave-Ah*Xh)
+                //        = inv(EWave)*(ByWave-Ah*Xh)
+                //        with EWave = E+Az*inv(Dz+Rz)*Az' and ByWave = By+Az*BzWave
+                //
+                // Finally, first line gives us 
+                //
+                //     Xh = -inv(H+Dh+Rh+Ah'*inv(EWave)*Ah)*(Bh-Ah'*inv(EWave)*ByWave)
+                //        = -inv(HWave)*BhWave
+                //        with HWave = H+Dh+Rh+Ah'*inv(EWave)*Ah and BhWave = Bh-Ah'*inv(EWave)*ByWave
+                //
+                // In order to prepare factorization we need to compute:
+                // (a) diagonal matrices Dh, Rh, Dz and Rz (and precomputed inverse of Dz+Rz)
+                // (b) EWave
+                // (c) HWave
+                //
+                // === SPECIAL HANDLING OF FROZEN VARIABLES ===
+                //
+                // Frozen variables result in zero steps, i.e. zero components of Xh and Xz.
+                // It could be implemented by explicit modification of KKT system (zeroing out
+                // columns/rows of KKT matrix, rows of right part, putting 1's to diagonal).
+                //
+                // However, it is possible to do without actually modifying quadratic term and
+                // constraints:
+                // * freezing elements of Xz can be implemented by zeroing out corresponding
+                //   columns of inv(Dz+Rz) because Az always appears in computations along with diagonal Dz+Rz.
+                // * freezing elements of Xh is a bit more complex - it needs:
+                //   * zeroing out columns/rows of HWave and setting up unit diagonal prior to solving for Xh
+                //   * explicitly zeroing out computed elements of Xh prior to computing Y and Xz
+                //
+                apserv.rvectorsetlengthatleast(ref state.factregdhrh, nmain, _params);
+                apserv.rvectorsetlengthatleast(ref state.factinvregdzrz, nslack, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    v = 0;
+                    if( (double)(alpha0)>(double)(0) )
+                    {
+                        v = v+alpha0*d[i];
+                    }
+                    if( (double)(alpha11)>(double)(0) )
+                    {
+                        v = v+alpha11;
+                    }
+                    v = v+state.diagr[i];
+                    v = v+dampeps;
+                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
+                    if( i>=nmain )
+                    {
+                        if( !state.isfrozen[i] )
+                        {
+                            state.factinvregdzrz[i-nmain] = 1/v;
+                        }
+                        else
+                        {
+                            state.factinvregdzrz[i-nmain] = 0.0;
+                        }
+                    }
+                    else
+                    {
+                        state.factregdhrh[i] = v;
+                    }
+                }
+                
+                //
+                // Now we are ready to compute EWave
+                //
+                apserv.rvectorsetlengthatleast(ref state.factregewave, m, _params);
+                for(i=0; i<=m-1; i++)
+                {
+                    
+                    //
+                    // Compute diagonal element of E
+                    //
+                    v = 0;
+                    if( (double)(beta0)>(double)(0) )
+                    {
+                        v = v+beta0*e[i];
+                    }
+                    if( (double)(beta11)>(double)(0) )
+                    {
+                        v = v+beta11;
+                    }
+                    v = v+dampeps;
+                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
+                    
+                    //
+                    // Compute diagonal modification Az*inv(Dz)*Az'
+                    //
+                    k0 = state.combinedaslack.ridx[i];
+                    k1 = state.combinedaslack.ridx[i+1]-1;
+                    for(k=k0; k<=k1; k++)
+                    {
+                        vv = state.combinedaslack.vals[k];
+                        v = v+vv*vv*state.factinvregdzrz[state.combinedaslack.idx[k]];
+                    }
+                    
+                    //
+                    // Save EWave
+                    //
+                    state.factregewave[i] = v;
+                }
+                
+                //
+                // Now we are ready to compute HWave:
+                // * store H
+                // * add Dh
+                // * add Ah'*inv(EWave)*Ah
+                //
+                apserv.rmatrixsetlengthatleast(ref state.factdensehaug, nmain, nmain, _params);
+                alglib.ap.assert(state.hkind==0, "VIPMFactorize: unexpected HKind");
+                ablas.rmatrixcopy(nmain, nmain, state.denseh, 0, 0, state.factdensehaug, 0, 0, _params);
+                for(i=0; i<=nmain-1; i++)
+                {
+                    state.factdensehaug[i,i] = state.factdensehaug[i,i]+state.factregdhrh[i];
+                }
+                if( msparse>0 )
+                {
+                    
+                    //
+                    // Handle sparse part of Ah in Ah'*inv(EWave)*Ah
+                    //
+                    for(i=0; i<=msparse-1; i++)
+                    {
+                        v = 1.0/state.factregewave[i];
+                        k0 = state.sparseamain.ridx[i];
+                        k1 = state.sparseamain.ridx[i+1]-1;
+                        for(ka=k0; ka<=k1; ka++)
+                        {
+                            ja = state.sparseamain.idx[ka];
+                            va = state.sparseamain.vals[ka];
+                            for(kb=k0; kb<=ka; kb++)
+                            {
+                                jb = state.sparseamain.idx[kb];
+                                vb = state.sparseamain.vals[kb];
+                                state.factdensehaug[ja,jb] = state.factdensehaug[ja,jb]+v*va*vb;
+                            }
+                        }
+                    }
+                }
+                if( mdense>0 )
+                {
+                    
+                    //
+                    // Handle dense part of Ah in Ah'*inv(EWave)*Ah
+                    //
+                    apserv.rmatrixsetlengthatleast(ref state.tmpr2, mdense, nmain, _params);
+                    ablas.rmatrixcopy(mdense, nmain, state.denseamain, 0, 0, state.tmpr2, 0, 0, _params);
+                    for(i=0; i<=mdense-1; i++)
+                    {
+                        v = 1.0/Math.Sqrt(state.factregewave[msparse+i]);
+                        for(j=0; j<=nmain-1; j++)
+                        {
+                            state.tmpr2[i,j] = v*state.tmpr2[i,j];
+                        }
+                    }
+                    ablas.rmatrixsyrk(nmain, mdense, 1.0, state.tmpr2, 0, 0, 2, 1.0, state.factdensehaug, 0, 0, false, _params);
+                }
+                
+                //
+                // Zero out rows/cols of HWave corresponding to frozen variables, set up unit diagonal
+                //
+                ablasf.rsetallocv(nmain, 1.0, ref state.tmp0, _params);
+                for(i=0; i<=nmain-1; i++)
+                {
+                    if( state.isfrozen[i] )
+                    {
+                        state.tmp0[i] = 0.0;
+                    }
+                }
+                for(i=0; i<=nmain-1; i++)
+                {
+                    if( state.isfrozen[i] )
+                    {
+                        
+                        //
+                        // Entire row is nullified except for diagonal element
+                        //
+                        ablasf.rsetr(i+1, 0.0, state.factdensehaug, i, _params);
+                        state.factdensehaug[i,i] = 1.0;
+                    }
+                    else
+                    {
+                        
+                        //
+                        // Only some components are nullified
+                        //
+                        ablasf.rmergemulvr(i+1, state.tmp0, state.factdensehaug, i, _params);
+                    }
+                }
+                
+                //
+                // Compute Cholesky factorization of HWave
+                //
+                if( !trfac.spdmatrixcholesky(ref state.factdensehaug, nmain, false, _params) )
+                {
+                    result = false;
+                    return result;
+                }
+                v = 0;
+                for(i=0; i<=nmain-1; i++)
+                {
+                    v = v+state.factdensehaug[i,i];
+                }
+                if( !math.isfinite(v) || (double)(v)>(double)(badchol) )
+                {
+                    result = false;
+                    return result;
+                }
+                state.factorizationpresent = true;
+            }
+            
+            //
+            // Sparse (M+N)x(M+N) factorization
+            //
+            if( state.factorizationtype==1 )
+            {
+                
+                //
+                // Generate reduced KKT matrix
+                //
+                ablasf.rallocv(n+m, ref state.facttmpdiag, _params);
+                sparse.sparsecopybuf(state.factsparsekkttmpl, state.factsparsekkt, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    alglib.ap.assert(state.factsparsekkt.didx[i]+1==state.factsparsekkt.uidx[i], "VIPMFactorize: integrity check failed, no diagonal element");
+                    v = state.factsparsekkt.vals[state.factsparsekkt.didx[i]];
+                    vv = 0;
+                    if( (double)(alpha0)>(double)(0) )
+                    {
+                        vv = vv+alpha0*d[i];
+                    }
+                    if( (double)(alpha11)>(double)(0) )
+                    {
+                        vv = vv+alpha11;
+                    }
+                    vv = vv+state.diagr[i];
+                    vv = vv+dampeps;
+                    v = v-vv;
+                    state.factsparsekkt.vals[state.factsparsekkt.didx[i]] = v;
+                    state.facttmpdiag[i] = v;
+                    alglib.ap.assert((double)(v)<(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
+                }
+                for(i=0; i<=msparse+mdense-1; i++)
+                {
+                    alglib.ap.assert(state.factsparsekkt.didx[n+i]+1==state.factsparsekkt.uidx[n+i], "VIPMFactorize: integrity check failed, no diagonal element");
+                    v = state.factsparsekkt.vals[state.factsparsekkt.didx[n+i]];
+                    vv = 0;
+                    if( (double)(beta0)>(double)(0) )
+                    {
+                        vv = vv+beta0*e[i];
+                    }
+                    if( (double)(beta11)>(double)(0) )
+                    {
+                        vv = vv+beta11;
+                    }
+                    vv = vv+dampeps;
+                    v = v+vv;
+                    state.factsparsekkt.vals[state.factsparsekkt.didx[n+i]] = v;
+                    state.facttmpdiag[n+i] = v;
+                    alglib.ap.assert((double)(v)>(double)(0), "VIPMFactorize: integrity check failed, degenerate diagonal matrix");
+                }
+                
+                //
+                // Perform factorization
+                // Perform additional integrity check: LDLT should reproduce diagonal of initial KKT system with good precision
+                //
+                spchol.spsymmreload(state.ldltanalysis, state.factsparsekkt, _params);
+                spchol.spsymmsetmodificationstrategy(state.ldltanalysis, 1, modeps, badchol, 0.0, 0.0, _params);
+                if( !spchol.spsymmfactorize(state.ldltanalysis, state.factsparsekkt, ref state.factsparsediagd, ref state.factsparsekktpivp, _params) )
+                {
+                    result = false;
+                    return result;
+                }
+                for(i=0; i<=n+m-1; i++)
+                {
+                    v = state.facttmpdiag[i];
+                    state.facttmpdiag[i] = state.facttmpdiag[state.factsparsekktpivp[i]];
+                    state.facttmpdiag[state.factsparsekktpivp[i]] = v;
+                }
+                sumsq = ablasf.rdotv2(n+m, state.facttmpdiag, _params);
+                errsq = 0;
+                for(i=0; i<=n+m-1; i++)
+                {
+                    v = 0;
+                    k0 = state.factsparsekkt.ridx[i];
+                    k1 = state.factsparsekkt.didx[i];
+                    for(k=k0; k<=k1; k++)
+                    {
+                        vv = state.factsparsekkt.vals[k];
+                        v = v+state.factsparsediagd[state.factsparsekkt.idx[k]]*vv*vv;
+                    }
+                    errsq = errsq+math.sqr(v-state.facttmpdiag[i]);
+                }
+                if( (double)(Math.Sqrt(errsq/(1+sumsq)))>(double)(Math.Sqrt(math.machineepsilon)) )
+                {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace(System.String.Format("LDLT-diag-err= {0,0:E3} (diagonal reproduction error)\n", Math.Sqrt(errsq/(1+sumsq))));
+                    }
+                    result = false;
+                    return result;
+                }
+                state.factorizationpresent = true;
+                
+                //
+                // Trace
+                //
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("--- sparse KKT factorization report ----------------------------------------------------------------\n");
+                    alglib.ap.trace("> diagonal terms D and E\n");
+                    if( (double)(alpha0)!=(double)(0) )
+                    {
+                        v = Math.Abs(d[0]);
+                        vv = Math.Abs(d[0]);
+                        for(i=1; i<=n-1; i++)
+                        {
+                            v = Math.Min(v, Math.Abs(d[i]));
+                            vv = Math.Max(vv, Math.Abs(d[i]));
+                        }
+                        alglib.ap.trace(System.String.Format("diagD        = {0,0:E3} (min) ... {1,0:E3} (max)\n", v, vv));
+                    }
+                    if( m>0 && (double)(beta0)!=(double)(0) )
+                    {
+                        v = Math.Abs(e[0]);
+                        vv = Math.Abs(e[0]);
+                        for(i=1; i<=m-1; i++)
+                        {
+                            v = Math.Min(v, Math.Abs(e[i]));
+                            vv = Math.Max(vv, Math.Abs(e[i]));
+                        }
+                        alglib.ap.trace(System.String.Format("diagE        = {0,0:E3} (min) ... {1,0:E3} (max)\n", v, vv));
+                    }
+                    alglib.ap.trace("> LDLT factorization of entire KKT matrix\n");
+                    v = Math.Abs(state.factsparsediagd[0]);
+                    vv = Math.Abs(state.factsparsediagd[0]);
+                    for(i=0; i<=n+m-1; i++)
+                    {
+                        v = Math.Max(v, Math.Abs(state.factsparsediagd[i]));
+                        vv = Math.Min(vv, Math.Abs(state.factsparsediagd[i]));
+                    }
+                    alglib.ap.trace(System.String.Format("|D|          = {0,0:E3} (min) ... {1,0:E3} (max)\n", vv, v));
+                    v = 0.0;
+                    for(i=0; i<=n+m-1; i++)
+                    {
+                        k0 = state.factsparsekkt.ridx[i];
+                        k1 = state.factsparsekkt.didx[i];
+                        for(k=k0; k<=k1; k++)
+                        {
+                            v = Math.Max(v, Math.Abs(state.factsparsekkt.vals[k]));
+                        }
+                    }
+                    alglib.ap.trace(System.String.Format("max(|L|)     = {0,0:E3}\n", v));
+                    alglib.ap.trace(System.String.Format("diag-err     = {0,0:E3} (diagonal reproduction error)\n", Math.Sqrt(errsq/(1+sumsq))));
+                }
+            }
+            
+            //
+            // Done, integrity control
+            //
+            alglib.ap.assert(state.factorizationpresent, "VIPMFactorize: integrity check failed");
+            apserv.inc(ref state.repncholesky, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        A  low-level  function  which  solves  KKT  system  whose  regularized (!)
+        factorization was prepared by VIPMFactorize(). No iterative refinement  is
+        performed.
+
+        On input, right-hand-side is stored in DeltaXY; on output, solution replaces
+        DeltaXY.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void solvereducedkktsystem(vipmstate state,
+            double[] deltaxy,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int nmain = 0;
+            int nslack = 0;
+            int m = 0;
+            int mdense = 0;
+            int msparse = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+
+            alglib.ap.assert(state.factorizationpresent, "VIPMSolve: integrity check failed - factorization is not present");
+            alglib.ap.assert(state.factorizationtype==0 || state.factorizationtype==1, "VIPMSolve: unexpected factorization type");
+            n = state.n;
+            nmain = state.nmain;
+            nslack = n-nmain;
+            m = state.mdense+state.msparse;
+            mdense = state.mdense;
+            msparse = state.msparse;
+            
+            //
+            // Dense solving
+            //
+            if( state.factorizationtype==0 )
+            {
+                
+                //
+                // Compute
+                //
+                //     BzWave = inv(Dz+Rz)*Bz
+                //     ByWave = By+Az*BzWave
+                //     BhWave = Bh-Ah'*inv(EWave)*ByWave
+                //
+                for(i=0; i<=nslack-1; i++)
+                {
+                    deltaxy[nmain+i] = deltaxy[nmain+i]*state.factinvregdzrz[i];
+                }
+                sparse.sparsegemv(state.combinedaslack, 1.0, 0, deltaxy, nmain, 1.0, deltaxy, n, _params);
+                apserv.rvectorsetlengthatleast(ref state.tmp1, m, _params);
+                for(i=0; i<=m-1; i++)
+                {
+                    state.tmp1[i] = deltaxy[n+i]/state.factregewave[i];
+                }
+                sparse.sparsegemv(state.sparseamain, -1.0, 1, state.tmp1, 0, 1.0, deltaxy, 0, _params);
+                ablas.rmatrixgemv(nmain, mdense, -1.0, state.denseamain, 0, 0, 1, state.tmp1, msparse, 1.0, deltaxy, 0, _params);
+                
+                //
+                // Compute Xh = -inv(HWave)*BhWave.
+                // Zero out components corresponding to frozen variables.
+                //
+                for(i=0; i<=nmain-1; i++)
+                {
+                    deltaxy[i] = -deltaxy[i];
+                }
+                ablas.rmatrixtrsv(nmain, state.factdensehaug, 0, 0, false, false, 0, deltaxy, 0, _params);
+                ablas.rmatrixtrsv(nmain, state.factdensehaug, 0, 0, false, false, 1, deltaxy, 0, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    if( state.isfrozen[i] )
+                    {
+                        deltaxy[i] = 0;
+                    }
+                }
+                
+                //
+                // Compute Y = inv(EWave)*(ByWave-Ah*Xh)
+                //
+                sparse.sparsegemv(state.sparseamain, -1.0, 0, deltaxy, 0, 1.0, deltaxy, n, _params);
+                ablas.rmatrixgemv(mdense, nmain, -1.0, state.denseamain, 0, 0, 0, deltaxy, 0, 1.0, deltaxy, n+msparse, _params);
+                for(i=0; i<=m-1; i++)
+                {
+                    deltaxy[n+i] = deltaxy[n+i]/state.factregewave[i];
+                }
+                
+                //
+                // Compute Xz = -(BzWave - inv(Dz+Rz)*Az'*y)
+                //
+                apserv.rvectorsetlengthatleast(ref state.tmp0, nslack, _params);
+                for(i=0; i<=nslack-1; i++)
+                {
+                    state.tmp0[i] = 0;
+                }
+                sparse.sparsegemv(state.combinedaslack, 1.0, 1, deltaxy, n, 1.0, state.tmp0, 0, _params);
+                for(i=0; i<=nslack-1; i++)
+                {
+                    deltaxy[nmain+i] = -(deltaxy[nmain+i]-state.factinvregdzrz[i]*state.tmp0[i]);
+                }
+                
+                //
+                // Done
+                //
+                return;
+            }
+            
+            //
+            // Sparse solving
+            //
+            if( state.factorizationtype==1 )
+            {
+                
+                //
+                // Solve sparse KKT system given by its triangular factorization
+                //
+                for(i=0; i<=n-1; i++)
+                {
+                    alglib.ap.assert(state.factsparsekkt.didx[i]+1==state.factsparsekkt.uidx[i] && state.factsparsekkt.vals[state.factsparsekkt.didx[i]]!=0.0, "VIPMSolve: degenerate KKT system encountered");
+                }
+                for(i=0; i<=n+m-1; i++)
+                {
+                    j = state.factsparsekktpivp[i];
+                    v = deltaxy[i];
+                    deltaxy[i] = deltaxy[j];
+                    deltaxy[j] = v;
+                }
+                sparse.sparsetrsv(state.factsparsekkt, false, false, 0, deltaxy, _params);
+                for(i=0; i<=n+m-1; i++)
+                {
+                    if( (double)(state.factsparsediagd[i])!=(double)(0) )
+                    {
+                        deltaxy[i] = deltaxy[i]/state.factsparsediagd[i];
+                    }
+                    else
+                    {
+                        deltaxy[i] = 0.0;
+                    }
+                }
+                sparse.sparsetrsv(state.factsparsekkt, false, false, 1, deltaxy, _params);
+                for(i=n+m-1; i>=0; i--)
+                {
+                    j = state.factsparsekktpivp[i];
+                    v = deltaxy[i];
+                    deltaxy[i] = deltaxy[j];
+                    deltaxy[j] = v;
+                }
+                for(i=0; i<=n-1; i++)
+                {
+                    if( state.isfrozen[i] )
+                    {
+                        deltaxy[i] = 0;
+                    }
+                }
+                
+                //
+                // Done
+                //
+                return;
+            }
+            
+            //
+            //
+            //
+            alglib.ap.assert(false, "VIPMSolve: integrity check failed - unexpected factorization");
+        }
+
+
+        /*************************************************************************
+        Generates precomputed temporary  vectors  and  KKT  factorization  at  the
+        beginning of the current iteration.
+
+        This function uses representation of  KKT  system  inspired  by  Vanderbei
+        slack variable approach, but with additional regularization being  applied
+        all along computations.
+
+        On successful factorization returns True; on failure returns False - it is
+        recommended to increase regularization parameter and try one more time.
+
+        --- DESCRIPTION ----------------------------------------------------------
+
+        Initial KKT system proposed by Vanderbei has following structure:
+
+            (1) -DS*deltaT - I*deltaS                       = -mu/T + s + DELTAT*DELTAS/T = -GammaS
+            (2) -DZ*deltaG - I*deltaZ                       = -mu/G + z + DELTAG*DELTAZ/G = -GammaZ
+            (3) -DQ*deltaP - I*deltaQ                       = -mu/P + q + DELTAP*DELTAQ/P = -GammaQ
+            (4) -DW*deltaV - I*deltaW                       = -mu/V + w + DELTAV*DELTAW/V = -GammaW
+            (5)  -I*deltaY - I*deltaQ + I*deltaV            = y-q+v                       =  Beta
+            (6)  -H*deltaX +A'*deltaY + I*deltaZ - I*deltaS = c-A'*y-z+s+H*x              =  Sigma
+            (7)   A*deltaX - I*deltaW                       = b-A*x+w                     =  Rho
+            (8)   I*deltaX - I*deltaG                       = l-x+g                       =  Nu
+            (9)  -I*deltaX - I*deltaT                       = -u+x+t                      = -Tau
+            (10) -I*deltaW - I*deltaP                       = -r+w+p                      = -Alpha
+            
+        where
+            
+            DS = diag(S/T)
+            DZ = diag(Z/G)
+            DQ = diag(Q/P)
+            DW = diag(W/V)
+
+        This linear system is actually  symmetric  indefinite  one,  that  can  be
+        regularized by modifying equations (5), (6),  (7), (8), (9), (10):
+
+            (5)       -I*deltaY - I*deltaQ + I*deltaV -REG*deltaW= y+q-v+REG*w          =  Beta
+            (6) -(H+REG)*deltaX +A'*deltaY + I*deltaZ - I*deltaS = c-A'*y-z+s+(H+REG)*x =  Sigma
+            (7)        A*deltaX - I*deltaW            +REG*deltaY= b-A*x+w-REG*y        =  Rho
+            (8)        I*deltaX - I*deltaG            +REG*deltaZ= l-x+g-REG*z          =  Nu
+            (9)       -I*deltaX - I*deltaT            +REG*deltaS= -u+x+t-REG*s         = -Tau
+            (10)      -I*deltaW - I*deltaP            +REG*deltaQ= -r+w+p-REG*q         = -Alpha
+            
+        NOTE: regularizing equations (5)-(10) seems to be beneficial because their
+              coefficients are well-normalized, usually having unit scale. Contrary
+              to that, equations (1)-(4) are wildly nonnormalized, and regularization
+              ruins algorithm convergence.
+
+        From (1), (2), (3) and (4) we obtain
+
+            deltaT = (GammaS-I*deltaS)/DS
+            deltaG = (GammaZ-I*deltaZ)/DZ
+            deltaP = (GammaQ-I*deltaQ)/DQ
+            deltaV = (GammaW-I*deltaW)/DW
+            
+        and substitute them to equations to obtain
+
+            (5)   -I*deltaY - I*deltaQ      - (inv(DW)+REG)*deltaW =    Beta-inv(DW)*GammaW  =  BetaCap
+            (8)    I*deltaX                 + (inv(DZ)+REG)*deltaZ =      Nu+inv(DZ)*GammaZ  =  NuCap
+            (9)   -I*deltaX                 + (inv(DS)+REG)*deltaS =   -(Tau-inv(DS)*GammaS) = -TauCap
+            (10)  -I*deltaW                 + (inv(DQ)+REG)*deltaQ = -(Alpha-inv(DQ)*GammaQ) = -AlphaCap
+            (6)   A'*deltaY + I*deltaZ - I*deltaS - (H+REG)*deltaX = c-A'*y-z+s+(H+REG)*x    =  Sigma
+            (7)  REG*deltaY + A*deltaX - I*deltaW                  = b-A*x+w-REG*y           =  Rho
+
+        then, we obtain (here IRI stands for Invert-Regularize-Invert)
+
+            DQIRI  = inv(inv(DQ)+REG)
+            DZIRI  = inv(inv(DZ)+REG)
+            DSIRI  = inv(inv(DS)+REG)
+            
+            deltaQ = (I*deltaW-AlphaCap)*DQIRI
+            deltaZ =    (NuCap-I*deltaX)*DZIRI
+            deltaS =   (I*deltaX-TauCap)*DSIRI
+            
+            DWIR   = inv(DW)+REG
+            
+        and after substitution
+
+            (5)   -I*deltaY        - (DQIRI+DWIR)*deltaW = BetaCap-DQIRI*AlphaCap
+            (6)   A'*deltaY - (H+REG+DSIRI+DZIRI)*deltaX = Sigma-DSIRI*TauCap-DZIRI*NuCap
+            (7)  REG*deltaY + A*deltaX - I*deltaW        = Rho
+            
+        finally, we obtain
+            
+            DE     = inv(DQIRI+DWIR)
+            DER    = DE+REG
+            DDR    = DSIRI+DZIRI+REG
+            deltaW = -(BetaCap-DQIRI*AlphaCap+I*deltaY)*DE
+
+        and after substitution
+
+            (6)  -(H+DDR)*deltaX +  A'*deltaY = Sigma-DSIRI*TauCap-DZIRI*NuCap
+            (7)         A*deltaX + DER*deltaY = Rho-DE*(BetaCap-DQIRI*AlphaCap)
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool vipmprecomputenewtonfactorization(vipmstate state,
+            vipmvars v0,
+            double regeps,
+            double modeps,
+            double dampeps,
+            double dampfree,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            ablasf.rsetallocv(n, 0.0, ref state.diagdz, _params);
+            ablasf.rsetallocv(n, 0.0, ref state.diagdzi, _params);
+            ablasf.rsetallocv(n, 0.0, ref state.diagdziri, _params);
+            ablasf.rsetallocv(n, 0.0, ref state.diagds, _params);
+            ablasf.rsetallocv(n, 0.0, ref state.diagdsi, _params);
+            ablasf.rsetallocv(n, 0.0, ref state.diagdsiri, _params);
+            ablasf.rsetallocv(m, 0.0, ref state.diagdw, _params);
+            ablasf.rsetallocv(m, 0.0, ref state.diagdwi, _params);
+            ablasf.rsetallocv(m, 0.0, ref state.diagdwir, _params);
+            ablasf.rsetallocv(m, 0.0, ref state.diagdq, _params);
+            ablasf.rsetallocv(m, 0.0, ref state.diagdqi, _params);
+            ablasf.rsetallocv(m, 0.0, ref state.diagdqiri, _params);
+            ablasf.rallocv(n, ref state.diagddr, _params);
+            ablasf.rallocv(m, ref state.diagde, _params);
+            ablasf.rallocv(m, ref state.diagder, _params);
+            
+            //
+            // Handle temporary matrices arising due to box constraints
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Lower bound: G*inv(Z) and Z*inv(G)
+                //
+                if( state.hasgz[i] )
+                {
+                    alglib.ap.assert(v0.g[i]>0.0 && v0.z[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - G[i]<=0 or Z[i]<=0");
+                    state.diagdz[i] = v0.z[i]/v0.g[i];
+                    state.diagdzi[i] = 1/state.diagdz[i];
+                    state.diagdziri[i] = 1/(state.diagdzi[i]+regeps);
+                }
+                else
+                {
+                    alglib.ap.assert(v0.g[i]==0.0 && v0.z[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - G[i]<>0 or Z[i]<>0 for absent lower bound");
+                }
+                
+                //
+                // Upper bound: T*inv(S) and S*inv(T)
+                //
+                if( state.hasts[i] )
+                {
+                    alglib.ap.assert(v0.t[i]>0.0 && v0.s[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - T[i]<=0 or S[i]<=0");
+                    state.diagds[i] = v0.s[i]/v0.t[i];
+                    state.diagdsi[i] = 1/state.diagds[i];
+                    state.diagdsiri[i] = 1/(state.diagdsi[i]+regeps);
+                }
+                else
+                {
+                    alglib.ap.assert(v0.t[i]==0.0 && v0.s[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - T[i]<>0 or S[i]<>0 for absent upper bound");
+                }
+                
+                //
+                // Diagonal term D
+                //
+                state.diagddr[i] = state.diagdziri[i]+state.diagdsiri[i]+regeps;
+                if( !state.hasgz[i] && !state.hasts[i] )
+                {
+                    state.diagddr[i] = state.diagddr[i]+dampfree;
+                }
+            }
+            
+            //
+            // Handle temporary matrices arising due to linear constraints: with lower bound B[]
+            // or with lower and upper bounds.
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Lower bound
+                //
+                if( state.haswv[i] )
+                {
+                    alglib.ap.assert(v0.v[i]>0.0 && v0.w[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - V[i]<=0 or W[i]<=0");
+                    state.diagdw[i] = v0.w[i]/v0.v[i];
+                    state.diagdwi[i] = 1/state.diagdw[i];
+                    state.diagdwir[i] = state.diagdwi[i]+regeps;
+                }
+                else
+                {
+                    alglib.ap.assert(v0.v[i]==0.0 && v0.w[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - V[i]<>0 or W[i]<>0 for linear equality constraint");
+                }
+                
+                //
+                // Upper bound
+                //
+                if( state.haspq[i] )
+                {
+                    alglib.ap.assert(v0.p[i]>0.0 && v0.q[i]>0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - P[i]<=0 or Q[i]<=0");
+                    state.diagdq[i] = v0.q[i]/v0.p[i];
+                    state.diagdqi[i] = 1/state.diagdq[i];
+                    state.diagdqiri[i] = 1/(state.diagdqi[i]+regeps);
+                }
+                else
+                {
+                    alglib.ap.assert(v0.p[i]==0.0 && v0.q[i]==0.0, "VIPMPrecomputeNewtonFactorization: integrity failure - P[i]<>0 or Q[i]<>0 for absent linear constraint");
+                }
+                
+                //
+                // Diagonal term E
+                //
+                if( state.haswv[i] || state.haspq[i] )
+                {
+                    state.diagde[i] = 1/(state.diagdwir[i]+state.diagdqiri[i]);
+                }
+                else
+                {
+                    state.diagde[i] = 0.0;
+                }
+                state.diagder[i] = state.diagde[i]+regeps;
+            }
+            
+            //
+            // Perform factorization
+            //
+            result = vipmfactorize(state, 1.0, state.diagddr, 1.0, state.diagder, 0.0, 0.0, modeps, dampeps, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Solves KKT system stored in VIPMState with user-passed RHS.  The  solution
+        X is either copied to Sol (AlphaSol=0) or added Sol:=AlphaSol*Sol+X.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void solvekktsystem(vipmstate state,
+            vipmrighthandside rhs,
+            vipmvars sol,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            
+            //
+            // Compute elimination temporaries
+            //
+            // RhsAlphaCap  = RhsAlpha - InvDQ*GammaQ
+            // RhsNuCap     = RhsNu    + InvDZ*GammaZ
+            // RhsTauCap    = RhsTau   - InvDS*GammaS
+            // RhsBetaCap   = RhsBeta  - InvDW*GammaW
+            //
+            ablasf.rallocv(n, ref state.rhsnucap, _params);
+            ablasf.rallocv(n, ref state.rhstaucap, _params);
+            ablasf.rallocv(m, ref state.rhsbetacap, _params);
+            ablasf.rallocv(m, ref state.rhsalphacap, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                state.rhsalphacap[i] = rhs.alpha[i]-state.diagdqi[i]*rhs.gammaq[i];
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                state.rhsnucap[i] = rhs.nu[i]+state.diagdzi[i]*rhs.gammaz[i];
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                state.rhstaucap[i] = rhs.tau[i]-state.diagdsi[i]*rhs.gammas[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                state.rhsbetacap[i] = rhs.beta[i]-state.diagdwi[i]*rhs.gammaw[i];
+            }
+            
+            //
+            // Solve reduced KKT system
+            //
+            apserv.rvectorsetlengthatleast(ref state.deltaxy, n+m, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                state.deltaxy[i] = rhs.sigma[i]-state.diagdziri[i]*state.rhsnucap[i]-state.diagdsiri[i]*state.rhstaucap[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                state.deltaxy[n+i] = rhs.rho[i]-state.diagde[i]*(state.rhsbetacap[i]-state.diagdqiri[i]*state.rhsalphacap[i]);
+            }
+            solvereducedkktsystem(state, state.deltaxy, _params);
+            
+            //
+            // Perform backsubstitution
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                sol.x[i] = state.deltaxy[i];
+                sol.s[i] = state.diagdsiri[i]*(sol.x[i]-state.rhstaucap[i]);
+                sol.z[i] = state.diagdziri[i]*(state.rhsnucap[i]-sol.x[i]);
+                sol.g[i] = state.diagdzi[i]*(rhs.gammaz[i]-sol.z[i]);
+                sol.t[i] = state.diagdsi[i]*(rhs.gammas[i]-sol.s[i]);
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                sol.y[i] = state.deltaxy[n+i];
+                sol.w[i] = -(state.diagde[i]*(state.rhsbetacap[i]-state.diagdqiri[i]*state.rhsalphacap[i]+sol.y[i]));
+                sol.q[i] = state.diagdqiri[i]*(sol.w[i]-state.rhsalphacap[i]);
+                sol.v[i] = state.diagdwi[i]*(rhs.gammaw[i]-sol.w[i]);
+                sol.p[i] = state.diagdqi[i]*(rhs.gammaq[i]-sol.q[i]);
+            }
+        }
+
+
+        /*************************************************************************
+        Compute VIPM step by solving KKT system.
+
+        Returns False on failure to compute step direction with reasonable accuracy
+        (it is advised to terminate iterations immediately).
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool vipmcomputestepdirection(vipmstate state,
+            vipmvars v0,
+            double muestimate,
+            vipmvars vdestimate,
+            vipmvars vdresult,
+            double reg,
+            bool isdampepslarge,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int m = 0;
+            double vrhsprim2 = 0;
+            double vrhsdual2 = 0;
+            double vrhscmpl2 = 0;
+            double vresprim2 = 0;
+            double vresdual2 = 0;
+            double vrescmpl2 = 0;
+            double vrhspriminf = 0;
+            double vrhsdualinf = 0;
+            double vrespriminf = 0;
+            double vresdualinf = 0;
+            double badres = 0;
+            double verybadres = 0;
+            double residualgrowth = 0;
+            bool primaldestabilized = new bool();
+            bool dualdestabilized = new bool();
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            badres = 1.01;
+            verybadres = 1.0E3;
+            result = true;
+            
+            //
+            // Initial solver report
+            //
+            if( state.dotrace )
+            {
+                alglib.ap.trace("--- detailed KKT solver report ---------------------------------------------------------------------\n");
+            }
+            
+            //
+            // Solve KKT system with right-hand sides coming from primal, dual 
+            // and complementary slackness conditions. Analyze solution,
+            // terminate immediately if primal/dual residuals are way too high.
+            //
+            varsinitbyzero(vdresult, n, m, _params);
+            rhscompute(state, v0, muestimate, vdestimate, state.rhs, reg, _params);
+            vrhsprim2 = rhsprimal2(state.rhs, n, m, _params);
+            vrhsdual2 = rhsdual2(state.rhs, n, m, _params);
+            vrhscmpl2 = rhscompl2(state.rhs, n, m, _params);
+            vrhspriminf = rhsprimalinf(state.rhs, n, m, _params);
+            vrhsdualinf = rhsdualinf(state.rhs, n, m, _params);
+            if( state.dotrace )
+            {
+                alglib.ap.trace("> primal/dual/complementarity right-hand-side\n");
+                alglib.ap.trace(System.String.Format("rhs-prim     = {0,0:E3} (2-norm)\n", Math.Sqrt(vrhsprim2)));
+                alglib.ap.trace(System.String.Format("rhs-dual     = {0,0:E3} (2-norm)\n", Math.Sqrt(vrhsdual2)));
+                alglib.ap.trace(System.String.Format("rhs-cmpl     = {0,0:E3} (2-norm)\n", Math.Sqrt(vrhscmpl2)));
+            }
+            solvekktsystem(state, state.rhs, vdresult, _params);
+            rhssubtract(state, state.rhs, v0, vdresult, reg, _params);
+            vresprim2 = rhsprimal2(state.rhs, n, m, _params);
+            vresdual2 = rhsdual2(state.rhs, n, m, _params);
+            vrescmpl2 = rhscompl2(state.rhs, n, m, _params);
+            vrespriminf = rhsprimalinf(state.rhs, n, m, _params);
+            vresdualinf = rhsdualinf(state.rhs, n, m, _params);
+            if( state.dotrace )
+            {
+                alglib.ap.trace("> primal/dual/complementarity residuals compared with RHS\n");
+                alglib.ap.trace(System.String.Format("res/rhs prim = {0,0:E3}\n", Math.Sqrt(vresprim2/apserv.coalesce(vrhsprim2, 1, _params))));
+                alglib.ap.trace(System.String.Format("res/rhs dual = {0,0:E3}\n", Math.Sqrt(vresdual2/apserv.coalesce(vrhsdual2, 1, _params))));
+                alglib.ap.trace(System.String.Format("res/rhs cmpl = {0,0:E3}\n", Math.Sqrt(vrescmpl2/apserv.coalesce(vrhscmpl2, 1, _params))));
+                alglib.ap.trace(System.String.Format("res/rhs all  = {0,0:E3}\n", Math.Sqrt((vresprim2+vresdual2+vrescmpl2)/apserv.coalesce(vrhsprim2+vrhsdual2+vrhscmpl2, 1, _params))));
+            }
+            primaldestabilized = (double)(vrhspriminf)<=(double)(state.epsp) && (double)(vrespriminf)>=(double)(Math.Max(verybadres*vrhspriminf, state.epsp));
+            dualdestabilized = (double)(vrhsdualinf)<=(double)(state.epsd) && (double)(vresdualinf)>=(double)(Math.Max(verybadres*vrhsdualinf, state.epsd));
+            residualgrowth = Math.Sqrt((vresprim2+vresdual2+vrescmpl2)/apserv.coalesce(vrhsprim2+vrhsdual2+vrhscmpl2, 1, _params));
+            if( ((primaldestabilized || dualdestabilized) && (double)(residualgrowth)>(double)(0.01*Math.Sqrt(math.machineepsilon))) && !isdampepslarge )
+            {
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> primal/dual residual growth is too high, signaling presence of numerical errors\n");
+                }
+                result = false;
+                return result;
+            }
+            if( (double)(residualgrowth)>(double)(badres) )
+            {
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> total residual is too high, signaling presence of numerical errors\n");
+                }
+                result = false;
+                return result;
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function estimates primal and dual step lengths (subject to step
+        decay parameter, which should be in [0,1] range).
+
+        Current version returns same step lengths for primal and dual steps.
+
+        INPUT PARAMETERS:
+            State               -   solver state
+            V0                  -   current point (we ignore one stored in State.Current)
+            VS                  -   step direction
+            StepDecay           -   decay parameter, the step is multiplied by this
+                                    coefficient. 1.0 corresponds to full step
+                                    length being returned. Values in (0,1] range.
+            
+        OUTPUT PARAMETERS:
+            AlphaP              -   primal step (after applying decay coefficient)
+            AlphaD              -   dual   step (after applying decay coefficient)
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmcomputesteplength(vipmstate state,
+            vipmvars v0,
+            vipmvars vs,
+            double stepdecay,
+            ref double alphap,
+            ref double alphad,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            double alpha = 0;
+
+            alphap = 0;
+            alphad = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            alglib.ap.assert(n==v0.n && m==v0.m, "VIPMComputeStepLength: sizes mismatch");
+            alphap = 1;
+            alphad = 1;
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Primal
+                //
+                if( vs.g[i]<0.0 )
+                {
+                    alphap = apserv.safeminposrv(v0.g[i], -vs.g[i], alphap, _params);
+                }
+                if( vs.t[i]<0.0 )
+                {
+                    alphap = apserv.safeminposrv(v0.t[i], -vs.t[i], alphap, _params);
+                }
+                
+                //
+                // Dual
+                //
+                if( vs.z[i]<0.0 )
+                {
+                    alphad = apserv.safeminposrv(v0.z[i], -vs.z[i], alphad, _params);
+                }
+                if( vs.s[i]<0.0 )
+                {
+                    alphad = apserv.safeminposrv(v0.s[i], -vs.s[i], alphad, _params);
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                
+                //
+                // Primal
+                //
+                if( vs.w[i]<0.0 )
+                {
+                    alphap = apserv.safeminposrv(v0.w[i], -vs.w[i], alphap, _params);
+                }
+                if( vs.p[i]<0.0 )
+                {
+                    alphap = apserv.safeminposrv(v0.p[i], -vs.p[i], alphap, _params);
+                }
+                
+                //
+                // Dual
+                //
+                if( vs.v[i]<0.0 )
+                {
+                    alphad = apserv.safeminposrv(v0.v[i], -vs.v[i], alphad, _params);
+                }
+                if( vs.q[i]<0.0 )
+                {
+                    alphad = apserv.safeminposrv(v0.q[i], -vs.q[i], alphad, _params);
+                }
+            }
+            
+            //
+            // Because we may solve QP problem, step length has to be same for primal and dual variables
+            //
+            alpha = Math.Min(alphap, alphad);
+            
+            //
+            // Apply decay
+            //
+            alphap = stepdecay*alpha;
+            alphad = stepdecay*alpha;
+        }
+
+
+        /*************************************************************************
+        This function performs IPM step, updates  iteration  counts  and  performs
+        following additional checks:
+        * it monitors status of box/linear constraints  and  smoothly  drops  ones
+          with too large bounds (a variable or linear sum is well below constraint
+          bound for several iterations)
+
+        INPUT PARAMETERS:
+            State               -   solver state
+            AlphaP              -   primal step to perform
+            AlphaD              -   dual   step to perform
+            
+        OUTPUT PARAMETERS:
+
+          -- ALGLIB --
+             Copyright 01.08.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void vipmperformstep(vipmstate state,
+            double alphap,
+            double alphad,
+            alglib.xparams _params)
+        {
+            
+            //
+            // Perform step
+            //
+            varsaddstep(state.current, state.deltacorr, alphap, alphad, _params);
+            
+            //
+            // Update iterations count
+            //
+            apserv.inc(ref state.repiterationscount, _params);
+        }
+
+
+        /*************************************************************************
+        Compute primal/dual errors and complementarity gap
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void computeerrors(vipmstate state,
+            ref double errp2,
+            ref double errd2,
+            ref double errpinf,
+            ref double errdinf,
+            ref double egap,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            int cntp2 = 0;
+            int cntd2 = 0;
+            double v = 0;
+
+            errp2 = 0;
+            errd2 = 0;
+            errpinf = 0;
+            errdinf = 0;
+            egap = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            
+            //
+            // Compute primal and dual infeasibilities
+            //
+            vipmmultiply(state, state.current.x, state.current.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
+            cntp2 = 0;
+            errp2 = 0;
+            errpinf = 0;
+            for(i=0; i<=m-1; i++)
+            {
+                v = state.tmpax[i]-state.current.w[i]-state.b[i];
+                errp2 = errp2+v*v;
+                errpinf = Math.Max(errpinf, Math.Abs(v));
+                apserv.inc(ref cntp2, _params);
+                if( state.haspq[i] )
+                {
+                    v = state.current.w[i]+state.current.p[i]-state.r[i];
+                    errp2 = errp2+v*v;
+                    errpinf = Math.Max(errpinf, Math.Abs(v));
+                    apserv.inc(ref cntp2, _params);
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] )
+                {
+                    v = state.current.x[i]-state.current.g[i]-state.bndl[i];
+                    errp2 = errp2+v*v;
+                    errpinf = Math.Max(errpinf, Math.Abs(v));
+                    apserv.inc(ref cntp2, _params);
+                }
+                if( state.hasts[i] )
+                {
+                    v = state.current.x[i]+state.current.t[i]-state.bndu[i];
+                    errp2 = errp2+v*v;
+                    errpinf = Math.Max(errpinf, Math.Abs(v));
+                    apserv.inc(ref cntp2, _params);
+                }
+            }
+            errp2 = Math.Sqrt(errp2/apserv.coalesce(cntp2, 1, _params));
+            cntd2 = 0;
+            errd2 = 0;
+            errdinf = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                if( !state.isfrozen[i] )
+                {
+                    v = state.tmphx[i]+state.c[i]-state.tmpaty[i];
+                    if( state.hasgz[i] )
+                    {
+                        v = v-state.current.z[i];
+                    }
+                    if( state.hasts[i] )
+                    {
+                        v = v+state.current.s[i];
+                    }
+                    errd2 = errd2+v*v;
+                    errdinf = Math.Max(errdinf, Math.Abs(v));
+                    apserv.inc(ref cntd2, _params);
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                v = 0;
+                if( state.haswv[i] )
+                {
+                    v = state.current.y[i]-state.current.v[i];
+                }
+                if( state.haspq[i] )
+                {
+                    v = v+state.current.q[i];
+                }
+                errd2 = errd2+v*v;
+                errdinf = Math.Max(errdinf, Math.Abs(v));
+                if( state.haswv[i] || state.haspq[i] )
+                {
+                    apserv.inc(ref cntd2, _params);
+                }
+            }
+            errd2 = Math.Sqrt(errd2/apserv.coalesce(cntd2, 1, _params));
+            egap = varscomputecomplementaritygap(state.current, _params)/(1.0+Math.Abs(vipmtarget(state, state.current.x, _params)));
+        }
+
+
+        /*************************************************************************
+        Performs integrity checks for current point and step
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void runintegritychecks(vipmstate state,
+            vipmvars v0,
+            vipmvars vd,
+            double alphap,
+            double alphad,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            alglib.ap.assert(math.isfinite(alphap) && (double)(alphap)>=(double)(0), "[VIPM]RunIntegrityChecks: bad AlphaP");
+            alglib.ap.assert(math.isfinite(alphad) && (double)(alphad)>=(double)(0), "[VIPM]RunIntegrityChecks: bad AlphaD");
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] )
+                {
+                    alglib.ap.assert(!state.isfrozen[i], "[VIPM]RunIntegrityChecks: integrity failure - X[I] is frozen");
+                    alglib.ap.assert(v0.g[i]>0.0 && v0.z[i]>0.0, "[VIPM]RunIntegrityChecks: integrity failure - G[i]<=0 or Z[i]<=0");
+                }
+                else
+                {
+                    alglib.ap.assert(v0.g[i]==0.0 && v0.z[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - G[i]<>0 or Z[i]<>0 for absent lower bound");
+                    alglib.ap.assert(vd.g[i]==0.0 && vd.z[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - G[i]<>0 or Z[i]<>0 for absent lower bound");
+                }
+                if( state.hasts[i] )
+                {
+                    alglib.ap.assert(!state.isfrozen[i], "[VIPM]RunIntegrityChecks: integrity failure - X[I] is frozen");
+                    alglib.ap.assert(v0.t[i]>0.0 && v0.s[i]>0.0, "[VIPM]RunIntegrityChecks: integrity failure - T[i]<=0 or S[i]<=0");
+                }
+                else
+                {
+                    alglib.ap.assert(v0.t[i]==0.0 && v0.s[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - T[i]<>0 or S[i]<>0 for absent upper bound");
+                    alglib.ap.assert(vd.t[i]==0.0 && vd.s[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - T[i]<>0 or S[i]<>0 for absent upper bound");
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                alglib.ap.assert(state.haswv[i] || !state.haspq[i], "[VIPM]RunIntegrityChecks: inconsistent HasWV/HasPQ");
+                if( state.haswv[i] )
+                {
+                    alglib.ap.assert(v0.v[i]>0.0 && v0.w[i]>0.0, "[VIPM]RunIntegrityChecks: integrity failure - V[i]<=0 or W[i]<=0");
+                }
+                else
+                {
+                    alglib.ap.assert(v0.v[i]==0.0 && v0.w[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - V[i]<>0 or W[i]<>0 for linear equality constraint");
+                    alglib.ap.assert(vd.v[i]==0.0 && vd.w[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - V[i]<>0 or W[i]<>0 for linear equality constraint");
+                }
+                if( state.haspq[i] )
+                {
+                    alglib.ap.assert(v0.p[i]>0.0 && v0.q[i]>0.0, "[VIPM]RunIntegrityChecks: integrity failure - P[i]<=0 or Q[i]<=0");
+                }
+                else
+                {
+                    alglib.ap.assert(v0.p[i]==0.0 && v0.q[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - P[i]<>0 or Q[i]<>0 for absent range of linear constraint");
+                    alglib.ap.assert(vd.p[i]==0.0 && vd.q[i]==0.0, "[VIPM]RunIntegrityChecks: integrity failure - P[i]<>0 or Q[i]<>0 for absent range of linear constraint");
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Evaluate progress so far, outputs trace data, if requested to do so.
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void traceprogress(vipmstate state,
+            double mu,
+            double muaff,
+            double sigma,
+            double alphap,
+            double alphad,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+            double v = 0;
+            double errp2 = 0;
+            double errd2 = 0;
+            double errpinf = 0;
+            double errdinf = 0;
+            double errgap = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            if( !state.dotrace )
+            {
+                return;
+            }
+            
+            //
+            // Print high-level information
+            //
+            computeerrors(state, ref errp2, ref errd2, ref errpinf, ref errdinf, ref errgap, _params);
+            alglib.ap.trace("--- step report ------------------------------------------------------------------------------------\n");
+            alglib.ap.trace("> step information\n");
+            alglib.ap.trace(System.String.Format("mu_init = {0,0:E3}    (at the beginning)\n", mu));
+            alglib.ap.trace(System.String.Format("mu_aff  = {0,0:E3}    (by affine scaling step)\n", muaff));
+            alglib.ap.trace(System.String.Format("sigma   = {0,0:E3}    (centering parameter)\n", sigma));
+            alglib.ap.trace(System.String.Format("alphaP  = {0,0:E3}    (primal step)\n", alphap));
+            alglib.ap.trace(System.String.Format("alphaD  = {0,0:E3}    (dual   step)\n", alphad));
+            alglib.ap.trace(System.String.Format("mu_cur  = {0,0:E3}    (after the step)\n", varscomputemu(state.current, _params)));
+            alglib.ap.trace("> errors\n");
+            alglib.ap.trace(System.String.Format("errP    = {0,0:E3}    (primal infeasibility, inf-norm)\n", errpinf));
+            alglib.ap.trace(System.String.Format("errD    = {0,0:E3}    (dual infeasibility,   inf-norm)\n", errdinf));
+            alglib.ap.trace(System.String.Format("errGap  = {0,0:E3}    (complementarity gap)\n", errgap));
+            alglib.ap.trace("> current point information (inf-norm)\n");
+            alglib.ap.trace(System.String.Format("|X|={0,8:E1},  |G|={1,8:E1},  |T|={2,8:E1},  |W|={3,8:E1},  |P|={4,8:E1}\n", ablasf.rmaxabsv(n, state.current.x, _params), ablasf.rmaxabsv(n, state.current.g, _params), ablasf.rmaxabsv(n, state.current.t, _params), ablasf.rmaxabsv(m, state.current.w, _params), ablasf.rmaxabsv(m, state.current.p, _params)));
+            alglib.ap.trace(System.String.Format("|Y|={0,8:E1},  |Z|={1,8:E1},  |S|={2,8:E1},  |V|={3,8:E1},  |Q|={4,8:E1}\n", ablasf.rmaxabsv(m, state.current.y, _params), ablasf.rmaxabsv(n, state.current.z, _params), ablasf.rmaxabsv(n, state.current.s, _params), ablasf.rmaxabsv(m, state.current.v, _params), ablasf.rmaxabsv(m, state.current.q, _params)));
+            
+            //
+            // Print variable stats, if required
+            //
+            if( state.dotrace )
+            {
+                alglib.ap.trace("--- variable statistics ----------------------------------------------------------------------------\n");
+                alglib.ap.trace("> smallest values for nonnegative vars\n");
+                alglib.ap.trace(System.String.Format("primal:       minG={0,8:E1}  minT={1,8:E1}  minW={2,8:E1}  minP={3,8:E1}\n", minnz(state.current.g, n, _params), minnz(state.current.t, n, _params), minnz(state.current.w, m, _params), minnz(state.current.p, m, _params)));
+                alglib.ap.trace(System.String.Format("dual:         minZ={0,8:E1}  minS={1,8:E1}  minV={2,8:E1}  minQ={3,8:E1}\n", minnz(state.current.z, n, _params), minnz(state.current.s, n, _params), minnz(state.current.v, m, _params), minnz(state.current.q, m, _params)));
+                alglib.ap.trace("> min and max complementary slackness\n");
+                alglib.ap.trace(System.String.Format("min:            GZ={0,8:E1}    TS={1,8:E1}    WV={2,8:E1}    PQ={3,8:E1}\n", minprodnz(state.current.g, state.current.z, n, _params), minprodnz(state.current.t, state.current.s, n, _params), minprodnz(state.current.w, state.current.v, m, _params), minprodnz(state.current.p, state.current.q, m, _params)));
+                alglib.ap.trace(System.String.Format("max:            GZ={0,8:E1}    TS={1,8:E1}    WV={2,8:E1}    PQ={3,8:E1}\n", maxprodnz(state.current.g, state.current.z, n, _params), maxprodnz(state.current.t, state.current.s, n, _params), maxprodnz(state.current.w, state.current.v, m, _params), maxprodnz(state.current.p, state.current.q, m, _params)));
+            }
+            
+            //
+            // Detailed output (all variables values, not suited for high-dimensional problems)
+            //
+            if( state.dodetailedtrace )
+            {
+                vipmmultiply(state, state.current.x, state.current.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
+                ablasf.rsetallocv(n, 0.0, ref state.tmplaggrad, _params);
+                for(i=0; i<=n-1; i++)
+                {
+                    if( !state.isfrozen[i] )
+                    {
+                        v = state.tmphx[i]+state.c[i]-state.tmpaty[i];
+                        if( state.hasgz[i] )
+                        {
+                            v = v-state.current.z[i];
+                        }
+                        if( state.hasts[i] )
+                        {
+                            v = v+state.current.s[i];
+                        }
+                        state.tmplaggrad[i] = v;
+                    }
+                }
+                alglib.ap.trace("--- printing raw data (prior to applying variable scales and shifting by XOrigin) ------------------\n");
+                alglib.ap.trace("X (raw)         = ");
+                apserv.tracevectorunscaledunshiftedautoprec(state.current.x, n, state.scl, true, state.xorigin, true, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("--- printing scaled data (after applying variable scales and shifting by XOrigin) ------------------\n");
+                alglib.ap.trace("> reporting X, Lagrangian gradient\n");
+                alglib.ap.trace("Xnew            = ");
+                apserv.tracevectorautoprec(state.current.x, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("Lag-grad        = ");
+                apserv.tracevectorautoprec(state.tmplaggrad, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("--- printing new point -----------------------------------------------------------------------------\n");
+                alglib.ap.trace("> primal slacks and dual multipliers for box constraints\n");
+                alglib.ap.trace("G (L prim slck) = ");
+                apserv.tracevectorautoprec(state.current.g, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("Z (L dual mult) = ");
+                apserv.tracevectorautoprec(state.current.z, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("T (U prim slck) = ");
+                apserv.tracevectorautoprec(state.current.t, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("S (U dual mult) = ");
+                apserv.tracevectorautoprec(state.current.s, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("> primal slacks and dual multipliers for linear constraints, B/R stand for B<=Ax<=B+R\n");
+                alglib.ap.trace("Y (lag mult)    = ");
+                apserv.tracevectorautoprec(state.current.y, 0, m, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("W (B prim slck) = ");
+                apserv.tracevectorautoprec(state.current.w, 0, m, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("V (B dual mult) = ");
+                apserv.tracevectorautoprec(state.current.v, 0, m, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("P (R prim slck) = ");
+                apserv.tracevectorautoprec(state.current.p, 0, m, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("Q (R dual mult) = ");
+                apserv.tracevectorautoprec(state.current.q, 0, m, _params);
+                alglib.ap.trace("\n");
+            }
+            alglib.ap.trace("\n");
+        }
+
+
+        /*************************************************************************
+        Compute right-hand side for KKT system.
+
+        INPUT PARAMETERS:
+            State           -   IPM state
+            V0              -   current point (used to compute RHS)
+            MuEstimate      -   estimate of Mu (can be zero)
+            DirEstimate     -   estimate of delta's (can be zero)
+            
+        OUTPUT PARAMETERS:
+            Rhs             -   RHS
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void rhscompute(vipmstate state,
+            vipmvars v0,
+            double muestimate,
+            vipmvars direstimate,
+            vipmrighthandside rhs,
+            double reg,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            
+            //
+            // Allocate
+            //
+            apserv.rvectorsetlengthatleast(ref rhs.sigma, n, _params);
+            apserv.rvectorsetlengthatleast(ref rhs.nu, n, _params);
+            apserv.rvectorsetlengthatleast(ref rhs.tau, n, _params);
+            apserv.rvectorsetlengthatleast(ref rhs.gammaz, n, _params);
+            apserv.rvectorsetlengthatleast(ref rhs.gammas, n, _params);
+            apserv.rvectorsetlengthatleast(ref rhs.gammaw, m, _params);
+            apserv.rvectorsetlengthatleast(ref rhs.gammaq, m, _params);
+            ablasf.rsetallocv(m, 0.0, ref rhs.beta, _params);
+            ablasf.rsetallocv(m, 0.0, ref rhs.rho, _params);
+            ablasf.rsetallocv(m, 0.0, ref rhs.alpha, _params);
+            
+            //
+            // Compute products H*x, A*x, A^T*y
+            // We compute these products in one location for the sake of simplicity.
+            //
+            vipmmultiply(state, v0.x, v0.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
+            
+            //
+            // Compute right-hand side:
+            // Rho      = b - A*x + w
+            // Nu       = l - x + g
+            // Tau      = u - x - t
+            // Alpha    = r - w - p
+            // Sigma    = c - A^T*y - z + s + (H+REG)*x
+            // Beta     = y + q - v
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                rhs.rho[i] = state.b[i]-state.tmpax[i]-reg*v0.y[i];
+                if( state.haswv[i] )
+                {
+                    
+                    //
+                    // Inequality/range constraint
+                    //
+                    rhs.rho[i] = rhs.rho[i]+v0.w[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Equality constraint without slack variables, W[i]=0
+                    //
+                    alglib.ap.assert(v0.w[i]==0.0, "RhsCompute: W[i]<>0 for linear equality constraint");
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] )
+                {
+                    
+                    //
+                    // Lower bound is present
+                    //
+                    rhs.nu[i] = state.bndl[i]-v0.x[i]+v0.g[i]-reg*v0.z[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Lower bound is absent, g[i] = 0
+                    //
+                    alglib.ap.assert(v0.g[i]==0.0, "RhsCompute: G[i]<>0 for absent constraint");
+                    rhs.nu[i] = 0;
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasts[i] )
+                {
+                    
+                    //
+                    // Upper bound is present
+                    //
+                    rhs.tau[i] = state.bndu[i]-v0.x[i]-v0.t[i]+reg*v0.s[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Upper bound is absent, t[i] = 0
+                    //
+                    alglib.ap.assert(v0.t[i]==0.0, "RhsCompute: T[i]<>0 for absent constraint");
+                    rhs.tau[i] = 0;
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haspq[i] )
+                {
+                    rhs.alpha[i] = state.r[i]-v0.w[i]-v0.p[i]+reg*v0.q[i];
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( !state.isfrozen[i] )
+                {
+                    rhs.sigma[i] = state.c[i]-state.tmpaty[i]+state.tmphx[i]+reg*v0.x[i];
+                    if( state.hasgz[i] )
+                    {
+                        rhs.sigma[i] = rhs.sigma[i]-v0.z[i];
+                    }
+                    if( state.hasts[i] )
+                    {
+                        rhs.sigma[i] = rhs.sigma[i]+v0.s[i];
+                    }
+                }
+                else
+                {
+                    rhs.sigma[i] = 0;
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haswv[i] )
+                {
+                    rhs.beta[i] = rhs.beta[i]+v0.y[i]-v0.v[i]+reg*v0.w[i];
+                }
+                if( state.haspq[i] )
+                {
+                    rhs.beta[i] = rhs.beta[i]+v0.q[i];
+                }
+            }
+            
+            //
+            // Compute right-hand side:
+            // GammaZ   = mu*inv(G)*e - z - inv(G)*DELTAG*deltaZ
+            // GammaW   = mu*inv(V)*e - w - inv(V)*DELTAV*deltaW
+            // GammaS   = mu*inv(T)*e - s - inv(T)*DELTAT*deltaS
+            // GammaQ   = mu*inv(P)*e - q - inv(P)*DELTAP*deltaQ
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] )
+                {
+                    alglib.ap.assert(v0.g[i]>0.0, "RhsCompute: G[i]<=0");
+                    rhs.gammaz[i] = muestimate/v0.g[i]-v0.z[i]-direstimate.g[i]*direstimate.z[i]/v0.g[i];
+                }
+                else
+                {
+                    alglib.ap.assert(v0.g[i]==0.0, "RhsCompute: G[i]<>0 for absent constraint");
+                    alglib.ap.assert(v0.z[i]==0.0, "RhsCompute: Z[i]<>0 for absent constraint");
+                    rhs.gammaz[i] = 0;
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haswv[i] )
+                {
+                    
+                    //
+                    // Inequality/range constraint
+                    //
+                    alglib.ap.assert(v0.v[i]>0.0, "RhsCompute: V[i]<=0");
+                    rhs.gammaw[i] = muestimate/v0.v[i]-v0.w[i]-direstimate.v[i]*direstimate.w[i]/v0.v[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Equality constraint
+                    //
+                    alglib.ap.assert(v0.v[i]==0.0, "RhsCompute: V[i]<>0 for equality constraint");
+                    alglib.ap.assert(v0.w[i]==0.0, "RhsCompute: W[i]<>0 for equality constraint");
+                    rhs.gammaw[i] = 0;
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasts[i] )
+                {
+                    
+                    //
+                    // Upper bound is present
+                    //
+                    alglib.ap.assert(v0.t[i]>0.0, "RhsCompute: T[i]<=0");
+                    rhs.gammas[i] = muestimate/v0.t[i]-v0.s[i]-direstimate.t[i]*direstimate.s[i]/v0.t[i];
+                }
+                else
+                {
+                    
+                    //
+                    // Upper bound is absent
+                    //
+                    alglib.ap.assert(v0.t[i]==0.0, "RhsCompute: T[i]<>0 for absent constraint");
+                    alglib.ap.assert(v0.s[i]==0.0, "RhsCompute: S[i]<>0 for absent constraint");
+                    rhs.gammas[i] = 0;
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haspq[i] )
+                {
+                    alglib.ap.assert(v0.p[i]>0.0, "RhsCompute: P[i]<=0");
+                    rhs.gammaq[i] = muestimate/v0.p[i]-v0.q[i]-direstimate.p[i]*direstimate.q[i]/v0.p[i];
+                }
+                else
+                {
+                    alglib.ap.assert(v0.p[i]==0.0, "RhsCompute: P[i]<>0 for absent range");
+                    alglib.ap.assert(v0.q[i]==0.0, "RhsCompute: Q[i]<>0 for absent range");
+                    rhs.gammaq[i] = 0;
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Subtracts KKT*cand from already computed RHS.
+
+        A pair of RhsCompute/RhsSubtract calls results in  residual  being  loaded
+        into the RHS structure.
+
+        INPUT PARAMETERS:
+            State           -   IPM state
+            V0              -   current point (used to compute RHS)
+            MuEstimate      -   estimate of Mu (can be zero)
+            DirEstimate     -   estimate of delta's (can be zero)
+            ResidualFrom    -   whether we want to compute RHS or residual computed
+                                using VDCandidate
+            VDCandidate     -   solution candidate
+            
+        OUTPUT PARAMETERS:
+            Rhs             -   either RHS or residual RHS-KKT*Cand
+
+          -- ALGLIB --
+             Copyright 01.11.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void rhssubtract(vipmstate state,
+            vipmrighthandside rhs,
+            vipmvars v0,
+            vipmvars vdcandidate,
+            double reg,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            n = state.n;
+            m = state.mdense+state.msparse;
+            vipmmultiply(state, vdcandidate.x, vdcandidate.y, ref state.tmphx, ref state.tmpax, ref state.tmpaty, _params);
+            
+            //
+            // Residual for Rho, Nu, Tau, Alpha, Sigma, Beta
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haswv[i] )
+                {
+                    rhs.rho[i] = rhs.rho[i]-(state.tmpax[i]-vdcandidate.w[i]+reg*vdcandidate.y[i]);
+                }
+                else
+                {
+                    rhs.rho[i] = rhs.rho[i]-(state.tmpax[i]+reg*vdcandidate.y[i]);
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] )
+                {
+                    rhs.nu[i] = rhs.nu[i]-(vdcandidate.x[i]-vdcandidate.g[i]+reg*vdcandidate.z[i]);
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasts[i] )
+                {
+                    rhs.tau[i] = rhs.tau[i]-(vdcandidate.x[i]+vdcandidate.t[i]-reg*vdcandidate.s[i]);
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haspq[i] )
+                {
+                    rhs.alpha[i] = rhs.alpha[i]-(vdcandidate.w[i]+vdcandidate.p[i]-reg*vdcandidate.q[i]);
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( !state.isfrozen[i] )
+                {
+                    rhs.sigma[i] = rhs.sigma[i]-(state.tmpaty[i]-state.tmphx[i]-reg*vdcandidate.x[i]);
+                    if( state.hasgz[i] )
+                    {
+                        rhs.sigma[i] = rhs.sigma[i]-vdcandidate.z[i];
+                    }
+                    if( state.hasts[i] )
+                    {
+                        rhs.sigma[i] = rhs.sigma[i]+vdcandidate.s[i];
+                    }
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haswv[i] )
+                {
+                    rhs.beta[i] = rhs.beta[i]-(-vdcandidate.y[i]+vdcandidate.v[i]-reg*vdcandidate.w[i]);
+                }
+                if( state.haspq[i] )
+                {
+                    rhs.beta[i] = rhs.beta[i]+vdcandidate.q[i];
+                }
+            }
+            
+            //
+            // Residual for GammaZ, GammaW, GammaS, GammaQ
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasgz[i] )
+                {
+                    rhs.gammaz[i] = rhs.gammaz[i]-(v0.z[i]/v0.g[i]*vdcandidate.g[i]+vdcandidate.z[i]);
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haswv[i] )
+                {
+                    rhs.gammaw[i] = rhs.gammaw[i]-(v0.w[i]/v0.v[i]*vdcandidate.v[i]+vdcandidate.w[i]);
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasts[i] )
+                {
+                    rhs.gammas[i] = rhs.gammas[i]-(v0.s[i]/v0.t[i]*vdcandidate.t[i]+vdcandidate.s[i]);
+                }
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                if( state.haspq[i] )
+                {
+                    rhs.gammaq[i] = rhs.gammaq[i]-(v0.q[i]/v0.p[i]*vdcandidate.p[i]+vdcandidate.q[i]);
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        Computes sum of squared primal terms of RHS
+
+        INPUT PARAMETERS:
+            Rhs             -   RHS structure
+            N, M            -   problem metrics
+            
+        RESULT:
+            sum(sqr()) computed over primal terms (Rho, Nu, Tau, Alpha)
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double rhsprimal2(vipmrighthandside rhs,
+            int n,
+            int m,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = 0;
+            result = result+ablasf.rdotv2(m, rhs.rho, _params);
+            result = result+ablasf.rdotv2(n, rhs.nu, _params);
+            result = result+ablasf.rdotv2(n, rhs.tau, _params);
+            result = result+ablasf.rdotv2(m, rhs.alpha, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes sum of squared dual terms of RHS
+
+        INPUT PARAMETERS:
+            Rhs             -   RHS structure
+            N, M            -   problem metrics
+            
+        RESULT:
+            sum(sqr()) computed over dual terms (Sigma, Beta)
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double rhsdual2(vipmrighthandside rhs,
+            int n,
+            int m,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = 0;
+            result = result+ablasf.rdotv2(n, rhs.sigma, _params);
+            result = result+ablasf.rdotv2(m, rhs.beta, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes inf-norm of primal terms of RHS
+
+        INPUT PARAMETERS:
+            Rhs             -   RHS structure
+            N, M            -   problem metrics
+            
+        RESULT:
+            max(abs()) computed over primal terms (Rho, Nu, Tau, Alpha)
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double rhsprimalinf(vipmrighthandside rhs,
+            int n,
+            int m,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = 0;
+            result = Math.Max(result, ablasf.rmaxabsv(m, rhs.rho, _params));
+            result = Math.Max(result, ablasf.rmaxabsv(n, rhs.nu, _params));
+            result = Math.Max(result, ablasf.rmaxabsv(n, rhs.tau, _params));
+            result = Math.Max(result, ablasf.rmaxabsv(m, rhs.alpha, _params));
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes inf-norm of dual terms of RHS
+
+        INPUT PARAMETERS:
+            Rhs             -   RHS structure
+            N, M            -   problem metrics
+            
+        RESULT:
+            max(abs()) computed over dual terms (Sigma, Beta)
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double rhsdualinf(vipmrighthandside rhs,
+            int n,
+            int m,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = 0;
+            result = Math.Max(result, ablasf.rmaxabsv(n, rhs.sigma, _params));
+            result = Math.Max(result, ablasf.rmaxabsv(m, rhs.beta, _params));
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes maximum over complementarity slackness terms of RHS
+
+        INPUT PARAMETERS:
+            Rhs             -   RHS structure
+            N, M            -   problem metrics
+            
+        RESULT:
+            max(abs()) computed over complementarity terms (GammaZ, GammaS, GammaW, GammaQ)
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double rhscompl2(vipmrighthandside rhs,
+            int n,
+            int m,
+            alglib.xparams _params)
+        {
+            double result = 0;
+
+            result = 0;
+            result = result+ablasf.rdotv2(n, rhs.gammaz, _params);
+            result = result+ablasf.rdotv2(n, rhs.gammas, _params);
+            result = result+ablasf.rdotv2(m, rhs.gammaw, _params);
+            result = result+ablasf.rdotv2(m, rhs.gammaq, _params);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes minimum nonzero value of the vector. Returns 0 if all components
+        are nonpositive.
+
+        INPUT PARAMETERS:
+            X               -   vector
+            N               -   length
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double minnz(double[] x,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            bool nz = new bool();
+
+            result = 0;
+            nz = false;
+            for(i=0; i<=n-1; i++)
+            {
+                if( (double)(x[i])>(double)(0) )
+                {
+                    if( !nz )
+                    {
+                        result = x[i];
+                        nz = true;
+                    }
+                    else
+                    {
+                        result = Math.Min(result, x[i]);
+                    }
+                }
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes minimum product of nonzero components.
+        Returns 0 if all components are nonpositive.
+
+        INPUT PARAMETERS:
+            X               -   vector
+            Y               -   vector
+            N               -   length
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double minprodnz(double[] x,
+            double[] y,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            bool nz = new bool();
+
+            result = 0;
+            nz = false;
+            for(i=0; i<=n-1; i++)
+            {
+                if( (double)(x[i])>(double)(0) && (double)(y[i])>(double)(0) )
+                {
+                    if( !nz )
+                    {
+                        result = x[i]*y[i];
+                        nz = true;
+                    }
+                    else
+                    {
+                        result = Math.Min(result, x[i]*y[i]);
+                    }
+                }
+            }
+            return result;
+        }
+
+
+        /*************************************************************************
+        Computes maximum product of nonzero components.
+        Returns 0 if all components are nonpositive.
+
+        INPUT PARAMETERS:
+            X               -   vector
+            Y               -   vector
+            N               -   length
+
+          -- ALGLIB --
+             Copyright 01.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static double maxprodnz(double[] x,
+            double[] y,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            bool nz = new bool();
+
+            result = 0;
+            nz = false;
+            for(i=0; i<=n-1; i++)
+            {
+                if( (double)(x[i])>(double)(0) && (double)(y[i])>(double)(0) )
+                {
+                    if( !nz )
+                    {
+                        result = x[i]*y[i];
+                        nz = true;
+                    }
+                    else
+                    {
+                        result = Math.Max(result, x[i]*y[i]);
+                    }
+                }
+            }
+            return result;
+        }
+
+
+    }
+    public class nlcsqp
+    {
+        /*************************************************************************
+        This object stores temporaries of SQP subsolver.
+        *************************************************************************/
+        public class minsqpsubsolver : apobject
+        {
+            public int algokind;
+            public vipmsolver.vipmstate ipmsolver;
+            public double[] curb;
+            public double[] curbndl;
+            public double[] curbndu;
+            public double[] cural;
+            public double[] curau;
+            public sparse.sparsematrix sparserawlc;
+            public sparse.sparsematrix sparseefflc;
+            public double[] d0;
+            public double[,] h;
+            public double[,] densedummy;
+            public sparse.sparsematrix sparsedummy;
+            public double[] tmp0;
+            public double[] tmp1;
+            public double[] tmp2;
+            public double[] sk;
+            public double[] yk;
+            public bool[] hasbndl;
+            public bool[] hasbndu;
+            public bool[] hasal;
+            public bool[] hasau;
+            public double[,] activea;
+            public double[] activerhs;
+            public int[] activeidx;
+            public int activesetsize;
+            public minsqpsubsolver()
+            {
+                init();
+            }
+            public override void init()
+            {
+                ipmsolver = new vipmsolver.vipmstate();
+                curb = new double[0];
+                curbndl = new double[0];
+                curbndu = new double[0];
+                cural = new double[0];
+                curau = new double[0];
+                sparserawlc = new sparse.sparsematrix();
+                sparseefflc = new sparse.sparsematrix();
+                d0 = new double[0];
+                h = new double[0,0];
+                densedummy = new double[0,0];
+                sparsedummy = new sparse.sparsematrix();
+                tmp0 = new double[0];
+                tmp1 = new double[0];
+                tmp2 = new double[0];
+                sk = new double[0];
+                yk = new double[0];
+                hasbndl = new bool[0];
+                hasbndu = new bool[0];
+                hasal = new bool[0];
+                hasau = new bool[0];
+                activea = new double[0,0];
+                activerhs = new double[0];
+                activeidx = new int[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqpsubsolver _result = new minsqpsubsolver();
+                _result.algokind = algokind;
+                _result.ipmsolver = (vipmsolver.vipmstate)ipmsolver.make_copy();
+                _result.curb = (double[])curb.Clone();
+                _result.curbndl = (double[])curbndl.Clone();
+                _result.curbndu = (double[])curbndu.Clone();
+                _result.cural = (double[])cural.Clone();
+                _result.curau = (double[])curau.Clone();
+                _result.sparserawlc = (sparse.sparsematrix)sparserawlc.make_copy();
+                _result.sparseefflc = (sparse.sparsematrix)sparseefflc.make_copy();
+                _result.d0 = (double[])d0.Clone();
+                _result.h = (double[,])h.Clone();
+                _result.densedummy = (double[,])densedummy.Clone();
+                _result.sparsedummy = (sparse.sparsematrix)sparsedummy.make_copy();
+                _result.tmp0 = (double[])tmp0.Clone();
+                _result.tmp1 = (double[])tmp1.Clone();
+                _result.tmp2 = (double[])tmp2.Clone();
+                _result.sk = (double[])sk.Clone();
+                _result.yk = (double[])yk.Clone();
+                _result.hasbndl = (bool[])hasbndl.Clone();
+                _result.hasbndu = (bool[])hasbndu.Clone();
+                _result.hasal = (bool[])hasal.Clone();
+                _result.hasau = (bool[])hasau.Clone();
+                _result.activea = (double[,])activea.Clone();
+                _result.activerhs = (double[])activerhs.Clone();
+                _result.activeidx = (int[])activeidx.Clone();
+                _result.activesetsize = activesetsize;
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries for LagrangianFG() function
+        *************************************************************************/
+        public class minsqptmplagrangian : apobject
+        {
+            public double[] sclagtmp0;
+            public double[] sclagtmp1;
+            public minsqptmplagrangian()
+            {
+                init();
+            }
+            public override void init()
+            {
+                sclagtmp0 = new double[0];
+                sclagtmp1 = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqptmplagrangian _result = new minsqptmplagrangian();
+                _result.sclagtmp0 = (double[])sclagtmp0.Clone();
+                _result.sclagtmp1 = (double[])sclagtmp1.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries for LagrangianFG() function
+        *************************************************************************/
+        public class minsqptmpmerit : apobject
+        {
+            public double[] mftmp0;
+            public minsqptmpmerit()
+            {
+                init();
+            }
+            public override void init()
+            {
+                mftmp0 = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqptmpmerit _result = new minsqptmpmerit();
+                _result.mftmp0 = (double[])mftmp0.Clone();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries of Phase 1 (merit function optimization).
+        *************************************************************************/
+        public class minsqpmeritphasestate : apobject
+        {
+            public int n;
+            public int nec;
+            public int nic;
+            public int nlec;
+            public int nlic;
+            public double[] d;
+            public double[] dx;
+            public double[] stepkx;
+            public double[] stepkxc;
+            public double[] stepkxn;
+            public double[] stepkfi;
+            public double[] stepkfic;
+            public double[] stepkfin;
+            public double[,] stepkj;
+            public double[,] stepkjc;
+            public double[,] stepkjn;
+            public double[] lagmult;
+            public double[] dummylagmult;
+            public double[] penalties;
+            public minsqptmpmerit tmpmerit;
+            public minsqptmplagrangian tmplagrangianfg;
+            public double[] stepklaggrad;
+            public double[] stepknlaggrad;
+            public int status;
+            public bool increasebigc;
+            public rcommstate rmeritphasestate;
+            public minsqpmeritphasestate()
+            {
+                init();
+            }
+            public override void init()
+            {
+                d = new double[0];
+                dx = new double[0];
+                stepkx = new double[0];
+                stepkxc = new double[0];
+                stepkxn = new double[0];
+                stepkfi = new double[0];
+                stepkfic = new double[0];
+                stepkfin = new double[0];
+                stepkj = new double[0,0];
+                stepkjc = new double[0,0];
+                stepkjn = new double[0,0];
+                lagmult = new double[0];
+                dummylagmult = new double[0];
+                penalties = new double[0];
+                tmpmerit = new minsqptmpmerit();
+                tmplagrangianfg = new minsqptmplagrangian();
+                stepklaggrad = new double[0];
+                stepknlaggrad = new double[0];
+                rmeritphasestate = new rcommstate();
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqpmeritphasestate _result = new minsqpmeritphasestate();
+                _result.n = n;
+                _result.nec = nec;
+                _result.nic = nic;
+                _result.nlec = nlec;
+                _result.nlic = nlic;
+                _result.d = (double[])d.Clone();
+                _result.dx = (double[])dx.Clone();
+                _result.stepkx = (double[])stepkx.Clone();
+                _result.stepkxc = (double[])stepkxc.Clone();
+                _result.stepkxn = (double[])stepkxn.Clone();
+                _result.stepkfi = (double[])stepkfi.Clone();
+                _result.stepkfic = (double[])stepkfic.Clone();
+                _result.stepkfin = (double[])stepkfin.Clone();
+                _result.stepkj = (double[,])stepkj.Clone();
+                _result.stepkjc = (double[,])stepkjc.Clone();
+                _result.stepkjn = (double[,])stepkjn.Clone();
+                _result.lagmult = (double[])lagmult.Clone();
+                _result.dummylagmult = (double[])dummylagmult.Clone();
+                _result.penalties = (double[])penalties.Clone();
+                _result.tmpmerit = (minsqptmpmerit)tmpmerit.make_copy();
+                _result.tmplagrangianfg = (minsqptmplagrangian)tmplagrangianfg.make_copy();
+                _result.stepklaggrad = (double[])stepklaggrad.Clone();
+                _result.stepknlaggrad = (double[])stepknlaggrad.Clone();
+                _result.status = status;
+                _result.increasebigc = increasebigc;
+                _result.rmeritphasestate = (rcommstate)rmeritphasestate.make_copy();
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        This object stores temporaries of SQP solver.
+        *************************************************************************/
+        public class minsqpstate : apobject
+        {
+            public int n;
+            public int nec;
+            public int nic;
+            public int nlec;
+            public int nlic;
+            public double[] s;
+            public double[,] scaledcleic;
+            public int[] lcsrcidx;
+            public bool[] hasbndl;
+            public bool[] hasbndu;
+            public double[] scaledbndl;
+            public double[] scaledbndu;
+            public double epsx;
+            public int maxits;
+            public double[] x;
+            public double[] fi;
+            public double[,] j;
+            public double f;
+            public bool needfij;
+            public bool xupdated;
+            public minsqpmeritphasestate meritstate;
+            public double bigc;
+            public double trustrad;
+            public int trustradstagnationcnt;
+            public int fstagnationcnt;
+            public double[] step0x;
+            public double[] stepkx;
+            public double[] backupx;
+            public double[] step0fi;
+            public double[] stepkfi;
+            public double[] backupfi;
+            public double[,] step0j;
+            public double[,] stepkj;
+            public bool haslagmult;
+            public double[] meritlagmult;
+            public double[] dummylagmult;
+            public double[,] abslagmemory;
+            public double[] fscales;
+            public double[] tracegamma;
+            public minsqpsubsolver subsolver;
+            public minsqptmpmerit tmpmerit;
+            public int repsimplexiterations;
+            public int repsimplexiterations1;
+            public int repsimplexiterations2;
+            public int repsimplexiterations3;
+            public int repiterationscount;
+            public int repterminationtype;
+            public double repbcerr;
+            public int repbcidx;
+            public double replcerr;
+            public int replcidx;
+            public double repnlcerr;
+            public int repnlcidx;
+            public rcommstate rstate;
+            public minsqpstate()
+            {
+                init();
+            }
+            public override void init()
+            {
+                s = new double[0];
+                scaledcleic = new double[0,0];
+                lcsrcidx = new int[0];
+                hasbndl = new bool[0];
+                hasbndu = new bool[0];
+                scaledbndl = new double[0];
+                scaledbndu = new double[0];
+                x = new double[0];
+                fi = new double[0];
+                j = new double[0,0];
+                meritstate = new minsqpmeritphasestate();
+                step0x = new double[0];
+                stepkx = new double[0];
+                backupx = new double[0];
+                step0fi = new double[0];
+                stepkfi = new double[0];
+                backupfi = new double[0];
+                step0j = new double[0,0];
+                stepkj = new double[0,0];
+                meritlagmult = new double[0];
+                dummylagmult = new double[0];
+                abslagmemory = new double[0,0];
+                fscales = new double[0];
+                tracegamma = new double[0];
+                subsolver = new minsqpsubsolver();
+                tmpmerit = new minsqptmpmerit();
+                rstate = new rcommstate();
+            }
+            public override alglib.apobject make_copy()
+            {
+                minsqpstate _result = new minsqpstate();
+                _result.n = n;
+                _result.nec = nec;
+                _result.nic = nic;
+                _result.nlec = nlec;
+                _result.nlic = nlic;
+                _result.s = (double[])s.Clone();
+                _result.scaledcleic = (double[,])scaledcleic.Clone();
+                _result.lcsrcidx = (int[])lcsrcidx.Clone();
+                _result.hasbndl = (bool[])hasbndl.Clone();
+                _result.hasbndu = (bool[])hasbndu.Clone();
+                _result.scaledbndl = (double[])scaledbndl.Clone();
+                _result.scaledbndu = (double[])scaledbndu.Clone();
+                _result.epsx = epsx;
+                _result.maxits = maxits;
+                _result.x = (double[])x.Clone();
+                _result.fi = (double[])fi.Clone();
+                _result.j = (double[,])j.Clone();
+                _result.f = f;
+                _result.needfij = needfij;
+                _result.xupdated = xupdated;
+                _result.meritstate = (minsqpmeritphasestate)meritstate.make_copy();
+                _result.bigc = bigc;
+                _result.trustrad = trustrad;
+                _result.trustradstagnationcnt = trustradstagnationcnt;
+                _result.fstagnationcnt = fstagnationcnt;
+                _result.step0x = (double[])step0x.Clone();
+                _result.stepkx = (double[])stepkx.Clone();
+                _result.backupx = (double[])backupx.Clone();
+                _result.step0fi = (double[])step0fi.Clone();
+                _result.stepkfi = (double[])stepkfi.Clone();
+                _result.backupfi = (double[])backupfi.Clone();
+                _result.step0j = (double[,])step0j.Clone();
+                _result.stepkj = (double[,])stepkj.Clone();
+                _result.haslagmult = haslagmult;
+                _result.meritlagmult = (double[])meritlagmult.Clone();
+                _result.dummylagmult = (double[])dummylagmult.Clone();
+                _result.abslagmemory = (double[,])abslagmemory.Clone();
+                _result.fscales = (double[])fscales.Clone();
+                _result.tracegamma = (double[])tracegamma.Clone();
+                _result.subsolver = (minsqpsubsolver)subsolver.make_copy();
+                _result.tmpmerit = (minsqptmpmerit)tmpmerit.make_copy();
+                _result.repsimplexiterations = repsimplexiterations;
+                _result.repsimplexiterations1 = repsimplexiterations1;
+                _result.repsimplexiterations2 = repsimplexiterations2;
+                _result.repsimplexiterations3 = repsimplexiterations3;
+                _result.repiterationscount = repiterationscount;
+                _result.repterminationtype = repterminationtype;
+                _result.repbcerr = repbcerr;
+                _result.repbcidx = repbcidx;
+                _result.replcerr = replcerr;
+                _result.replcidx = replcidx;
+                _result.repnlcerr = repnlcerr;
+                _result.repnlcidx = repnlcidx;
+                _result.rstate = (rcommstate)rstate.make_copy();
+                return _result;
+            }
+        };
+
+
+
+
+        public const double sqpdeltadecrease = 0.20;
+        public const double sqpdeltaincrease = 0.80;
+        public const double maxtrustraddecay = 0.1;
+        public const double maxtrustradgrowth = 1.333;
+        public const double maxbigc = 1.0E5;
+        public const double meritfunctionbase = 0.0;
+        public const double meritfunctiongain = 2.0;
+        public const double augmentationfactor = 10.0;
+        public const double inittrustrad = 0.1;
+        public const double stagnationepsf = 1.0E-12;
+        public const int fstagnationlimit = 20;
+        public const int trustradstagnationlimit = 10;
+        public const double sqpbigscale = 5.0;
+        public const double sqpsmallscale = 0.2;
+        public const int penaltymemlen = 5;
+
+
+        public static void minsqpinitbuf(double[] bndl,
+            double[] bndu,
+            double[] s,
+            double[] x0,
+            int n,
+            double[,] cleic,
+            int[] lcsrcidx,
+            int nec,
+            int nic,
+            int nlec,
+            int nlic,
+            double epsx,
+            int maxits,
+            minsqpstate state,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            state.n = n;
+            state.nec = nec;
+            state.nic = nic;
+            state.nlec = nlec;
+            state.nlic = nlic;
+            
+            //
+            // Prepare RCOMM state
+            //
+            state.rstate.ia = new int[9+1];
+            state.rstate.ba = new bool[3+1];
+            state.rstate.ra = new double[6+1];
+            state.rstate.stage = -1;
+            state.needfij = false;
+            state.xupdated = false;
+            state.x = new double[n];
+            state.fi = new double[1+nlec+nlic];
+            state.j = new double[1+nlec+nlic, n];
+            
+            //
+            // Allocate memory.
+            //
+            apserv.rvectorsetlengthatleast(ref state.s, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.step0x, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.stepkx, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.backupx, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.step0fi, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.stepkfi, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.backupfi, 1+nlec+nlic, _params);
+            apserv.rmatrixsetlengthatleast(ref state.step0j, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref state.stepkj, 1+nlec+nlic, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.fscales, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.tracegamma, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref state.dummylagmult, nec+nic+nlec+nlic, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref state.hasbndu, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.scaledbndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref state.scaledbndu, n, _params);
+            apserv.rmatrixsetlengthatleast(ref state.scaledcleic, nec+nic, n+1, _params);
+            apserv.ivectorsetlengthatleast(ref state.lcsrcidx, nec+nic, _params);
+            ablasf.rallocv(nec+nic+nlec+nlic, ref state.meritlagmult, _params);
+            ablasf.rsetallocm(penaltymemlen, nec+nic+nlec+nlic, 0.0, ref state.abslagmemory, _params);
+            
+            //
+            // Prepare scaled problem
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                state.hasbndl[i] = math.isfinite(bndl[i]);
+                state.hasbndu[i] = math.isfinite(bndu[i]);
+                if( state.hasbndl[i] )
+                {
+                    state.scaledbndl[i] = bndl[i]/s[i];
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.scaledbndu[i] = bndu[i]/s[i];
+                }
+                if( state.hasbndl[i] && state.hasbndu[i] )
+                {
+                    alglib.ap.assert((double)(bndl[i])<=(double)(bndu[i]), "SQP: integrity check failed, box constraints are inconsistent");
+                }
+                state.step0x[i] = x0[i]/s[i];
+                state.s[i] = s[i];
+            }
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                
+                //
+                // Permutation
+                //
+                state.lcsrcidx[i] = lcsrcidx[i];
+                
+                //
+                // Scale and normalize linear constraints
+                //
+                vv = 0.0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = cleic[i,j]*s[j];
+                    state.scaledcleic[i,j] = v;
+                    vv = vv+v*v;
+                }
+                vv = Math.Sqrt(vv);
+                state.scaledcleic[i,n] = cleic[i,n];
+                if( (double)(vv)>(double)(0) )
+                {
+                    for(j=0; j<=n; j++)
+                    {
+                        state.scaledcleic[i,j] = state.scaledcleic[i,j]/vv;
+                    }
+                }
+            }
+            
+            //
+            // Initial enforcement of box constraints
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    state.step0x[i] = Math.Max(state.step0x[i], state.scaledbndl[i]);
+                }
+                if( state.hasbndu[i] )
+                {
+                    state.step0x[i] = Math.Min(state.step0x[i], state.scaledbndu[i]);
+                }
+            }
+            
+            //
+            // Stopping criteria
+            //
+            state.epsx = epsx;
+            state.maxits = maxits;
+            
+            //
+            // Report fields
+            //
+            state.repsimplexiterations = 0;
+            state.repsimplexiterations1 = 0;
+            state.repsimplexiterations2 = 0;
+            state.repsimplexiterations3 = 0;
+            state.repterminationtype = 0;
+            state.repbcerr = 0;
+            state.repbcidx = -1;
+            state.replcerr = 0;
+            state.replcidx = -1;
+            state.repnlcerr = 0;
+            state.repnlcidx = -1;
+            state.repiterationscount = 0;
+            
+            //
+            // Integrity checks
+            //
+            alglib.ap.assert((double)(sqpdeltadecrease)<(double)(sqpdeltaincrease), "MinSQP: integrity check failed");
+        }
+
+
+        /*************************************************************************
+        This function performs actual processing for  SQP  algorithm.  It  expects
+        that caller redirects its reverse communication  requests NeedFiJ/XUpdated
+        to external user who will provide analytic derivative (or  handle  reports
+        about progress).
+
+        In case external user does not have analytic derivative, it is responsibility
+        of caller to intercept NeedFiJ request and  replace  it  with  appropriate
+        numerical differentiation scheme.
+
+        Results are stored:
+        * point - in State.StepKX
+
+        IMPORTANT: this function works with scaled problem formulation; it is
+                   responsibility of the caller to unscale request and scale
+                   Jacobian.
+                   
+        NOTE: SMonitor is expected to be correctly initialized smoothness monitor.
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        public static bool minsqpiteration(minsqpstate state,
+            optserv.smoothnessmonitor smonitor,
+            bool userterminationneeded,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+            double mx = 0;
+            int status = 0;
+            double deltamax = 0;
+            double multiplyby = 0;
+            double setscaleto = 0;
+            double prevtrustrad = 0;
+            int subiterationidx = 0;
+            bool trustradstagnated = new bool();
+            bool dotrace = new bool();
+            bool dodetailedtrace = new bool();
+            bool increasebigc = new bool();
+
+            
+            //
+            // Reverse communication preparations
+            // I know it looks ugly, but it works the same way
+            // anywhere from C++ to Python.
+            //
+            // This code initializes locals by:
+            // * random values determined during code
+            //   generation - on first subroutine call
+            // * values from previous call - on subsequent calls
+            //
+            if( state.rstate.stage>=0 )
+            {
+                n = state.rstate.ia[0];
+                nslack = state.rstate.ia[1];
+                nec = state.rstate.ia[2];
+                nic = state.rstate.ia[3];
+                nlec = state.rstate.ia[4];
+                nlic = state.rstate.ia[5];
+                i = state.rstate.ia[6];
+                j = state.rstate.ia[7];
+                status = state.rstate.ia[8];
+                subiterationidx = state.rstate.ia[9];
+                trustradstagnated = state.rstate.ba[0];
+                dotrace = state.rstate.ba[1];
+                dodetailedtrace = state.rstate.ba[2];
+                increasebigc = state.rstate.ba[3];
+                v = state.rstate.ra[0];
+                vv = state.rstate.ra[1];
+                mx = state.rstate.ra[2];
+                deltamax = state.rstate.ra[3];
+                multiplyby = state.rstate.ra[4];
+                setscaleto = state.rstate.ra[5];
+                prevtrustrad = state.rstate.ra[6];
+            }
+            else
+            {
+                n = 359;
+                nslack = -58;
+                nec = -919;
+                nic = -909;
+                nlec = 81;
+                nlic = 255;
+                i = 74;
+                j = -788;
+                status = 809;
+                subiterationidx = 205;
+                trustradstagnated = false;
+                dotrace = true;
+                dodetailedtrace = false;
+                increasebigc = true;
+                v = -541;
+                vv = -698;
+                mx = -900;
+                deltamax = -318;
+                multiplyby = -940;
+                setscaleto = 1016;
+                prevtrustrad = -229;
+            }
+            if( state.rstate.stage==0 )
+            {
+                goto lbl_0;
+            }
+            if( state.rstate.stage==1 )
+            {
+                goto lbl_1;
+            }
+            if( state.rstate.stage==2 )
+            {
+                goto lbl_2;
+            }
+            
+            //
+            // Routine body
+            //
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            dotrace = ap.istraceenabled("SQP", _params);
+            dodetailedtrace = dotrace && ap.istraceenabled("SQP.DETAILED", _params);
+            
+            //
+            // Prepare rcomm interface
+            //
+            state.needfij = false;
+            state.xupdated = false;
+            
+            //
+            // Initialize algorithm data:
+            // * Lagrangian and "Big C" estimates
+            // * trust region
+            // * initial function scales (vector of 1's)
+            // * current approximation of the Hessian matrix H (unit matrix)
+            // * initial linearized constraints
+            // * initial violation of linear/nonlinear constraints
+            //
+            state.fstagnationcnt = 0;
+            state.trustradstagnationcnt = 0;
+            state.trustrad = inittrustrad;
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                state.fscales[i] = 1.0;
+                state.tracegamma[i] = 0.0;
+            }
+            state.haslagmult = false;
+            
+            //
+            // Avoid spurious warnings about possibly uninitialized vars
+            //
+            status = 0;
+            
+            //
+            // Evaluate function vector and Jacobian at Step0X, send first location report.
+            // Compute initial violation of constraints.
+            //
+            sqpsendx(state, state.step0x, _params);
+            state.needfij = true;
+            state.rstate.stage = 0;
+            goto lbl_rcomm;
+        lbl_0:
+            state.needfij = false;
+            if( !sqpretrievefij(state, state.step0fi, state.step0j, _params) )
+            {
+                
+                //
+                // Failed to retrieve function/Jaconian, infinities detected!
+                //
+                for(i=0; i<=n-1; i++)
+                {
+                    state.stepkx[i] = state.step0x[i];
+                }
+                state.repterminationtype = -8;
+                result = false;
+                return result;
+            }
+            sqpcopystate(state, state.step0x, state.step0fi, state.step0j, state.stepkx, state.stepkfi, state.stepkj, _params);
+            sqpsendx(state, state.stepkx, _params);
+            state.f = state.stepkfi[0]*state.fscales[0];
+            state.xupdated = true;
+            state.rstate.stage = 1;
+            goto lbl_rcomm;
+        lbl_1:
+            state.xupdated = false;
+            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, state.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
+            optserv.unscaleandchecknlcviolation(state.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+            
+            //
+            // Trace output (if needed)
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+                alglib.ap.trace("//  SQP SOLVER STARTED                                                                            //\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+            }
+            
+            //
+            // Perform outer (NLC) iterations
+            //
+            state.bigc = 500;
+            initqpsubsolver(state, state.subsolver, _params);
+        lbl_3:
+            if( false )
+            {
+                goto lbl_4;
+            }
+            
+            //
+            // Before beginning new outer iteration:
+            // * renormalize target function and/or constraints, if some of them have too large magnitudes
+            // * save initial point for the outer iteration
+            //
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                
+                //
+                // Determine (a) multiplicative coefficient applied to function value
+                // and Jacobian row, and (b) new value of the function scale.
+                //
+                mx = 0;
+                for(j=0; j<=n-1; j++)
+                {
+                    mx = Math.Max(mx, Math.Abs(state.stepkj[i,j]));
+                }
+                multiplyby = 1.0;
+                setscaleto = state.fscales[i];
+                if( (double)(mx)>=(double)(sqpbigscale) )
+                {
+                    multiplyby = 1/mx;
+                    setscaleto = state.fscales[i]*mx;
+                }
+                if( (double)(mx)<=(double)(sqpsmallscale) && (double)(state.fscales[i])>(double)(1.0) )
+                {
+                    if( (double)(state.fscales[i]*mx)>(double)(1) )
+                    {
+                        multiplyby = 1/mx;
+                        setscaleto = state.fscales[i]*mx;
+                    }
+                    else
+                    {
+                        multiplyby = state.fscales[i];
+                        setscaleto = 1.0;
+                    }
+                }
+                if( (double)(multiplyby)!=(double)(1.0) )
+                {
+                    
+                    //
+                    // Function #I needs renormalization:
+                    // * update function vector element and Jacobian matrix row
+                    // * update FScales[] and TraceGamma[] arrays
+                    //
+                    state.stepkfi[i] = state.stepkfi[i]*multiplyby;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        state.stepkj[i,j] = state.stepkj[i,j]*multiplyby;
+                    }
+                    state.fscales[i] = setscaleto;
+                    state.tracegamma[i] = state.tracegamma[i]*multiplyby;
+                }
+            }
+            
+            //
+            // Trace output (if needed)
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace(System.String.Format("\n=== OUTER ITERATION {0,5:d} STARTED ==================================================================\n", state.repiterationscount));
+                if( dodetailedtrace )
+                {
+                    alglib.ap.trace("> printing raw data (prior to applying variable and function scales)\n");
+                    alglib.ap.trace("X (raw)       = ");
+                    apserv.tracevectorunscaledunshiftedautoprec(state.step0x, n, state.s, true, state.s, false, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("> printing scaled data (after applying variable and function scales)\n");
+                    alglib.ap.trace("X (scaled)    = ");
+                    apserv.tracevectorautoprec(state.step0x, 0, n, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("FScales       = ");
+                    apserv.tracevectorautoprec(state.fscales, 0, 1+nlec+nlic, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("GammaScl      = ");
+                    apserv.tracevectorautoprec(state.tracegamma, 0, 1+nlec+nlic, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("Fi (scaled)   = ");
+                    apserv.tracevectorautoprec(state.stepkfi, 0, 1+nlec+nlic, _params);
+                    alglib.ap.trace("\n");
+                    alglib.ap.trace("|Ji| (scaled) = ");
+                    apserv.tracerownrm1autoprec(state.stepkj, 0, 1+nlec+nlic, 0, n, _params);
+                    alglib.ap.trace("\n");
+                }
+                mx = 0;
+                for(i=1; i<=nlec; i++)
+                {
+                    mx = Math.Max(mx, Math.Abs(state.stepkfi[i]));
+                }
+                for(i=nlec+1; i<=nlec+nlic; i++)
+                {
+                    mx = Math.Max(mx, state.stepkfi[i]);
+                }
+                alglib.ap.trace(System.String.Format("trustRad      = {0,0:E3}\n", state.trustrad));
+                alglib.ap.trace(System.String.Format("lin.violation = {0,0:E3}    (scaled violation of linear constraints)\n", state.replcerr));
+                alglib.ap.trace(System.String.Format("nlc.violation = {0,0:E3}    (scaled violation of nonlinear constraints)\n", mx));
+                alglib.ap.trace(System.String.Format("gamma0        = {0,0:E3}    (Hessian 2-norm estimate for target)\n", state.tracegamma[0]));
+                j = 0;
+                for(i=0; i<=nlec+nlic; i++)
+                {
+                    if( (double)(state.tracegamma[i])>(double)(state.tracegamma[j]) )
+                    {
+                        j = i;
+                    }
+                }
+                alglib.ap.trace(System.String.Format("gammaMax      = {0,0:E3}    (maximum over Hessian 2-norm estimates for target/constraints)\n", state.tracegamma[j]));
+                alglib.ap.trace(System.String.Format("arg(gammaMax) = {0,0:d}             (function index; 0 for target, >0 for nonlinear constraints)\n", j));
+            }
+            
+            //
+            // PHASE 2
+            //
+            // This phase is a primary part of the algorithm which is responsible for its
+            // convergence properties.
+            //
+            // It solves QP subproblem with possible activation and deactivation of constraints
+            // and then starts backtracking (step length is bounded by 1.0) merit function search
+            // (with second-order correction to deal with Maratos effect) on the direction produced
+            // by QP subproblem.
+            //
+            // This phase is everything we need to in order to have convergence; however,
+            // it has one performance-related issue: using "general" interior point QP solver
+            // results in slow solution times. Fast equality-constrained phase is essential for
+            // the quick convergence.
+            //
+            qpsubsolversetalgoipm(state.subsolver, _params);
+            sqpcopystate(state, state.stepkx, state.stepkfi, state.stepkj, state.step0x, state.step0fi, state.step0j, _params);
+            meritphaseinit(state.meritstate, state.stepkx, state.stepkfi, state.stepkj, n, nec, nic, nlec, nlic, state.abslagmemory, penaltymemlen, _params);
+        lbl_5:
+            if( !meritphaseiteration(state, state.meritstate, smonitor, userterminationneeded, _params) )
+            {
+                goto lbl_6;
+            }
+            state.rstate.stage = 2;
+            goto lbl_rcomm;
+        lbl_2:
+            goto lbl_5;
+        lbl_6:
+            meritphaseresults(state.meritstate, state.stepkx, state.stepkfi, state.stepkj, state.meritlagmult, ref increasebigc, ref status, _params);
+            if( status==0 )
+            {
+                goto lbl_4;
+            }
+            alglib.ap.assert(status>0, "MinSQPIteration: integrity check failed");
+            state.haslagmult = true;
+            for(i=penaltymemlen-1; i>=1; i--)
+            {
+                ablasf.rcopyrr(nec+nic+nlec+nlic, state.abslagmemory, i-1, state.abslagmemory, i, _params);
+            }
+            for(i=0; i<=nec+nic+nlec+nlic-1; i++)
+            {
+                state.abslagmemory[0,i] = Math.Abs(state.meritlagmult[i]);
+            }
+            
+            //
+            // Caller requested to update BigC - L1 penalty coefficient for linearized constraint violation
+            //
+            if( increasebigc )
+            {
+                state.bigc = Math.Min(10*state.bigc, maxbigc);
+            }
+            
+            //
+            // Update trust region.
+            //
+            // NOTE: when trust region radius remains fixed for a long time it may mean that we 
+            //       stagnated in eternal loop. In such cases we decrease it slightly in order
+            //       to break possible loop. If such decrease was unnecessary, it may be easily
+            //       fixed within few iterations.
+            //
+            deltamax = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                deltamax = Math.Max(deltamax, Math.Abs(state.step0x[i]-state.stepkx[i])/state.trustrad);
+            }
+            trustradstagnated = false;
+            apserv.inc(ref state.trustradstagnationcnt, _params);
+            prevtrustrad = state.trustrad;
+            if( (double)(deltamax)<=(double)(sqpdeltadecrease) )
+            {
+                state.trustrad = state.trustrad*Math.Max(deltamax/sqpdeltadecrease, maxtrustraddecay);
+                state.trustradstagnationcnt = 0;
+            }
+            if( (double)(deltamax)>=(double)(sqpdeltaincrease) )
+            {
+                state.trustrad = state.trustrad*Math.Min(deltamax/sqpdeltaincrease, maxtrustradgrowth);
+                state.trustradstagnationcnt = 0;
+            }
+            if( state.trustradstagnationcnt>=trustradstagnationlimit )
+            {
+                state.trustrad = 0.5*state.trustrad;
+                state.trustradstagnationcnt = 0;
+                trustradstagnated = true;
+            }
+            
+            //
+            // Trace
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n--- outer iteration ends ---------------------------------------------------------------------------\n");
+                alglib.ap.trace(System.String.Format("deltaMax    = {0,0:F3} (ratio of step length to trust radius)\n", deltamax));
+                alglib.ap.trace(System.String.Format("newTrustRad = {0,0:E3}", state.trustrad));
+                if( !trustradstagnated )
+                {
+                    if( (double)(state.trustrad)>(double)(prevtrustrad) )
+                    {
+                        alglib.ap.trace(", trust radius increased");
+                    }
+                    if( (double)(state.trustrad)<(double)(prevtrustrad) )
+                    {
+                        alglib.ap.trace(", trust radius decreased");
+                    }
+                }
+                else
+                {
+                    alglib.ap.trace(System.String.Format(", trust radius forcibly decreased due to stagnation for {0,0:d} iterations", trustradstagnationlimit));
+                }
+                alglib.ap.trace("\n");
+                if( increasebigc )
+                {
+                    alglib.ap.trace(System.String.Format("BigC        = {0,0:E3} (short step was performed, but some constraints are still infeasible - increasing)\n", state.bigc));
+                }
+            }
+            
+            //
+            // Advance outer iteration counter, test stopping criteria
+            //
+            apserv.inc(ref state.repiterationscount, _params);
+            if( (double)(Math.Abs(state.stepkfi[0]-state.step0fi[0]))<=(double)(stagnationepsf*Math.Abs(state.step0fi[0])) )
+            {
+                apserv.inc(ref state.fstagnationcnt, _params);
+            }
+            else
+            {
+                state.fstagnationcnt = 0;
+            }
+            if( (double)(state.trustrad)<=(double)(state.epsx) )
+            {
+                state.repterminationtype = 2;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping condition met: trust radius is smaller than {0,0:E3}\n", state.epsx));
+                }
+                goto lbl_4;
+            }
+            if( state.maxits>0 && state.repiterationscount>=state.maxits )
+            {
+                state.repterminationtype = 5;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping condition met: {0,0:d} iterations performed\n", state.repiterationscount));
+                }
+                goto lbl_4;
+            }
+            if( state.fstagnationcnt>=fstagnationlimit )
+            {
+                state.repterminationtype = 7;
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> stopping criteria are too stringent: F stagnated for {0,0:d} its, stopping\n", state.fstagnationcnt));
+                }
+                goto lbl_4;
+            }
+            goto lbl_3;
+        lbl_4:
+            optserv.smoothnessmonitortracestatus(smonitor, dotrace, _params);
+            result = false;
+            return result;
+            
+            //
+            // Saving state
+            //
+        lbl_rcomm:
+            result = true;
+            state.rstate.ia[0] = n;
+            state.rstate.ia[1] = nslack;
+            state.rstate.ia[2] = nec;
+            state.rstate.ia[3] = nic;
+            state.rstate.ia[4] = nlec;
+            state.rstate.ia[5] = nlic;
+            state.rstate.ia[6] = i;
+            state.rstate.ia[7] = j;
+            state.rstate.ia[8] = status;
+            state.rstate.ia[9] = subiterationidx;
+            state.rstate.ba[0] = trustradstagnated;
+            state.rstate.ba[1] = dotrace;
+            state.rstate.ba[2] = dodetailedtrace;
+            state.rstate.ba[3] = increasebigc;
+            state.rstate.ra[0] = v;
+            state.rstate.ra[1] = vv;
+            state.rstate.ra[2] = mx;
+            state.rstate.ra[3] = deltamax;
+            state.rstate.ra[4] = multiplyby;
+            state.rstate.ra[5] = setscaleto;
+            state.rstate.ra[6] = prevtrustrad;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes SQP subproblem.
+        Should be called once in the beginning of the optimization.
+
+        INPUT PARAMETERS:
+            SState          -   solver state
+            Subsolver       -   SQP subproblem to initialize
+                                
+                                
+        RETURN VALUE:
+            True on success
+            False on failure of the QP solver (unexpected... but possible due to numerical errors)
+                                
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void initqpsubsolver(minsqpstate sstate,
+            minsqpsubsolver subsolver,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int lccnt = 0;
+            int nnz = 0;
+            int offs = 0;
+            int i = 0;
+            int j = 0;
+
+            n = sstate.n;
+            nec = sstate.nec;
+            nic = sstate.nic;
+            nlec = sstate.nlec;
+            nlic = sstate.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            lccnt = nec+nic+nlec+nlic;
+            
+            //
+            // Allocate temporaries
+            //
+            apserv.rvectorsetlengthatleast(ref subsolver.cural, lccnt, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curau, lccnt, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curbndl, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curbndu, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.curb, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.sk, n, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.yk, n, _params);
+            
+            //
+            // Initial state
+            //
+            subsolver.algokind = 0;
+            apserv.rmatrixsetlengthatleast(ref subsolver.h, n, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    subsolver.h[i,j] = 0;
+                }
+                subsolver.h[i,i] = 1;
+            }
+            
+            //
+            // Linear constraints do not change across subiterations, that's
+            // why we allocate storage for them at the start of the program.
+            //
+            // A full set of "raw" constraints is stored; later we will filter
+            // out inequality ones which are inactive anywhere in the current
+            // trust region.
+            //
+            // NOTE: because sparserawlc object stores only linear constraint
+            //       (linearizations of nonlinear ones are not stored) we
+            //       allocate only minimum necessary space.
+            //
+            nnz = 0;
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    if( sstate.scaledcleic[i,j]!=0.0 )
+                    {
+                        nnz = nnz+1;
+                    }
+                }
+            }
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.ridx, nec+nic+1, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.sparserawlc.vals, nnz, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.idx, nnz, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.didx, nec+nic, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparserawlc.uidx, nec+nic, _params);
+            offs = 0;
+            subsolver.sparserawlc.ridx[0] = 0;
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    if( sstate.scaledcleic[i,j]!=0.0 )
+                    {
+                        
+                        //
+                        // Primary part of the matrix
+                        //
+                        subsolver.sparserawlc.vals[offs] = sstate.scaledcleic[i,j];
+                        subsolver.sparserawlc.idx[offs] = j;
+                        offs = offs+1;
+                    }
+                }
+                subsolver.sparserawlc.ridx[i+1] = offs;
+            }
+            subsolver.sparserawlc.matrixtype = 1;
+            subsolver.sparserawlc.ninitialized = subsolver.sparserawlc.ridx[nec+nic];
+            subsolver.sparserawlc.m = nec+nic;
+            subsolver.sparserawlc.n = n;
+            sparse.sparseinitduidx(subsolver.sparserawlc, _params);
+        }
+
+
+        /*************************************************************************
+        This function sets subsolver algorithm to interior point method (IPM)
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void qpsubsolversetalgoipm(minsqpsubsolver subsolver,
+            alglib.xparams _params)
+        {
+            subsolver.algokind = 0;
+        }
+
+
+        /*************************************************************************
+        Updates Hessian estimate, uses regularized formula which prevents  Hessian
+        eigenvalues from decreasing below sqrt(Eps)  and  rejects  updates  larger
+        than 1/sqrt(Eps) in magnitude.
+
+        INPUT PARAMETERS:
+            SState          -   solver state
+            Subsolver       -   SQP subproblem to initialize
+            X0, G0          -   point #0 and gradient at #0, array[N]
+            X1, G1          -   point #1 and gradient at #1, array[N]
+                                
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool qpsubproblemupdatehessian(minsqpstate sstate,
+            minsqpsubsolver subsolver,
+            double[] x0,
+            double[] g0,
+            double[] x1,
+            double[] g1,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int i = 0;
+            int n = 0;
+            double shs = 0;
+            double rawsy = 0;
+            double sy = 0;
+            double snrm2 = 0;
+            double ynrm2 = 0;
+            double v2 = 0;
+            double gk = 0;
+            double sk = 0;
+            double yk = 0;
+            double mxs = 0;
+            double mxy = 0;
+            double mxhs = 0;
+            double reg = 0;
+            double big = 0;
+            double growth = 0;
+            double eigold = 0;
+            double eignew = 0;
+            double eigcorrection = 0;
+
+            
+            //
+            // Algorithm parameters
+            //
+            reg = 100*Math.Sqrt(math.machineepsilon);
+            big = 1/reg;
+            growth = 100.0;
+            
+            //
+            // Proceed
+            //
+            result = false;
+            n = sstate.n;
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, n, _params);
+            rawsy = 0;
+            sy = 0;
+            snrm2 = 0;
+            ynrm2 = 0;
+            v2 = 0;
+            mxs = 0;
+            mxy = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                
+                //
+                // Fetch components
+                //
+                sk = x1[i]-x0[i];
+                yk = g1[i]-g0[i];
+                gk = g0[i];
+                
+                //
+                // Compute raw (S,Y) without regularization (to be used later
+                // during comparison with zero)
+                //
+                rawsy = rawsy+sk*yk;
+                
+                //
+                // Convexify Y
+                //
+                yk = yk+reg*sk;
+                
+                //
+                // Compute various coefficients using regularized values
+                //
+                sy = sy+sk*yk;
+                snrm2 = snrm2+sk*sk;
+                ynrm2 = ynrm2+yk*yk;
+                v2 = v2+gk*gk;
+                mxs = Math.Max(mxs, Math.Abs(sk));
+                mxy = Math.Max(mxy, Math.Abs(yk));
+                subsolver.sk[i] = sk;
+                subsolver.yk[i] = yk;
+            }
+            shs = ablas.rmatrixsyvmv(n, subsolver.h, 0, 0, true, subsolver.sk, 0, subsolver.tmp0, _params);
+            ablas.rmatrixgemv(n, n, 1.0, subsolver.h, 0, 0, 0, subsolver.sk, 0, 0.0, subsolver.tmp0, 0, _params);
+            mxhs = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                mxhs = Math.Max(mxhs, Math.Abs(subsolver.tmp0[i]));
+            }
+            
+            //
+            // Skip updates if (Sk,Yk)<=0 or Sk*H*Sk<=0
+            //
+            // NOTE: we use 0.5*(SY+RawSY) in place of (Sk,Yk) which allows us to have slight
+            //       nonconvexity due to numerical noise.
+            //
+            if( (double)(0.5*(sy+rawsy))<=(double)(0) )
+            {
+                return result;
+            }
+            if( (double)(shs)<=(double)(0) )
+            {
+                return result;
+            }
+            if( (double)(snrm2)<=(double)(0) )
+            {
+                return result;
+            }
+            alglib.ap.assert((double)(sy)>(double)(0), "UpdateHessian: integrity check failed");
+            
+            //
+            // Skip updates with too short steps
+            //
+            // NOTE: may prevent us from updating Hessian near the solution
+            //
+            if( (double)(mxs)<=(double)(apserv.coalesce(sstate.epsx, Math.Sqrt(math.machineepsilon), _params)) )
+            {
+                return result;
+            }
+            
+            //
+            // Too large Hessian updates sometimes may come from noisy or nonsmooth problems.
+            // 
+            // Skip updates with max(Yk)^2/(Yk,Sk)>=BIG or max(H*Sk)^2/(Sk*H*Sk)>=BIG
+            //
+            if( (double)(math.sqr(mxy)/sy)>=(double)(big) )
+            {
+                return result;
+            }
+            if( (double)(math.sqr(mxhs)/shs)>=(double)(big) )
+            {
+                return result;
+            }
+            
+            //
+            // Compare eigenvalues of H: old one removed by update, and new one.
+            // We require that new eigenvalue is not much larger/smaller than the old one.
+            // In order to enforce this condition we compute correction coefficient and
+            // multiply one of the rank-1 updates by this coefficient.
+            //
+            eigold = shs/snrm2;
+            eignew = ynrm2/sy;
+            eigcorrection = 1.0;
+            if( (double)(eignew)>(double)(eigold*growth) )
+            {
+                eigcorrection = 1/(eignew/(eigold*growth));
+            }
+            if( (double)(eignew)<(double)(eigold/growth) )
+            {
+                eigcorrection = 1/(eignew/(eigold/growth));
+            }
+            
+            //
+            // Update Hessian
+            //
+            ablas.rmatrixger(n, n, subsolver.h, 0, 0, -(1/shs), subsolver.tmp0, 0, subsolver.tmp0, 0, _params);
+            ablas.rmatrixger(n, n, subsolver.h, 0, 0, eigcorrection*(1/sy), subsolver.yk, 0, subsolver.yk, 0, _params);
+            result = true;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function solves QP subproblem given by initial point X, function vector Fi
+        and Jacobian Jac, and returns estimates of Lagrangian multipliers and search direction D[].
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void fassolve(minsqpsubsolver subsolver,
+            double[] d0,
+            double[,] h,
+            int nq,
+            double[] b,
+            int n,
+            double[] bndl,
+            double[] bndu,
+            sparse.sparsematrix a,
+            int m,
+            double[] al,
+            double[] au,
+            double trustrad,
+            ref int terminationtype,
+            double[] d,
+            double[] lagmult,
+            alglib.xparams _params)
+        {
+            int i = 0;
+
+            terminationtype = 1;
+            
+            //
+            // Initial point, integrity check for constraints
+            //
+            apserv.bvectorsetlengthatleast(ref subsolver.hasbndl, n, _params);
+            apserv.bvectorsetlengthatleast(ref subsolver.hasbndu, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.hasbndl[i] = math.isfinite(bndl[i]);
+                subsolver.hasbndu[i] = math.isfinite(bndu[i]);
+                alglib.ap.assert(!subsolver.hasbndl[i] || (double)(bndl[i])<=(double)(d0[i]), "FASSolve: integrity check failed");
+                alglib.ap.assert(!subsolver.hasbndu[i] || (double)(bndu[i])>=(double)(d0[i]), "FASSolve: integrity check failed");
+                d[i] = d0[i];
+            }
+            apserv.bvectorsetlengthatleast(ref subsolver.hasal, m, _params);
+            apserv.bvectorsetlengthatleast(ref subsolver.hasau, m, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                subsolver.hasal[i] = math.isfinite(al[i]);
+                subsolver.hasau[i] = math.isfinite(au[i]);
+                if( subsolver.hasal[i] && subsolver.hasau[i] )
+                {
+                    alglib.ap.assert((double)(al[i])<=(double)(au[i]), "FASSolve: integrity check failed");
+                }
+            }
+            apserv.rmatrixsetlengthatleast(ref subsolver.activea, n, n, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.activerhs, n, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.activeidx, n, _params);
+            subsolver.activesetsize = 0;
+            
+            //
+            // Activate equality constraints (at most N)
+            //
+            for(i=0; i<=m-1; i++)
+            {
+                if( (subsolver.hasal[i] && subsolver.hasau[i]) && (double)(al[i])==(double)(au[i]) )
+                {
+                    
+                    //
+                    // Stop if full set of constraints is activated
+                    //
+                    if( subsolver.activesetsize>=n )
+                    {
+                        break;
+                    }
+                }
+            }
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, n, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp1, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.tmp0[i] = trustrad;
+                subsolver.tmp1[i] = 0.0;
+            }
+            vipmsolver.vipminitdensewithslacks(subsolver.ipmsolver, subsolver.tmp0, subsolver.tmp1, nq, n, _params);
+            vipmsolver.vipmsetquadraticlinear(subsolver.ipmsolver, h, subsolver.sparsedummy, 0, true, b, _params);
+            vipmsolver.vipmsetconstraints(subsolver.ipmsolver, bndl, bndu, a, m, subsolver.densedummy, 0, al, au, _params);
+            vipmsolver.vipmoptimize(subsolver.ipmsolver, false, ref subsolver.tmp0, ref subsolver.tmp1, ref subsolver.tmp2, ref terminationtype, _params);
+            if( terminationtype<=0 )
+            {
+                return;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                d[i] = subsolver.tmp0[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                lagmult[i] = subsolver.tmp2[i];
+            }
+        }
+
+
+        /*************************************************************************
+        This function solves QP subproblem given by initial point X, function vector Fi
+        and Jacobian Jac, and returns estimates of Lagrangian multipliers and search direction D[].
+
+          -- ALGLIB --
+             Copyright 05.03.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool qpsubproblemsolve(minsqpstate state,
+            minsqpsubsolver subsolver,
+            double[] x,
+            double[] fi,
+            double[,] jac,
+            double[] d,
+            double[] lagmult,
+            ref int terminationtype,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            double v = 0;
+            double vv = 0;
+            double vright = 0;
+            double vmax = 0;
+            int lccnt = 0;
+            int offsslackec = 0;
+            int offsslacknlec = 0;
+            int offsslackic = 0;
+            int offsslacknlic = 0;
+            int offs = 0;
+            int nnz = 0;
+            int j0 = 0;
+            int j1 = 0;
+
+            terminationtype = 0;
+
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            lccnt = nec+nic+nlec+nlic;
+            
+            //
+            // Locations of slack variables
+            //
+            offsslackec = n;
+            offsslacknlec = n+2*nec;
+            offsslackic = n+2*nec+2*nlec;
+            offsslacknlic = n+2*(nec+nlec)+nic;
+            
+            //
+            // Prepare temporary structures
+            //
+            apserv.rvectorgrowto(ref subsolver.cural, lccnt, _params);
+            apserv.rvectorgrowto(ref subsolver.curau, lccnt, _params);
+            apserv.rvectorsetlengthatleast(ref subsolver.d0, nslack, _params);
+            
+            //
+            // Prepare default solution: all zeros
+            //
+            result = true;
+            terminationtype = 0;
+            for(i=0; i<=nslack-1; i++)
+            {
+                d[i] = 0.0;
+                subsolver.d0[i] = 0;
+            }
+            for(i=0; i<=lccnt-1; i++)
+            {
+                lagmult[i] = 0;
+            }
+            
+            //
+            // Linear term B
+            //
+            // NOTE: elements [N,NSlack) are equal to bigC + perturbation to improve numeric properties of QP problem
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.curb[i] = jac[0,i];
+            }
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(jac[0,i]);
+            }
+            v = apserv.coalesce(Math.Sqrt(v), 1.0, _params);
+            for(i=n; i<=nslack-1; i++)
+            {
+                subsolver.curb[i] = (state.bigc+1.0/(1+i))*v;
+            }
+            
+            //
+            // Trust radius constraints for primary variables
+            //
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.curbndl[i] = -state.trustrad;
+                subsolver.curbndu[i] = state.trustrad;
+                if( state.hasbndl[i] )
+                {
+                    subsolver.curbndl[i] = Math.Max(subsolver.curbndl[i], state.scaledbndl[i]-x[i]);
+                }
+                if( state.hasbndu[i] )
+                {
+                    subsolver.curbndu[i] = Math.Min(subsolver.curbndu[i], state.scaledbndu[i]-x[i]);
+                }
+            }
+            
+            //
+            // Prepare storage for "effective" constraining matrix
+            //
+            nnz = subsolver.sparserawlc.ridx[nec+nic];
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                for(j=0; j<=n-1; j++)
+                {
+                    if( jac[1+i,j]!=0.0 )
+                    {
+                        nnz = nnz+1;
+                    }
+                }
+            }
+            nnz = nnz+2*nec+nic;
+            nnz = nnz+2*nlec+nlic;
+            apserv.ivectorgrowto(ref subsolver.sparseefflc.ridx, lccnt+1, _params);
+            apserv.rvectorgrowto(ref subsolver.sparseefflc.vals, nnz, _params);
+            apserv.ivectorgrowto(ref subsolver.sparseefflc.idx, nnz, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparseefflc.didx, lccnt, _params);
+            apserv.ivectorsetlengthatleast(ref subsolver.sparseefflc.uidx, lccnt, _params);
+            subsolver.sparseefflc.m = 0;
+            subsolver.sparseefflc.n = nslack;
+            subsolver.sparseefflc.matrixtype = 1;
+            
+            //
+            // Append linear equality/inequality constraints
+            //
+            // Scan sparsified linear constraints stored in sparserawlc[], skip ones
+            // which are inactive anywhere in the trust region.
+            //
+            apserv.rvectorsetlengthatleast(ref subsolver.tmp0, nslack, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                subsolver.tmp0[i] = x[i];
+            }
+            for(i=n; i<=nslack-1; i++)
+            {
+                subsolver.tmp0[i] = 0;
+            }
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                
+                //
+                // Calculate:
+                // * VRight - product of X[] (extended with zeros up to NSlack elements)
+                //            and AR[i] - Ith row of sparserawlc matrix.
+                // * VMax   - maximum value of X*ARi computed over trust region
+                //
+                vright = 0;
+                vmax = 0;
+                j0 = subsolver.sparserawlc.ridx[i];
+                j1 = subsolver.sparserawlc.ridx[i+1]-1;
+                for(k=j0; k<=j1; k++)
+                {
+                    j = subsolver.sparserawlc.idx[k];
+                    v = subsolver.tmp0[j];
+                    vv = subsolver.sparserawlc.vals[k];
+                    vright = vright+vv*v;
+                    if( vv>=0 )
+                    {
+                        vmax = vmax+vv*(v+subsolver.curbndu[j]);
+                    }
+                    else
+                    {
+                        vmax = vmax+vv*(v+subsolver.curbndl[j]);
+                    }
+                }
+                
+                //
+                // If constraint is an inequality one and guaranteed to be inactive
+                // within trust region, it is skipped (row itself is retained but
+                // filled by zeros).
+                //
+                if( i>=nec && vmax<=state.scaledcleic[i,n] )
+                {
+                    offs = subsolver.sparseefflc.ridx[i];
+                    subsolver.sparseefflc.vals[offs] = -1;
+                    subsolver.sparseefflc.idx[offs] = offsslackic+(i-nec);
+                    subsolver.sparseefflc.ridx[i+1] = offs+1;
+                    subsolver.cural[i] = 0.0;
+                    subsolver.curau[i] = 0.0;
+                    subsolver.curbndl[offsslackic+(i-nec)] = 0;
+                    subsolver.curbndu[offsslackic+(i-nec)] = 0;
+                    continue;
+                }
+                
+                //
+                // Start working on row I
+                //
+                offs = subsolver.sparseefflc.ridx[i];
+                
+                //
+                // Copy constraint from sparserawlc[] to sparseefflc[]
+                //
+                j0 = subsolver.sparserawlc.ridx[i];
+                j1 = subsolver.sparserawlc.ridx[i+1]-1;
+                for(k=j0; k<=j1; k++)
+                {
+                    subsolver.sparseefflc.idx[offs] = subsolver.sparserawlc.idx[k];
+                    subsolver.sparseefflc.vals[offs] = subsolver.sparserawlc.vals[k];
+                    offs = offs+1;
+                }
+                
+                //
+                // Set up slack variables
+                //
+                if( i<nec )
+                {
+                    subsolver.sparseefflc.vals[offs+0] = -1;
+                    subsolver.sparseefflc.vals[offs+1] = 1;
+                    subsolver.sparseefflc.idx[offs+0] = offsslackec+2*i+0;
+                    subsolver.sparseefflc.idx[offs+1] = offsslackec+2*i+1;
+                    offs = offs+2;
+                }
+                else
+                {
+                    
+                    //
+                    // Slack variables for inequality constraints
+                    //
+                    subsolver.sparseefflc.vals[offs] = -1;
+                    subsolver.sparseefflc.idx[offs] = offsslackic+(i-nec);
+                    offs = offs+1;
+                }
+                
+                //
+                // Finalize row
+                //
+                subsolver.sparseefflc.ridx[i+1] = offs;
+                
+                //
+                // Set up bounds and slack part of D0.
+                //
+                // NOTE: bounds for equality and inequality constraints are
+                //       handled differently
+                //
+                v = vright-state.scaledcleic[i,n];
+                if( i<nec )
+                {
+                    subsolver.cural[i] = -v;
+                    subsolver.curau[i] = -v;
+                    subsolver.curbndl[offsslackec+2*i+0] = 0;
+                    subsolver.curbndl[offsslackec+2*i+1] = 0;
+                    subsolver.curbndu[offsslackec+2*i+0] = Math.Abs(v);
+                    subsolver.curbndu[offsslackec+2*i+1] = Math.Abs(v);
+                    if( (double)(v)>=(double)(0) )
+                    {
+                        subsolver.d0[offsslackec+2*i+0] = Math.Abs(v);
+                        subsolver.d0[offsslackec+2*i+1] = 0;
+                    }
+                    else
+                    {
+                        subsolver.d0[offsslackec+2*i+0] = 0;
+                        subsolver.d0[offsslackec+2*i+1] = Math.Abs(v);
+                    }
+                }
+                else
+                {
+                    subsolver.cural[i] = Double.NegativeInfinity;
+                    subsolver.curau[i] = -v;
+                    subsolver.curbndl[offsslackic+(i-nec)] = 0;
+                    subsolver.curbndu[offsslackic+(i-nec)] = Math.Max(v, 0);
+                    subsolver.d0[offsslackic+(i-nec)] = Math.Max(v, 0);
+                }
+            }
+            subsolver.sparseefflc.m = subsolver.sparseefflc.m+(nec+nic);
+            
+            //
+            // Append nonlinear equality/inequality constraints
+            //
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                
+                //
+                // Calculate scale coefficient
+                //
+                vv = 0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = jac[1+i,j];
+                    vv = vv+v*v;
+                }
+                vv = 1/apserv.coalesce(Math.Sqrt(vv), 1, _params);
+                
+                //
+                // Copy scaled row
+                //
+                offs = subsolver.sparseefflc.ridx[subsolver.sparseefflc.m+i];
+                for(j=0; j<=n-1; j++)
+                {
+                    if( jac[1+i,j]!=0.0 )
+                    {
+                        subsolver.sparseefflc.vals[offs] = vv*jac[1+i,j];
+                        subsolver.sparseefflc.idx[offs] = j;
+                        offs = offs+1;
+                    }
+                }
+                if( i<nlec )
+                {
+                    
+                    //
+                    // Add slack terms for equality constraints
+                    //
+                    subsolver.sparseefflc.vals[offs+0] = -1;
+                    subsolver.sparseefflc.vals[offs+1] = 1;
+                    subsolver.sparseefflc.idx[offs+0] = offsslacknlec+2*i+0;
+                    subsolver.sparseefflc.idx[offs+1] = offsslacknlec+2*i+1;
+                    offs = offs+2;
+                }
+                else
+                {
+                    
+                    //
+                    // Add slack terms for inequality constraints
+                    //
+                    subsolver.sparseefflc.vals[offs] = -1;
+                    subsolver.sparseefflc.idx[offs] = offsslacknlic+(i-nlec);
+                    offs = offs+1;
+                }
+                subsolver.sparseefflc.ridx[subsolver.sparseefflc.m+i+1] = offs;
+                
+                //
+                // Set box constraints on slack variables and bounds on linear equality/inequality constraints
+                //
+                v = vv*fi[1+i];
+                if( i<nlec )
+                {
+                    
+                    //
+                    // Equality constraint
+                    //
+                    subsolver.cural[subsolver.sparseefflc.m+i] = -v;
+                    subsolver.curau[subsolver.sparseefflc.m+i] = -v;
+                    subsolver.curbndl[offsslacknlec+2*i+0] = 0;
+                    subsolver.curbndl[offsslacknlec+2*i+1] = 0;
+                    subsolver.curbndu[offsslacknlec+2*i+0] = Math.Abs(v);
+                    subsolver.curbndu[offsslacknlec+2*i+1] = Math.Abs(v);
+                    if( (double)(v)>=(double)(0) )
+                    {
+                        subsolver.d0[offsslacknlec+2*i+0] = Math.Abs(v);
+                        subsolver.d0[offsslacknlec+2*i+1] = 0;
+                    }
+                    else
+                    {
+                        subsolver.d0[offsslacknlec+2*i+0] = 0;
+                        subsolver.d0[offsslacknlec+2*i+1] = Math.Abs(v);
+                    }
+                }
+                else
+                {
+                    
+                    //
+                    // Inequality constraint
+                    //
+                    subsolver.cural[subsolver.sparseefflc.m+i] = Double.NegativeInfinity;
+                    subsolver.curau[subsolver.sparseefflc.m+i] = -v;
+                    subsolver.curbndl[offsslacknlic+(i-nlec)] = 0;
+                    subsolver.curbndu[offsslacknlic+(i-nlec)] = Math.Max(v, 0);
+                    subsolver.d0[offsslacknlic+(i-nlec)] = Math.Max(v, 0);
+                }
+            }
+            subsolver.sparseefflc.m = subsolver.sparseefflc.m+(nlec+nlic);
+            
+            //
+            // Finalize sparse matrix structure
+            //
+            alglib.ap.assert(subsolver.sparseefflc.ridx[subsolver.sparseefflc.m]<=alglib.ap.len(subsolver.sparseefflc.idx), "QPSubproblemSolve: critical integrity check failed");
+            alglib.ap.assert(subsolver.sparseefflc.ridx[subsolver.sparseefflc.m]<=alglib.ap.len(subsolver.sparseefflc.vals), "QPSubproblemSolve: critical integrity check failed");
+            subsolver.sparseefflc.ninitialized = subsolver.sparseefflc.ridx[subsolver.sparseefflc.m];
+            sparse.sparseinitduidx(subsolver.sparseefflc, _params);
+            
+            //
+            // Solve quadratic program
+            //
+            if( subsolver.algokind==0 )
+            {
+                
+                //
+                // Use dense IPM.
+                //
+                // We always treat its result as a valid solution, even for TerminationType<=0.
+                // In case anything is wrong with solution vector, we will detect it during line
+                // search phase (merit function does not increase).
+                //
+                // NOTE: because we cleaned up constraints that are DEFINITELY inactive within
+                //       trust region, we do not have to worry about StopOnExcessiveBounds option.
+                //
+                apserv.rvectorsetlengthatleast(ref subsolver.tmp0, nslack, _params);
+                apserv.rvectorsetlengthatleast(ref subsolver.tmp1, nslack, _params);
+                for(i=0; i<=nslack-1; i++)
+                {
+                    subsolver.tmp0[i] = state.trustrad;
+                    subsolver.tmp1[i] = 0.0;
+                }
+                vipmsolver.vipminitdensewithslacks(subsolver.ipmsolver, subsolver.tmp0, subsolver.tmp1, n, nslack, _params);
+                vipmsolver.vipmsetquadraticlinear(subsolver.ipmsolver, subsolver.h, subsolver.sparsedummy, 0, true, subsolver.curb, _params);
+                vipmsolver.vipmsetconstraints(subsolver.ipmsolver, subsolver.curbndl, subsolver.curbndu, subsolver.sparseefflc, subsolver.sparseefflc.m, subsolver.densedummy, 0, subsolver.cural, subsolver.curau, _params);
+                vipmsolver.vipmoptimize(subsolver.ipmsolver, false, ref subsolver.tmp0, ref subsolver.tmp1, ref subsolver.tmp2, ref terminationtype, _params);
+                for(i=0; i<=nslack-1; i++)
+                {
+                    d[i] = subsolver.tmp0[i];
+                }
+                for(i=0; i<=lccnt-1; i++)
+                {
+                    lagmult[i] = subsolver.tmp2[i];
+                }
+                return result;
+            }
+            if( subsolver.algokind==1 )
+            {
+                
+                //
+                // Use fast active set
+                //
+                fassolve(subsolver, subsolver.d0, subsolver.h, n, subsolver.curb, nslack, subsolver.curbndl, subsolver.curbndu, subsolver.sparseefflc, subsolver.sparseefflc.m, subsolver.cural, subsolver.curau, state.trustrad, ref terminationtype, d, lagmult, _params);
+                if( terminationtype<=0 )
+                {
+                    
+                    //
+                    // QP solver failed due to numerical errors; exit
+                    //
+                    result = false;
+                    return result;
+                }
+                return result;
+            }
+            
+            //
+            // Unexpected
+            //
+            alglib.ap.assert(false, "SQP: unexpected subsolver type");
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes MeritPhase temporaries. It should be called before
+        beginning of each new iteration. You may call it multiple  times  for  the
+        same instance of MeritPhase temporaries.
+
+        INPUT PARAMETERS:
+            MeritState          -   instance to be initialized.
+            N                   -   problem dimensionality
+            NEC, NIC            -   linear equality/inequality constraint count
+            NLEC, NLIC          -   nonlinear equality/inequality constraint count
+            AbsLagMemory        -   array[MemLen,NEC+NIC+NLEC+NLIC], stores absolute
+                                    values of Lagrange multipliers for the last MemLen
+                                    iterations
+            MemLen              -   memory length
+
+        OUTPUT PARAMETERS:
+            MeritState          -   instance being initialized
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void meritphaseinit(minsqpmeritphasestate meritstate,
+            double[] curx,
+            double[] curfi,
+            double[,] curj,
+            int n,
+            int nec,
+            int nic,
+            int nlec,
+            int nlic,
+            double[,] abslagmemory,
+            int memlen,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int nslack = 0;
+
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            meritstate.n = n;
+            meritstate.nec = nec;
+            meritstate.nic = nic;
+            meritstate.nlec = nlec;
+            meritstate.nlic = nlic;
+            apserv.rvectorsetlengthatleast(ref meritstate.d, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.dx, nslack, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkx, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkxc, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkxn, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkfi, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkfic, 1+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepkfin, 1+nlec+nlic, _params);
+            apserv.rmatrixsetlengthatleast(ref meritstate.stepkj, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref meritstate.stepkjc, 1+nlec+nlic, n, _params);
+            apserv.rmatrixsetlengthatleast(ref meritstate.stepkjn, 1+nlec+nlic, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepklaggrad, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.stepknlaggrad, n, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.lagmult, nec+nic+nlec+nlic, _params);
+            apserv.rvectorsetlengthatleast(ref meritstate.dummylagmult, nec+nic+nlec+nlic, _params);
+            ablasf.rsetallocv(nec+nic+nlec+nlic, 0.0, ref meritstate.penalties, _params);
+            for(i=0; i<=memlen-1; i++)
+            {
+                ablasf.rmergemaxrv(nec+nic+nlec+nlic, abslagmemory, i, meritstate.penalties, _params);
+            }
+            ablasf.rcopyv(n, curx, meritstate.stepkx, _params);
+            ablasf.rcopyv(1+nlec+nlic, curfi, meritstate.stepkfi, _params);
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                ablasf.rcopyrr(n, curj, i, meritstate.stepkj, i, _params);
+            }
+            meritstate.rmeritphasestate.ia = new int[7+1];
+            meritstate.rmeritphasestate.ba = new bool[3+1];
+            meritstate.rmeritphasestate.ra = new double[9+1];
+            meritstate.rmeritphasestate.stage = -1;
+        }
+
+
+        /*************************************************************************
+        This function tries to perform either phase #1 or phase #3 step.
+
+        Former corresponds to linear model step (without conjugacy constraints) with
+        correction for nonlinearity ("second order correction").  Such  correction
+        helps to overcome  Maratos  effect  (a  tendency  of  L1  penalized  merit
+        functions to reject nonzero steps).
+
+        Latter is a step using linear model with no second order correction.
+
+        INPUT PARAMETERS:
+            State       -   SQP solver state
+            SMonitor    -   smoothness monitor
+            UserTerminationNeeded-True if user requested termination
+
+        OUTPUT PARAMETERS:
+            State       -   RepTerminationType is set to current termination code (if Status=0).
+            Status      -   when reverse communication is done, Status is set to:
+                            * positive value,  if we can proceed to the next stage
+                              of the outer iteration
+                            * zero, if algorithm is terminated (RepTerminationType
+                              is set to appropriate value)
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static bool meritphaseiteration(minsqpstate state,
+            minsqpmeritphasestate meritstate,
+            optserv.smoothnessmonitor smonitor,
+            bool userterminationneeded,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int n = 0;
+            int nslack = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+            double mx = 0;
+            double f0 = 0;
+            double f1 = 0;
+            double nu = 0;
+            double localstp = 0;
+            double stepklagval = 0;
+            double stepknlagval = 0;
+            bool hessianupdateperformed = new bool();
+            bool dotrace = new bool();
+            bool doprobing = new bool();
+            bool dotracexd = new bool();
+            double stp = 0;
+
+            
+            //
+            // Reverse communication preparations
+            // I know it looks ugly, but it works the same way
+            // anywhere from C++ to Python.
+            //
+            // This code initializes locals by:
+            // * random values determined during code
+            //   generation - on first subroutine call
+            // * values from previous call - on subsequent calls
+            //
+            if( meritstate.rmeritphasestate.stage>=0 )
+            {
+                n = meritstate.rmeritphasestate.ia[0];
+                nslack = meritstate.rmeritphasestate.ia[1];
+                nec = meritstate.rmeritphasestate.ia[2];
+                nic = meritstate.rmeritphasestate.ia[3];
+                nlec = meritstate.rmeritphasestate.ia[4];
+                nlic = meritstate.rmeritphasestate.ia[5];
+                i = meritstate.rmeritphasestate.ia[6];
+                j = meritstate.rmeritphasestate.ia[7];
+                hessianupdateperformed = meritstate.rmeritphasestate.ba[0];
+                dotrace = meritstate.rmeritphasestate.ba[1];
+                doprobing = meritstate.rmeritphasestate.ba[2];
+                dotracexd = meritstate.rmeritphasestate.ba[3];
+                v = meritstate.rmeritphasestate.ra[0];
+                vv = meritstate.rmeritphasestate.ra[1];
+                mx = meritstate.rmeritphasestate.ra[2];
+                f0 = meritstate.rmeritphasestate.ra[3];
+                f1 = meritstate.rmeritphasestate.ra[4];
+                nu = meritstate.rmeritphasestate.ra[5];
+                localstp = meritstate.rmeritphasestate.ra[6];
+                stepklagval = meritstate.rmeritphasestate.ra[7];
+                stepknlagval = meritstate.rmeritphasestate.ra[8];
+                stp = meritstate.rmeritphasestate.ra[9];
+            }
+            else
+            {
+                n = -536;
+                nslack = 487;
+                nec = -115;
+                nic = 886;
+                nlec = 346;
+                nlic = -722;
+                i = -413;
+                j = -461;
+                hessianupdateperformed = true;
+                dotrace = true;
+                doprobing = false;
+                dotracexd = false;
+                v = 306;
+                vv = -1011;
+                mx = 951;
+                f0 = -463;
+                f1 = 88;
+                nu = -861;
+                localstp = -678;
+                stepklagval = -731;
+                stepknlagval = -675;
+                stp = -763;
+            }
+            if( meritstate.rmeritphasestate.stage==0 )
+            {
+                goto lbl_0;
+            }
+            if( meritstate.rmeritphasestate.stage==1 )
+            {
+                goto lbl_1;
+            }
+            if( meritstate.rmeritphasestate.stage==2 )
+            {
+                goto lbl_2;
+            }
+            if( meritstate.rmeritphasestate.stage==3 )
+            {
+                goto lbl_3;
+            }
+            
+            //
+            // Routine body
+            //
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            nslack = n+2*(nec+nlec)+(nic+nlic);
+            dotrace = ap.istraceenabled("SQP", _params);
+            dotracexd = dotrace && ap.istraceenabled("SQP.DETAILED", _params);
+            doprobing = ap.istraceenabled("SQP.PROBING", _params);
+            alglib.ap.assert(alglib.ap.len(meritstate.lagmult)>=nec+nic+nlec+nlic, "MeritPhaseIteration: integrity check failed");
+            
+            //
+            // Report iteration beginning
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("\n--- quadratic step ---------------------------------------------------------------------------------\n");
+            }
+            
+            //
+            // Default decision is to continue algorithm
+            //
+            meritstate.status = 1;
+            meritstate.increasebigc = false;
+            stp = 0;
+            
+            //
+            // Determine step direction using initial quadratic model.
+            // Update penalties vector with current Lagrange multipliers.
+            //
+            if( !qpsubproblemsolve(state, state.subsolver, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, meritstate.d, meritstate.lagmult, ref j, _params) )
+            {
+                if( dotrace )
+                {
+                    alglib.ap.trace(System.String.Format("> [WARNING] QP subproblem failed with TerminationType={0,0:d}\n", j));
+                }
+                result = false;
+                return result;
+            }
+            if( dotrace )
+            {
+                alglib.ap.trace(System.String.Format("> QP subproblem solved with TerminationType={0,0:d}\n", j));
+            }
+            for(i=0; i<=nec+nic+nlec+nlic-1; i++)
+            {
+                meritstate.penalties[i] = Math.Max(meritstate.penalties[i], Math.Abs(meritstate.lagmult[i]));
+            }
+            
+            //
+            // Perform merit function line search.
+            //
+            // First, we try unit step. If it does not decrease merit function,
+            // a second-order correction is tried (helps to combat Maratos effect).
+            //
+            localstp = 1.0;
+            f0 = meritfunction(state, meritstate.stepkx, meritstate.stepkfi, meritstate.lagmult, meritstate.penalties, meritstate.tmpmerit, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                meritstate.stepkxn[i] = meritstate.stepkx[i]+localstp*meritstate.d[i];
+            }
+            sqpsendx(state, meritstate.stepkxn, _params);
+            state.needfij = true;
+            meritstate.rmeritphasestate.stage = 0;
+            goto lbl_rcomm;
+        lbl_0:
+            state.needfij = false;
+            if( !sqpretrievefij(state, meritstate.stepkfin, meritstate.stepkjn, _params) )
+            {
+                
+                //
+                // Failed to retrieve func/Jac, infinities detected
+                //
+                state.repterminationtype = -8;
+                meritstate.status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
+                }
+                result = false;
+                return result;
+            }
+            f1 = meritfunction(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.lagmult, meritstate.penalties, meritstate.tmpmerit, _params);
+            if( (double)(f1)<(double)(f0) )
+            {
+                goto lbl_4;
+            }
+            
+            //
+            // Full step increases merit function. Let's compute second order
+            // correction to the constraint model and recompute trial step D:
+            // * use original model of the target
+            // * extrapolate model of nonlinear constraints at StepKX+D back to origin
+            //
+            //
+            if( dotrace )
+            {
+                alglib.ap.trace("> preparing second-order correction\n");
+            }
+            meritstate.stepkfic[0] = meritstate.stepkfi[0];
+            for(j=0; j<=n-1; j++)
+            {
+                meritstate.stepkjc[0,j] = meritstate.stepkj[0,j];
+            }
+            for(i=1; i<=nlec+nlic; i++)
+            {
+                v = 0;
+                for(j=0; j<=n-1; j++)
+                {
+                    v = v+meritstate.d[j]*meritstate.stepkj[i,j];
+                    meritstate.stepkjc[i,j] = meritstate.stepkj[i,j];
+                }
+                meritstate.stepkfic[i] = meritstate.stepkfin[i]-v;
+            }
+            if( !qpsubproblemsolve(state, state.subsolver, meritstate.stepkx, meritstate.stepkfic, meritstate.stepkjc, meritstate.dx, meritstate.dummylagmult, ref j, _params) )
+            {
+                if( dotrace )
+                {
+                    alglib.ap.trace("> [WARNING] second-order QP subproblem failed\n");
+                }
+                result = false;
+                return result;
+            }
+            if( dotrace )
+            {
+                alglib.ap.trace(System.String.Format("> second-order QP subproblem solved with TerminationType={0,0:d}\n", j));
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                meritstate.d[i] = meritstate.dx[i];
+            }
+            
+            //
+            // Perform line search, we again try full step (maybe it will work after SOC)
+            //
+            localstp = 1.0;
+            nu = 0.5;
+            f1 = f0;
+            optserv.smoothnessmonitorstartlinesearch(smonitor, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, _params);
+        lbl_6:
+            if( false )
+            {
+                goto lbl_7;
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                meritstate.stepkxn[i] = meritstate.stepkx[i]+localstp*meritstate.d[i];
+            }
+            sqpsendx(state, meritstate.stepkxn, _params);
+            state.needfij = true;
+            meritstate.rmeritphasestate.stage = 1;
+            goto lbl_rcomm;
+        lbl_1:
+            state.needfij = false;
+            if( !sqpretrievefij(state, meritstate.stepkfin, meritstate.stepkjn, _params) )
+            {
+                
+                //
+                // Failed to retrieve func/Jac, infinities detected
+                //
+                state.repterminationtype = -8;
+                meritstate.status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("[ERROR] infinities in target/constraints are detected\n");
+                }
+                result = false;
+                return result;
+            }
+            optserv.smoothnessmonitorenqueuepoint(smonitor, meritstate.d, localstp, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
+            f1 = meritfunction(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.lagmult, meritstate.penalties, meritstate.tmpmerit, _params);
+            if( (double)(f1)<(double)(f0) )
+            {
+                
+                //
+                // Step is found!
+                //
+                goto lbl_7;
+            }
+            if( (double)(localstp)<(double)(0.001) )
+            {
+                
+                //
+                // Step is shorter than 0.001 times current search direction,
+                // it means that no good step can be found.
+                //
+                localstp = 0;
+                sqpcopystate(state, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, _params);
+                goto lbl_7;
+            }
+            localstp = nu*localstp;
+            nu = Math.Max(0.1, 0.5*nu);
+            goto lbl_6;
+        lbl_7:
+            optserv.smoothnessmonitorfinalizelinesearch(smonitor, _params);
+        lbl_4:
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] )
+                {
+                    meritstate.stepkxn[i] = Math.Max(meritstate.stepkxn[i], state.scaledbndl[i]);
+                }
+                if( state.hasbndu[i] )
+                {
+                    meritstate.stepkxn[i] = Math.Min(meritstate.stepkxn[i], state.scaledbndu[i]);
+                }
+            }
+            if( userterminationneeded )
+            {
+                
+                //
+                // User requested termination, break before we move to new point
+                //
+                state.repterminationtype = 8;
+                meritstate.status = 0;
+                if( dotrace )
+                {
+                    alglib.ap.trace("> user requested termination\n");
+                }
+                result = false;
+                return result;
+            }
+            lagrangianfg(state, meritstate.stepkx, state.trustrad, meritstate.stepkfi, meritstate.stepkj, meritstate.lagmult, meritstate.tmplagrangianfg, ref stepklagval, meritstate.stepklaggrad, _params);
+            lagrangianfg(state, meritstate.stepkxn, state.trustrad, meritstate.stepkfin, meritstate.stepkjn, meritstate.lagmult, meritstate.tmplagrangianfg, ref stepknlagval, meritstate.stepknlaggrad, _params);
+            
+            //
+            // Decide whether we want to request increase BigC (a constraint enforcing multiplier for L1 penalized
+            // QP subproblem) or not.
+            //
+            // An increase is NOT needed if at least one of the following holds:
+            // * a long step was performed
+            // * any single constraint can be made feasible within trust region
+            //
+            // Thus, BigC is requested to be increased if a short step was made, but there are some
+            // constraints that are infeasible within trust region.
+            //
+            if( (double)(ablasf.rmaxabsv(n, meritstate.d, _params))<(double)(0.9*state.trustrad) )
+            {
+                for(i=0; i<=nec+nic-1; i++)
+                {
+                    v = 0;
+                    vv = 0;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        v = v+state.scaledcleic[i,j]*state.stepkx[j];
+                        vv = vv+Math.Abs(state.scaledcleic[i,j]*state.trustrad);
+                    }
+                    v = v-state.scaledcleic[i,n];
+                    if( i>=nec )
+                    {
+                        v = Math.Max(v, 0.0);
+                    }
+                    meritstate.increasebigc = meritstate.increasebigc || (double)(Math.Abs(v))>(double)(vv);
+                }
+                for(i=1; i<=nlec+nlic-1; i++)
+                {
+                    v = state.stepkfi[i];
+                    vv = 0;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        vv = vv+Math.Abs(state.stepkj[i,j]*state.trustrad);
+                    }
+                    if( i>=nlec+1 )
+                    {
+                        v = Math.Max(v, 0.0);
+                    }
+                    meritstate.increasebigc = meritstate.increasebigc || (double)(Math.Abs(v))>(double)(vv);
+                }
+            }
+            
+            //
+            // Trace
+            //
+            if( !dotrace )
+            {
+                goto lbl_8;
+            }
+            
+            //
+            // Perform agressive probing of the search direction - additional function evaluations
+            // which help us to determine possible discontinuity and nonsmoothness of the problem
+            //
+            if( !doprobing )
+            {
+                goto lbl_10;
+            }
+            optserv.smoothnessmonitorstartprobing(smonitor, 1.0, 2, state.trustrad, _params);
+            optserv.smoothnessmonitorstartlinesearch(smonitor, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, _params);
+        lbl_12:
+            if( !optserv.smoothnessmonitorprobe(smonitor, _params) )
+            {
+                goto lbl_13;
+            }
+            for(j=0; j<=n-1; j++)
+            {
+                meritstate.stepkxc[j] = meritstate.stepkx[j]+smonitor.probingstp*meritstate.d[j];
+                if( state.hasbndl[j] )
+                {
+                    meritstate.stepkxc[j] = Math.Max(meritstate.stepkxc[j], state.scaledbndl[j]);
+                }
+                if( state.hasbndu[j] )
+                {
+                    meritstate.stepkxc[j] = Math.Min(meritstate.stepkxc[j], state.scaledbndu[j]);
+                }
+            }
+            sqpsendx(state, meritstate.stepkxc, _params);
+            state.needfij = true;
+            meritstate.rmeritphasestate.stage = 2;
+            goto lbl_rcomm;
+        lbl_2:
+            state.needfij = false;
+            if( !sqpretrievefij(state, meritstate.stepkfic, meritstate.stepkjc, _params) )
+            {
+                goto lbl_13;
+            }
+            smonitor.probingf[0] = rawlagrangian(state, meritstate.stepkxc, meritstate.stepkfic, meritstate.lagmult, meritstate.penalties, meritstate.tmpmerit, _params);
+            smonitor.probingf[1] = meritstate.stepkfic[0];
+            optserv.smoothnessmonitorenqueuepoint(smonitor, meritstate.d, smonitor.probingstp, meritstate.stepkxc, meritstate.stepkfic, meritstate.stepkjc, _params);
+            goto lbl_12;
+        lbl_13:
+            optserv.smoothnessmonitorfinalizelinesearch(smonitor, _params);
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |   probing search direction suggested by QP subproblem    |\n");
+            alglib.ap.trace("*** ------------------------------------------------------------\n");
+            alglib.ap.trace("*** |  Step  | Lagrangian (unaugmentd)|    Target  function    |\n");
+            alglib.ap.trace("*** |along  D|     must be smooth     |     must be smooth     |\n");
+            alglib.ap.trace("*** |        | function   |    slope  | function   |    slope  |\n");
+            optserv.smoothnessmonitortraceprobingresults(smonitor, _params);
+        lbl_10:
+            
+            //
+            // Update debug curvature information - TraceGamma[]
+            //
+            v = 0;
+            mx = 0;
+            for(j=0; j<=n-1; j++)
+            {
+                vv = meritstate.stepkxn[j]-meritstate.stepkx[j];
+                mx = Math.Max(mx, Math.Abs(vv));
+                v = v+vv*vv;
+            }
+            if( (double)(v)>(double)(0) )
+            {
+                
+                //
+                // Step is long enough, update curvature information (used for debugging)
+                //
+                for(i=0; i<=nlec+nlic; i++)
+                {
+                    vv = 0;
+                    for(j=0; j<=n-1; j++)
+                    {
+                        vv = vv+(meritstate.stepkjn[i,j]-meritstate.stepkj[i,j])*(meritstate.stepkxn[j]-meritstate.stepkx[j]);
+                    }
+                    state.tracegamma[i] = Math.Max(state.tracegamma[i], Math.Abs(vv/(v+100*n*math.machineepsilon*math.machineepsilon)));
+                }
+            }
+            
+            //
+            // Output other information
+            //
+            mx = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                mx = Math.Max(mx, Math.Abs(meritstate.d[i])/state.trustrad);
+            }
+            if( (double)(localstp)>(double)(0) )
+            {
+                alglib.ap.trace("> nonzero linear step was performed\n");
+            }
+            else
+            {
+                alglib.ap.trace("> zero linear step was performed\n");
+            }
+            alglib.ap.trace(System.String.Format("max(|Di|)/TrustRad = {0,0:F6}\n", mx));
+            alglib.ap.trace(System.String.Format("stp = {0,0:F6}\n", localstp));
+            if( dotracexd )
+            {
+                alglib.ap.trace("X0 (scaled) = ");
+                apserv.tracevectorautoprec(meritstate.stepkx, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("D  (scaled) = ");
+                apserv.tracevectorautoprec(meritstate.d, 0, n, _params);
+                alglib.ap.trace("\n");
+                alglib.ap.trace("X1 (scaled) = ");
+                apserv.tracevectorautoprec(meritstate.stepkxn, 0, n, _params);
+                alglib.ap.trace("\n");
+            }
+            alglib.ap.trace(System.String.Format("meritF:         {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", f0, f1, f1-f0));
+            alglib.ap.trace(System.String.Format("scaled-targetF: {0,14:E6} -> {1,14:E6} (delta={2,11:E3})\n", meritstate.stepkfi[0], meritstate.stepkfin[0], meritstate.stepkfin[0]-meritstate.stepkfi[0]));
+            alglib.ap.trace("> evaluating possible Hessian update\n");
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+(meritstate.stepkxn[i]-meritstate.stepkx[i])*(meritstate.stepknlaggrad[i]-meritstate.stepklaggrad[i]);
+            }
+            alglib.ap.trace(System.String.Format("(Sk,Yk)     = {0,0:E3}\n", v));
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(meritstate.stepkxn[i]-meritstate.stepkx[i]);
+            }
+            alglib.ap.trace(System.String.Format("(Sk,Sk)     = {0,0:E3}\n", v));
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(meritstate.stepknlaggrad[i]-meritstate.stepklaggrad[i]);
+            }
+            alglib.ap.trace(System.String.Format("(Yk,Yk)     = {0,0:E3}\n", v));
+            v = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = v+math.sqr(meritstate.stepkxn[i]-meritstate.stepkx[i])*state.subsolver.h[i,i];
+                for(j=i+1; j<=n-1; j++)
+                {
+                    v = v+2*(meritstate.stepkxn[i]-meritstate.stepkx[i])*state.subsolver.h[i,j]*(meritstate.stepkxn[j]-meritstate.stepkx[j]);
+                }
+            }
+            alglib.ap.trace(System.String.Format("Sk*Bk*Sk    = {0,0:E3}\n", v));
+            v = state.subsolver.h[0,0];
+            for(i=0; i<=n-1; i++)
+            {
+                v = Math.Min(v, state.subsolver.h[i,i]);
+            }
+            alglib.ap.trace(System.String.Format("mindiag(Bk) = {0,0:E3}\n", v));
+            v = state.subsolver.h[0,0];
+            for(i=0; i<=n-1; i++)
+            {
+                v = Math.Max(v, state.subsolver.h[i,i]);
+            }
+            alglib.ap.trace(System.String.Format("maxdiag(Bk) = {0,0:E3}\n", v));
+        lbl_8:
+            
+            //
+            // Perform Hessian update
+            //
+            hessianupdateperformed = false;
+            if( (double)(localstp)>(double)(0) )
+            {
+                hessianupdateperformed = qpsubproblemupdatehessian(state, state.subsolver, meritstate.stepkx, meritstate.stepklaggrad, meritstate.stepkxn, meritstate.stepknlaggrad, _params);
+            }
+            if( dotrace )
+            {
+                if( hessianupdateperformed )
+                {
+                    alglib.ap.trace("> Hessian updated\n");
+                    v = state.subsolver.h[0,0];
+                    for(i=0; i<=n-1; i++)
+                    {
+                        v = Math.Min(v, state.subsolver.h[i,i]);
+                    }
+                    alglib.ap.trace(System.String.Format("mindiag(Bk) = {0,0:E3}\n", v));
+                    v = state.subsolver.h[0,0];
+                    for(i=0; i<=n-1; i++)
+                    {
+                        v = Math.Max(v, state.subsolver.h[i,i]);
+                    }
+                    alglib.ap.trace(System.String.Format("maxdiag(Bk) = {0,0:E3}\n", v));
+                }
+                else
+                {
+                    alglib.ap.trace("> skipping Hessian update\n");
+                }
+            }
+            
+            //
+            // Move to new point
+            //
+            stp = localstp;
+            sqpcopystate(state, meritstate.stepkxn, meritstate.stepkfin, meritstate.stepkjn, meritstate.stepkx, meritstate.stepkfi, meritstate.stepkj, _params);
+            if( (double)(localstp)<=(double)(0) )
+            {
+                goto lbl_14;
+            }
+            
+            //
+            // Report one more inner iteration
+            //
+            sqpsendx(state, meritstate.stepkx, _params);
+            state.f = meritstate.stepkfi[0]*state.fscales[0];
+            state.xupdated = true;
+            meritstate.rmeritphasestate.stage = 3;
+            goto lbl_rcomm;
+        lbl_3:
+            state.xupdated = false;
+            
+            //
+            // Update constraint violations
+            //
+            optserv.checklcviolation(state.scaledcleic, state.lcsrcidx, nec, nic, meritstate.stepkx, n, ref state.replcerr, ref state.replcidx, _params);
+            optserv.unscaleandchecknlcviolation(meritstate.stepkfi, state.fscales, nlec, nlic, ref state.repnlcerr, ref state.repnlcidx, _params);
+        lbl_14:
+            result = false;
+            return result;
+            
+            //
+            // Saving state
+            //
+        lbl_rcomm:
+            result = true;
+            meritstate.rmeritphasestate.ia[0] = n;
+            meritstate.rmeritphasestate.ia[1] = nslack;
+            meritstate.rmeritphasestate.ia[2] = nec;
+            meritstate.rmeritphasestate.ia[3] = nic;
+            meritstate.rmeritphasestate.ia[4] = nlec;
+            meritstate.rmeritphasestate.ia[5] = nlic;
+            meritstate.rmeritphasestate.ia[6] = i;
+            meritstate.rmeritphasestate.ia[7] = j;
+            meritstate.rmeritphasestate.ba[0] = hessianupdateperformed;
+            meritstate.rmeritphasestate.ba[1] = dotrace;
+            meritstate.rmeritphasestate.ba[2] = doprobing;
+            meritstate.rmeritphasestate.ba[3] = dotracexd;
+            meritstate.rmeritphasestate.ra[0] = v;
+            meritstate.rmeritphasestate.ra[1] = vv;
+            meritstate.rmeritphasestate.ra[2] = mx;
+            meritstate.rmeritphasestate.ra[3] = f0;
+            meritstate.rmeritphasestate.ra[4] = f1;
+            meritstate.rmeritphasestate.ra[5] = nu;
+            meritstate.rmeritphasestate.ra[6] = localstp;
+            meritstate.rmeritphasestate.ra[7] = stepklagval;
+            meritstate.rmeritphasestate.ra[8] = stepknlagval;
+            meritstate.rmeritphasestate.ra[9] = stp;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function initializes MeritPhase temporaries. It should be called before
+        beginning of each new iteration. You may call it multiple  times  for  the
+        same instance of MeritPhase temporaries.
+
+        INPUT PARAMETERS:
+            MeritState          -   instance to be initialized.
+            N                   -   problem dimensionality
+            NEC, NIC            -   linear equality/inequality constraint count
+            NLEC, NLIC          -   nonlinear equality/inequality constraint count
+
+        OUTPUT PARAMETERS:
+            IncreaseBigC        -   whether increasing BigC is suggested (we detected
+                                    infeasible constraints that are NOT improved)
+                                    or not.
+            MeritState          -   instance being initialized
+
+          -- ALGLIB --
+             Copyright 05.02.2019 by Bochkanov Sergey
+        *************************************************************************/
+        private static void meritphaseresults(minsqpmeritphasestate meritstate,
+            double[] curx,
+            double[] curfi,
+            double[,] curj,
+            double[] lagmult,
+            ref bool increasebigc,
+            ref int status,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+
+            increasebigc = meritstate.increasebigc;
+            status = meritstate.status;
+            for(i=0; i<=meritstate.n-1; i++)
+            {
+                curx[i] = meritstate.stepkx[i];
+            }
+            for(i=0; i<=meritstate.nlec+meritstate.nlic; i++)
+            {
+                curfi[i] = meritstate.stepkfi[i];
+                for(j=0; j<=meritstate.n-1; j++)
+                {
+                    curj[i,j] = meritstate.stepkj[i,j];
+                }
+            }
+            alglib.ap.assert(alglib.ap.len(lagmult)>=meritstate.nec+meritstate.nic+meritstate.nlec+meritstate.nlic, "MeritPhaseResults: LagMult too short");
+            for(i=0; i<=meritstate.nec+meritstate.nic+meritstate.nlec+meritstate.nlic-1; i++)
+            {
+                lagmult[i] = meritstate.lagmult[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Copies X to State.X
+        *************************************************************************/
+        private static void sqpsendx(minsqpstate state,
+            double[] xs,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+
+            n = state.n;
+            for(i=0; i<=n-1; i++)
+            {
+                if( state.hasbndl[i] && xs[i]<=state.scaledbndl[i] )
+                {
+                    state.x[i] = state.scaledbndl[i];
+                    continue;
+                }
+                if( state.hasbndu[i] && xs[i]>=state.scaledbndu[i] )
+                {
+                    state.x[i] = state.scaledbndu[i];
+                    continue;
+                }
+                state.x[i] = xs[i];
+            }
+        }
+
+
+        /*************************************************************************
+        Retrieves F-vector and scaled Jacobian, copies them to FiS and JS.
+
+        Returns True on success, False on failure (when F or J are not finite numbers).
+        *************************************************************************/
+        private static bool sqpretrievefij(minsqpstate state,
+            double[] fis,
+            double[,] js,
+            alglib.xparams _params)
+        {
+            bool result = new bool();
+            int nlec = 0;
+            int nlic = 0;
+            int n = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            double vv = 0;
+
+            n = state.n;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            v = 0;
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                vv = 1/state.fscales[i];
+                fis[i] = vv*state.fi[i];
+                v = 0.1*v+fis[i];
+                for(j=0; j<=n-1; j++)
+                {
+                    js[i,j] = vv*state.j[i,j];
+                    v = 0.1*v+js[i,j];
+                }
+            }
+            result = math.isfinite(v);
+            return result;
+        }
+
+
+        /*************************************************************************
+        Copies state (X point, Fi vector, J jacobian) to preallocated storage.
+        *************************************************************************/
+        private static void sqpcopystate(minsqpstate state,
+            double[] x0,
+            double[] fi0,
+            double[,] j0,
+            double[] x1,
+            double[] fi1,
+            double[,] j1,
+            alglib.xparams _params)
+        {
+            int nlec = 0;
+            int nlic = 0;
+            int n = 0;
+            int i = 0;
+            int j = 0;
+
+            n = state.n;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            for(i=0; i<=n-1; i++)
+            {
+                x1[i] = x0[i];
+            }
+            for(i=0; i<=nlec+nlic; i++)
+            {
+                fi1[i] = fi0[i];
+                for(j=0; j<=n-1; j++)
+                {
+                    j1[i,j] = j0[i,j];
+                }
+            }
+        }
+
+
+        /*************************************************************************
+        This function calculates Lagrangian of the problem (in scaled variables):
+        its value and gradient.
+
+        Additionally it also estimates violation of linear constraints at the point
+        as well as index of the most violated constraint
+        *************************************************************************/
+        private static void lagrangianfg(minsqpstate state,
+            double[] x,
+            double trustrad,
+            double[] fi,
+            double[,] j,
+            double[] lagmult,
+            minsqptmplagrangian tmp,
+            ref double f,
+            double[] g,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            double v = 0;
+            double vlag = 0;
+            double vact = 0;
+            double vd = 0;
+            bool usesparsegemv = new bool();
+
+            f = 0;
+
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            
+            //
+            // Target function
+            //
+            f = fi[0];
+            for(i=0; i<=n-1; i++)
+            {
+                g[i] = j[0,i];
+            }
+            
+            //
+            // Lagrangian terms for linear constraints, constraint violations
+            //
+            if( nec+nic>0 )
+            {
+                usesparsegemv = state.subsolver.sparserawlc.ridx[nec+nic]<apserv.sparselevel2density(_params)*n*(nec+nic);
+                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp0, Math.Max(nec+nic, n), _params);
+                apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, Math.Max(nec+nic, n), _params);
+                if( usesparsegemv )
+                {
+                    sparse.sparsemv(state.subsolver.sparserawlc, x, ref tmp.sclagtmp0, _params);
+                }
+                else
+                {
+                    ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.sclagtmp0, 0, _params);
+                }
+                for(i=0; i<=nec+nic-1; i++)
+                {
+                    
+                    //
+                    // Prepare
+                    //
+                    v = tmp.sclagtmp0[i]-state.scaledcleic[i,n];
+                    vlag = lagmult[i];
+                    tmp.sclagtmp1[i] = 0;
+                    
+                    //
+                    // Primary Lagrangian term
+                    //
+                    vact = v;
+                    vd = 1;
+                    f = f+vlag*vact;
+                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
+                    
+                    //
+                    // Quadratic augmentation term
+                    //
+                    if( i<nec || v>0 )
+                    {
+                        vact = v;
+                    }
+                    else
+                    {
+                        vact = 0;
+                    }
+                    f = f+0.5*augmentationfactor*vact*vact;
+                    tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
+                }
+                if( usesparsegemv )
+                {
+                    sparse.sparsemtv(state.subsolver.sparserawlc, tmp.sclagtmp1, ref tmp.sclagtmp0, _params);
+                    for(i=0; i<=n-1; i++)
+                    {
+                        g[i] = g[i]+tmp.sclagtmp0[i];
+                    }
+                }
+                else
+                {
+                    ablas.rmatrixgemv(n, nec+nic, 1.0, state.scaledcleic, 0, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
+                }
+            }
+            
+            //
+            // Lagrangian terms for nonlinear constraints
+            //
+            apserv.rvectorsetlengthatleast(ref tmp.sclagtmp1, nlec+nlic, _params);
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                v = fi[1+i];
+                vlag = lagmult[nec+nic+i];
+                tmp.sclagtmp1[i] = 0;
+                
+                //
+                // Lagrangian term
+                //
+                vact = v;
+                vd = 1;
+                f = f+vlag*vact;
+                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+vlag*vd;
+                
+                //
+                // Augmentation term
+                //
+                if( i<nlec || v>0 )
+                {
+                    vact = v;
+                }
+                else
+                {
+                    vact = 0;
+                }
+                f = f+0.5*augmentationfactor*vact*vact;
+                tmp.sclagtmp1[i] = tmp.sclagtmp1[i]+augmentationfactor*vact;
+            }
+            ablas.rmatrixgemv(n, nlec+nlic, 1.0, j, 1, 0, 1, tmp.sclagtmp1, 0, 1.0, g, 0, _params);
+        }
+
+
+        /*************************************************************************
+        This function calculates L1-penalized merit function
+        *************************************************************************/
+        private static double meritfunction(minsqpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            double[] penalties,
+            minsqptmpmerit tmp,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double tmp0 = 0;
+            double tmp1 = 0;
+
+            meritfunctionandrawlagrangian(state, x, fi, lagmult, penalties, tmp, ref tmp0, ref tmp1, _params);
+            result = tmp0;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function calculates raw (unaugmented and smooth) Lagrangian
+        *************************************************************************/
+        private static double rawlagrangian(minsqpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            double[] penalties,
+            minsqptmpmerit tmp,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            double tmp0 = 0;
+            double tmp1 = 0;
+
+            meritfunctionandrawlagrangian(state, x, fi, lagmult, penalties, tmp, ref tmp0, ref tmp1, _params);
+            result = tmp1;
+            return result;
+        }
+
+
+        /*************************************************************************
+        This function calculates L1-penalized merit function and raw  (smooth  and
+        un-augmented) Lagrangian
+        *************************************************************************/
+        private static void meritfunctionandrawlagrangian(minsqpstate state,
+            double[] x,
+            double[] fi,
+            double[] lagmult,
+            double[] penalties,
+            minsqptmpmerit tmp,
+            ref double meritf,
+            ref double rawlag,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int nec = 0;
+            int nic = 0;
+            int nlec = 0;
+            int nlic = 0;
+            double v = 0;
+
+            meritf = 0;
+            rawlag = 0;
+
+            n = state.n;
+            nec = state.nec;
+            nic = state.nic;
+            nlec = state.nlec;
+            nlic = state.nlic;
+            
+            //
+            // Merit function and Lagrangian: primary term
+            //
+            meritf = fi[0];
+            rawlag = fi[0];
+            
+            //
+            // Merit function: augmentation and penalty for linear constraints
+            //
+            apserv.rvectorsetlengthatleast(ref tmp.mftmp0, nec+nic, _params);
+            ablas.rmatrixgemv(nec+nic, n, 1.0, state.scaledcleic, 0, 0, 0, x, 0, 0.0, tmp.mftmp0, 0, _params);
+            for(i=0; i<=nec+nic-1; i++)
+            {
+                v = tmp.mftmp0[i]-state.scaledcleic[i,n];
+                if( i<nec )
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*v*v;
+                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(1+penalties[i])*Math.Abs(v);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[i]*v;
+                }
+                else
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Abs(1+penalties[i])*Math.Max(v, 0);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[i]*v;
+                }
+            }
+            
+            //
+            // Merit function: augmentation and penalty for nonlinear constraints
+            //
+            for(i=0; i<=nlec+nlic-1; i++)
+            {
+                v = fi[1+i];
+                if( i<nlec )
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*v*v;
+                    meritf = meritf+meritfunctionbase*Math.Abs(v)+meritfunctiongain*Math.Abs(1+penalties[nec+nic+i])*Math.Abs(v);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[nec+nic+i]*v;
+                }
+                else
+                {
+                    
+                    //
+                    // Merit function: augmentation term + L1 penalty term
+                    //
+                    meritf = meritf+0.5*augmentationfactor*math.sqr(Math.Max(v, 0));
+                    meritf = meritf+meritfunctionbase*Math.Max(v, 0)+meritfunctiongain*Math.Abs(1+penalties[nec+nic+i])*Math.Max(v, 0);
+                    
+                    //
+                    // Raw Lagrangian
+                    //
+                    rawlag = rawlag+lagmult[nec+nic+i]*v;
+                }
+            }
         }
 
 
@@ -37249,7 +39519,7 @@ public partial class alglib
             apserv.rvectorsetlengthatleast(ref state.bufrho, m, _params);
             apserv.rvectorsetlengthatleast(ref state.buftheta, m, _params);
             apserv.rvectorsetlengthatleast(ref state.tmp0, n, _params);
-            optserv.smoothnessmonitorinit(state.smonitor, n, 1, state.smoothnessguardlevel>0, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, n, 1, state.smoothnessguardlevel>0, _params);
             for(i=0; i<=n-1; i++)
             {
                 state.lastscaleused[i] = state.s[i];
@@ -38853,7 +41123,7 @@ public partial class alglib
             //
             state.teststep = 0;
             state.smoothnessguardlevel = 0;
-            optserv.smoothnessmonitorinit(state.smonitor, 0, 0, false, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, 0, 0, false, _params);
             state.nmain = n;
             state.diffstep = diffstep;
             sactivesets.sasinit(n, state.sas, _params);
@@ -39591,6 +41861,12 @@ public partial class alglib
             public double[,] dummyr2;
             public sparse.sparsematrix dummysparse;
             public double[,] tmpr2;
+            public double[] wrkbndl;
+            public double[] wrkbndu;
+            public double[] wrkcl;
+            public double[] wrkcu;
+            public double[,] wrkdensec;
+            public sparse.sparsematrix wrksparsec;
             public bool qpbleicfirstcall;
             public qpbleicsolver.qpbleicbuffers qpbleicbuf;
             public qqpsolver.qqpbuffers qqpbuf;
@@ -39631,6 +41907,12 @@ public partial class alglib
                 dummyr2 = new double[0,0];
                 dummysparse = new sparse.sparsematrix();
                 tmpr2 = new double[0,0];
+                wrkbndl = new double[0];
+                wrkbndu = new double[0];
+                wrkcl = new double[0];
+                wrkcu = new double[0];
+                wrkdensec = new double[0,0];
+                wrksparsec = new sparse.sparsematrix();
                 qpbleicbuf = new qpbleicsolver.qpbleicbuffers();
                 qqpbuf = new qqpsolver.qqpbuffers();
                 qpdenseaulbuf = new qpdenseaulsolver.qpdenseaulbuffers();
@@ -39686,6 +41968,12 @@ public partial class alglib
                 _result.dummyr2 = (double[,])dummyr2.Clone();
                 _result.dummysparse = (sparse.sparsematrix)dummysparse.make_copy();
                 _result.tmpr2 = (double[,])tmpr2.Clone();
+                _result.wrkbndl = (double[])wrkbndl.Clone();
+                _result.wrkbndu = (double[])wrkbndu.Clone();
+                _result.wrkcl = (double[])wrkcl.Clone();
+                _result.wrkcu = (double[])wrkcu.Clone();
+                _result.wrkdensec = (double[,])wrkdensec.Clone();
+                _result.wrksparsec = (sparse.sparsematrix)wrksparsec.make_copy();
                 _result.qpbleicfirstcall = qpbleicfirstcall;
                 _result.qpbleicbuf = (qpbleicsolver.qpbleicbuffers)qpbleicbuf.make_copy();
                 _result.qqpbuf = (qqpsolver.qqpbuffers)qqpbuf.make_copy();
@@ -39725,7 +42013,10 @@ public partial class alglib
         * -3    inconsistent constraints (or, maybe, feasible point is
                 too hard to find). If you are sure that constraints are feasible,
                 try to restart optimizer with better initial approximation.
-        * -1    solver error
+        * -2    IPM solver has difficulty finding primal/dual feasible point.
+                It is likely that the problem is either infeasible or unbounded,
+                but it is difficult to determine exact reason for termination.
+                X contains best point found so far.
         *  1..4 successful completion
         *  5    MaxIts steps was taken
         *  7    stopping conditions are too stringent,
@@ -39758,11 +42049,20 @@ public partial class alglib
         On failure (or when optimizer does not support Lagrange multipliers) these
         arrays are zero-filled.
 
+        It is expected that at solution the dual feasibility condition holds:
+
+            C+H*(Xs-X0) + SUM(Ei*LagBC[i],i=0..n-1) + SUM(Ai*LagLC[i],i=0..m-1) ~ 0
+            
+        where
+        * C is a linear term
+        * H is a quadratic term
+        * Xs is a solution, and X0 is an origin term (zero by default)
+        * Ei is a vector with 1.0 at position I and 0 in other positions
+        * Ai is an I-th row of linear constraint matrix
+
         NOTE: methods  from  IPM  family  may  also  return  meaningful   Lagrange
-              multipliers on completion with codes -3 (infeasibility detected) and
-              -4  (unboundedness  detected).   It   is   possible   that   seeming
-              infeasibility/unboundedness of the problem is due to rounding errors
-              In this case last values of Lagrange multipliers are returned.
+              multipliers  on  completion   with   code   -2   (infeasibility   or
+              unboundedness  detected).
         *************************************************************************/
         public class minqpreport : apobject
         {
@@ -40444,11 +42744,11 @@ public partial class alglib
 
         ALGORITHM OUTLINE:
 
-        * this  algorithm  is  an  implementation  of  interior  point  method  as
+        * this  algorithm  is  our implementation  of  interior  point  method  as
           formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
           (damped Newton directions are extensively used)
         * like all interior point methods, this algorithm  tends  to  converge  in
-          roughly same number of iterations (between 15 and 30) independently from
+          roughly same number of iterations (between 15 and 50) independently from
           the problem dimensionality
           
         ALGORITHM LIMITATIONS:
@@ -40498,7 +42798,7 @@ public partial class alglib
 
         You may specify multiple symbols by separating them with commas:
         >
-        > alglib::trace_file("IPM.DETAILED,PREC.F6", "path/to/trace.log")
+        > alglib::trace_file("IPM,PREC.F6", "path/to/trace.log")
         > 
 
           -- ALGLIB --
@@ -40554,11 +42854,11 @@ public partial class alglib
 
         ALGORITHM OUTLINE:
 
-        * this  algorithm  is  an  implementation  of  interior  point  method  as
+        * this  algorithm  is  our implementation  of  interior  point  method  as
           formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
           (damped Newton directions are extensively used)
         * like all interior point methods, this algorithm  tends  to  converge  in
-          roughly same number of iterations (between 15 and 30) independently from
+          roughly same number of iterations (between 15 and 50) independently from
           the problem dimensionality
           
         ALGORITHM LIMITATIONS:
@@ -40576,6 +42876,31 @@ public partial class alglib
         BECAUSE ITS CONVERGENCE PROPERTIES AND STOPPING CRITERIA ARE SCALE-DEPENDENT!
 
         NOTE: Passing EpsX=0 will lead to automatic selection of small epsilon.
+
+        ===== TRACING IPM SOLVER =================================================
+
+        IPM solver supports advanced tracing capabilities. You can trace algorithm
+        output by specifying following trace symbols (case-insensitive)  by  means
+        of trace_file() call:
+        * 'IPM'         - for basic trace of algorithm  steps and decisions.  Only
+                          short scalars (function values and deltas) are  printed.
+                          N-dimensional quantities like search directions are  NOT
+                          printed.
+        * 'IPM.DETAILED'- for output of points being visited and search directions
+                          This  symbol  also  implicitly  defines  'IPM'. You  can
+                          control output format by additionally specifying:
+                          * nothing     to output in  6-digit exponential format
+                          * 'PREC.E15'  to output in 15-digit exponential format
+                          * 'PREC.F6'   to output in  6-digit fixed-point format
+
+        By default trace is disabled and adds  no  overhead  to  the  optimization
+        process. However, specifying any of the symbols adds some  formatting  and
+        output-related overhead.
+
+        You may specify multiple symbols by separating them with commas:
+        >
+        > alglib::trace_file("IPM,PREC.F6", "path/to/trace.log")
+        > 
 
           -- ALGLIB --
              Copyright 01.11.2019 by Bochkanov Sergey
@@ -40995,7 +43320,7 @@ public partial class alglib
 
         This function may be useful if constraint matrix includes large number  of
         both types of rows - dense and sparse. If you have just a few sparse rows,
-        you  may  represent  them  in  dense  format  without loosing performance.
+        you  may  represent  them  in  dense  format  without losing  performance.
         Similarly, if you have just a few dense rows, you may store them in sparse
         format with almost same performance.
 
@@ -41335,7 +43660,7 @@ public partial class alglib
 
         This function may be useful if constraint matrix includes large number  of
         both types of rows - dense and sparse. If you have just a few sparse rows,
-        you  may  represent  them  in  dense  format  without loosing performance.
+        you  may  represent  them  in  dense  format  without losing  performance.
         Similarly, if you have just a few dense rows, you may store them in sparse
         format with almost same performance.
 
@@ -42056,6 +44381,23 @@ public partial class alglib
             {
                 
                 //
+                // Prepare working versions of constraints; these versions may be modified
+                // when we detect that some bounds are irrelevant.
+                //
+                ablasf.rcopyallocv(n, state.bndl, ref state.wrkbndl, _params);
+                ablasf.rcopyallocv(n, state.bndu, ref state.wrkbndu, _params);
+                if( state.msparse>0 )
+                {
+                    sparse.sparsecopybuf(state.sparsec, state.wrksparsec, _params);
+                }
+                if( state.mdense>0 )
+                {
+                    ablasf.rcopyallocm(state.mdense, n, state.densec, ref state.wrkdensec, _params);
+                }
+                ablasf.rcopyallocv(m, state.cl, ref state.wrkcl, _params);
+                ablasf.rcopyallocv(m, state.cu, ref state.wrkcu, _params);
+                
+                //
                 // Solve
                 //
                 alglib.ap.assert(state.akind==0 || state.akind==1, "MinQPOptimize: unexpected AKind");
@@ -42072,11 +44414,11 @@ public partial class alglib
                     vipmsolver.vipminitsparse(state.vsolver, state.effectives, state.xorigin, n, _params);
                 }
                 vipmsolver.vipmsetquadraticlinear(state.vsolver, state.tmpr2, state.sparsea, state.akind, state.sparseaupper, state.b, _params);
-                vipmsolver.vipmsetconstraints(state.vsolver, state.bndl, state.bndu, state.sparsec, state.msparse, state.densec, state.mdense, state.cl, state.cu, _params);
+                vipmsolver.vipmsetconstraints(state.vsolver, state.wrkbndl, state.wrkbndu, state.wrksparsec, state.msparse, state.wrkdensec, state.mdense, state.wrkcl, state.wrkcu, _params);
                 vipmsolver.vipmsetcond(state.vsolver, state.veps, state.veps, state.veps, _params);
-                vipmsolver.vipmoptimize(state.vsolver, ref state.xs, ref state.replagbc, ref state.replaglc, ref state.repterminationtype, _params);
+                vipmsolver.vipmoptimize(state.vsolver, true, ref state.xs, ref state.replagbc, ref state.replaglc, ref state.repterminationtype, _params);
                 state.repinneriterationscount = state.vsolver.repiterationscount;
-                state.repouteriterationscount = state.vsolver.repiterationscount;
+                state.repouteriterationscount = state.repinneriterationscount;
                 state.repncholesky = state.vsolver.repncholesky;
                 return;
             }
@@ -42095,15 +44437,33 @@ public partial class alglib
             State   -   algorithm state
 
         OUTPUT PARAMETERS:
-            X       -   array[0..N-1], solution.
-                        This array is allocated and initialized only when
-                        Rep.TerminationType parameter is positive (success).
+            X       -   array[0..N-1], solution (on failure - the best point found
+                        so far).
             Rep     -   optimization report, contains:
                         * completion code in Rep.TerminationType (positive  values
                           denote some kind of success, negative - failures)
-                        * Lagrange multipliers - for QP solvers which support then
+                        * Lagrange multipliers - for QP solvers which support them
                         * other statistics
                         See comments on minqpreport structure for more information
+                        
+        Following completion codes are returned in Rep.TerminationType:
+        * -9    failure of the automatic scale evaluation:  one  of  the  diagonal
+                elements of the quadratic term is non-positive.  Specify  variable
+                scales manually!
+        * -5    inappropriate solver was used:
+                * QuickQP solver for problem with general linear constraints
+        * -4    the function is unbounded from below even under constraints,
+                no meaningful minimum can be found.
+        * -3    inconsistent constraints (or, maybe, feasible point is too hard to
+                find).
+        * -2    IPM solver has difficulty finding primal/dual feasible point.
+                It is likely that the problem is either infeasible or unbounded,
+                but it is difficult to determine exact reason for termination.
+                X contains best point found so far.
+        *  >0   success
+        *  7    stopping conditions are too stringent,
+                further improvement is impossible,
+                X contains best point found so far.
 
           -- ALGLIB --
              Copyright 11.01.2011 by Bochkanov Sergey
@@ -42311,6 +44671,299 @@ public partial class alglib
 
 
     }
+    public class lpqppresolve
+    {
+        /*************************************************************************
+        This object stores transformation used to convert solution (primal and dual)
+        to original variables. It is also used to store temporaries.
+        *************************************************************************/
+        public class presolveinfo : apobject
+        {
+            public int newn;
+            public int oldn;
+            public int newm;
+            public int oldm;
+            public double[] rawbndl;
+            public double[] rawbndu;
+            public double[] colscales;
+            public double[] rowscales;
+            public double costscale;
+            public double[] c;
+            public double[] bndl;
+            public double[] bndu;
+            public sparse.sparsematrix sparsea;
+            public double[] al;
+            public double[] au;
+            public presolveinfo()
+            {
+                init();
+            }
+            public override void init()
+            {
+                rawbndl = new double[0];
+                rawbndu = new double[0];
+                colscales = new double[0];
+                rowscales = new double[0];
+                c = new double[0];
+                bndl = new double[0];
+                bndu = new double[0];
+                sparsea = new sparse.sparsematrix();
+                al = new double[0];
+                au = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                presolveinfo _result = new presolveinfo();
+                _result.newn = newn;
+                _result.oldn = oldn;
+                _result.newm = newm;
+                _result.oldm = oldm;
+                _result.rawbndl = (double[])rawbndl.Clone();
+                _result.rawbndu = (double[])rawbndu.Clone();
+                _result.colscales = (double[])colscales.Clone();
+                _result.rowscales = (double[])rowscales.Clone();
+                _result.costscale = costscale;
+                _result.c = (double[])c.Clone();
+                _result.bndl = (double[])bndl.Clone();
+                _result.bndu = (double[])bndu.Clone();
+                _result.sparsea = (sparse.sparsematrix)sparsea.make_copy();
+                _result.al = (double[])al.Clone();
+                _result.au = (double[])au.Clone();
+                return _result;
+            }
+        };
+
+
+
+
+        /*************************************************************************
+        No presolve, just user-supplied scaling + constraint and cost vector
+        normalization.
+
+        INPUT PARAMETERS:
+            S           -   array[N], user-supplied scale vector, S[I]>0
+            C           -   array[N], costs
+            BndL        -   array[N], lower bounds (may contain -INF)
+            BndU        -   array[N], upper bounds (may contain +INF)
+            N           -   variable count, N>0
+            SparseA     -   matrix[K,N], sparse constraints
+            AL          -   array[K], lower constraint bounds (may contain -INF)
+            AU          -   array[K], upper constraint bounds (may contain +INF)
+            K           -   constraint count, K>=0
+            Info        -   presolve info structure; temporaries allocated during
+                            previous calls may be reused by this function.
+                            
+        OUTPUT PARAMETERS:
+            Info        -   contains transformed C, BndL, bndU,  SparseA,  AL,  AU
+                            and   information   necessary   to   perform  backward
+                            transformation.
+                            Following fields can be acessed:
+                            * Info.NewN>0  for transformed problem size
+                            * Info.NewM>=0 for transformed constraint count
+                            * always:          Info.C, Info.BndL, Info.BndU - array[NewN]
+                            * for Info.NewM>0: Info.SparseA, Info.AL, Info.AU
+            
+        NOTE: this routine does not reallocate arrays if NNew<=NOld and/or KNew<=KOld.
+
+          -- ALGLIB --
+             Copyright 01.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void presolvenonescaleuser(double[] s,
+            double[] c,
+            double[] bndl,
+            double[] bndu,
+            int n,
+            sparse.sparsematrix sparsea,
+            double[] al,
+            double[] au,
+            int k,
+            presolveinfo info,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            double v = 0;
+            double avgln = 0;
+
+            
+            //
+            // Integrity checks
+            //
+            alglib.ap.assert(alglib.ap.len(bndl)>=n, "PresolveNoneScaleUser: Length(BndL)<N");
+            alglib.ap.assert(alglib.ap.len(bndu)>=n, "PresolveNoneScaleUser: Length(BndU)<N");
+            alglib.ap.assert(alglib.ap.len(s)>=n, "PresolveNoneScaleUser: Length(S)<N");
+            alglib.ap.assert(apserv.isfinitevector(s, n, _params), "PresolveNoneScaleUser: S contains infinite or NaN elements");
+            alglib.ap.assert(alglib.ap.len(c)>=n, "PresolveNoneScaleUser: Length(C)<N");
+            alglib.ap.assert(apserv.isfinitevector(c, n, _params), "PresolveNoneScaleUser: C contains infinite or NaN elements");
+            alglib.ap.assert(k>=0, "PresolveNoneScaleUser: K<0");
+            alglib.ap.assert(k==0 || sparse.sparseiscrs(sparsea, _params), "PresolveNoneScaleUser: A is not CRS");
+            alglib.ap.assert(k==0 || sparsea.m==k, "PresolveNoneScaleUser: rows(A)<>K");
+            alglib.ap.assert(k==0 || sparsea.n==n, "PresolveNoneScaleUser: cols(A)<>N");
+            
+            //
+            // Reallocate storage
+            //
+            apserv.rvectorgrowto(ref info.rawbndl, n, _params);
+            apserv.rvectorgrowto(ref info.rawbndu, n, _params);
+            apserv.rvectorgrowto(ref info.colscales, n, _params);
+            apserv.rvectorgrowto(ref info.rowscales, k, _params);
+            
+            //
+            // Save original problem formulation
+            //
+            info.newn = n;
+            info.oldn = n;
+            info.newm = k;
+            info.oldm = k;
+            for(i=0; i<=n-1; i++)
+            {
+                alglib.ap.assert(s[i]>0, "PresolveNoneScaleUser: S<=0");
+                alglib.ap.assert(math.isfinite(bndl[i]) || Double.IsNegativeInfinity(bndl[i]), "PresolveNoneScaleUser: BndL contains NAN or +INF");
+                alglib.ap.assert(math.isfinite(bndu[i]) || Double.IsPositiveInfinity(bndu[i]), "PresolveNoneScaleUser: BndU contains NAN or -INF");
+                info.colscales[i] = s[i];
+                info.rawbndl[i] = bndl[i];
+                info.rawbndu[i] = bndu[i];
+            }
+            
+            //
+            // Scale cost and box constraints
+            //
+            apserv.rvectorsetlengthatleast(ref info.c, n, _params);
+            apserv.rvectorsetlengthatleast(ref info.bndl, n, _params);
+            apserv.rvectorsetlengthatleast(ref info.bndu, n, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                info.c[i] = c[i]*s[i];
+                info.bndl[i] = bndl[i]/s[i];
+                info.bndu[i] = bndu[i]/s[i];
+            }
+            avgln = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                avgln = avgln+Math.Log(1+Math.Abs(info.c[i]));
+            }
+            info.costscale = Math.Exp(avgln/n);
+            ablasf.rmulv(n, 1/info.costscale, info.c, _params);
+            
+            //
+            // Quick exit if no linear constraints is present
+            //
+            if( k==0 )
+            {
+                return;
+            }
+            
+            //
+            // Scale constraint matrix
+            //
+            ablasf.rcopyallocv(k, al, ref info.al, _params);
+            ablasf.rcopyallocv(k, au, ref info.au, _params);
+            sparse.sparsecopybuf(sparsea, info.sparsea, _params);
+            for(i=0; i<=k-1; i++)
+            {
+                alglib.ap.assert(math.isfinite(info.al[i]) || Double.IsNegativeInfinity(info.al[i]), "PresolveNoneScaleUser: AL contains NAN or +INF");
+                alglib.ap.assert(math.isfinite(info.au[i]) || Double.IsPositiveInfinity(info.au[i]), "PresolveNoneScaleUser: AU contains NAN or -INF");
+                info.rowscales[i] = 0;
+                j0 = info.sparsea.ridx[i];
+                j1 = info.sparsea.ridx[i+1]-1;
+                for(j=j0; j<=j1; j++)
+                {
+                    v = s[info.sparsea.idx[j]]*info.sparsea.vals[j];
+                    info.sparsea.vals[j] = v;
+                    info.rowscales[i] = Math.Max(info.rowscales[i], v);
+                }
+                info.rowscales[i] = Math.Max(info.rowscales[i], 1.0);
+                v = 1/info.rowscales[i];
+                for(j=j0; j<=j1; j++)
+                {
+                    info.sparsea.vals[j] = v*info.sparsea.vals[j];
+                }
+                info.al[i] = info.al[i]*v;
+                info.au[i] = info.au[i]*v;
+            }
+        }
+
+
+        /*************************************************************************
+        Backward transformation which extracts original solution from that of  the
+        converted problem.
+
+        Below NNew/KNew correspond to transformed problem size (as returned by the
+        presolve routine) and NOld/KOld correspond to original  problem  size  (as
+        specified by caller). We expect that caller knows  these  sizes,  so  this
+        routine does not report them.
+
+        INPUT PARAMETERS:
+            Info        -   presolve info structure
+            X           -   array[NNew], transformed solution (primal variables)
+            Stats       -   array[NNew+MNew], transformed constraint status (negative -
+                            at lower bound, positive -  at  upper  bound,  zero  -
+                            inactive).
+            LagBC       -   array[NNew], transformed Lagrange multipliers
+            LagLC       -   array[KNew], transformed Lagrange multipliers
+                            
+        OUTPUT PARAMETERS:
+            X           -   array[NOld], original solution (primal variables)
+            Stats       -   array[NOld+MOld], original constraint status
+            LagBC       -   array[NOld], Lagrange multipliers
+            LagLC       -   array[KOld], Lagrange multipliers
+            
+        NOTE: this routine does not reallocate arrays if NOld<=NNew and/or KOld<=KNew.
+
+          -- ALGLIB --
+             Copyright 01.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void presolvebwd(presolveinfo info,
+            double[] x,
+            int[] stats,
+            double[] lagbc,
+            double[] laglc,
+            alglib.xparams _params)
+        {
+            int n = 0;
+            int m = 0;
+            int i = 0;
+
+            alglib.ap.assert(info.oldn==info.newn, "PresolveBwd: integrity check failed");
+            alglib.ap.assert(info.oldm==info.newm, "PresolveBwd: integrity check failed");
+            n = info.oldn;
+            m = info.oldm;
+            for(i=0; i<=n-1; i++)
+            {
+                if( stats[i]<0 )
+                {
+                    x[i] = info.rawbndl[i];
+                    continue;
+                }
+                if( stats[i]>0 )
+                {
+                    x[i] = info.rawbndu[i];
+                    continue;
+                }
+                x[i] = x[i]*info.colscales[i];
+                if( math.isfinite(info.rawbndl[i]) )
+                {
+                    x[i] = Math.Max(x[i], info.rawbndl[i]);
+                }
+                if( math.isfinite(info.rawbndu[i]) )
+                {
+                    x[i] = Math.Min(x[i], info.rawbndu[i]);
+                }
+            }
+            for(i=0; i<=n-1; i++)
+            {
+                lagbc[i] = lagbc[i]*info.costscale/info.colscales[i];
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                laglc[i] = laglc[i]*info.costscale/info.rowscales[i];
+            }
+        }
+
+
+    }
     public class reviseddualsimplex
     {
         /*************************************************************************
@@ -42325,6 +44978,9 @@ public partial class alglib
             public int ratiotest;
             public int pricing;
             public int shifting;
+            public double xtolabs;
+            public double xtolrelabs;
+            public double dtolabs;
             public dualsimplexsettings()
             {
                 init();
@@ -42342,6 +44998,42 @@ public partial class alglib
                 _result.ratiotest = ratiotest;
                 _result.pricing = pricing;
                 _result.shifting = shifting;
+                _result.xtolabs = xtolabs;
+                _result.xtolrelabs = xtolrelabs;
+                _result.dtolabs = dtolabs;
+                return _result;
+            }
+        };
+
+
+        /*************************************************************************
+        A vector that is stored in dual dense/sparse format.
+        *************************************************************************/
+        public class dssvector : apobject
+        {
+            public int n;
+            public int k;
+            public int[] idx;
+            public double[] vals;
+            public double[] dense;
+            public dssvector()
+            {
+                init();
+            }
+            public override void init()
+            {
+                idx = new int[0];
+                vals = new double[0];
+                dense = new double[0];
+            }
+            public override alglib.apobject make_copy()
+            {
+                dssvector _result = new dssvector();
+                _result.n = n;
+                _result.k = k;
+                _result.idx = (int[])idx.Clone();
+                _result.vals = (double[])vals.Clone();
+                _result.dense = (double[])dense.Clone();
                 return _result;
             }
         };
@@ -42373,6 +45065,9 @@ public partial class alglib
             public double[] dseweights;
             public bool dsevalid;
             public double eminu;
+            public int statfact;
+            public int statupdt;
+            public double statoffdiag;
             public double[] wtmp0;
             public double[] wtmp1;
             public double[] wtmp2;
@@ -42448,6 +45143,9 @@ public partial class alglib
                 _result.dseweights = (double[])dseweights.Clone();
                 _result.dsevalid = dsevalid;
                 _result.eminu = eminu;
+                _result.statfact = statfact;
+                _result.statupdt = statupdt;
+                _result.statoffdiag = statoffdiag;
                 _result.wtmp0 = (double[])wtmp0.Clone();
                 _result.wtmp1 = (double[])wtmp1.Clone();
                 _result.wtmp2 = (double[])wtmp2.Clone();
@@ -42486,8 +45184,9 @@ public partial class alglib
             public double[] bndlb;
             public double[] bndub;
             public int[] bndtb;
+            public double[] bndtollb;
+            public double[] bndtolub;
             public double[] effc;
-            public double[] colscales;
             public dualsimplexsubproblem()
             {
                 init();
@@ -42504,8 +45203,9 @@ public partial class alglib
                 bndlb = new double[0];
                 bndub = new double[0];
                 bndtb = new int[0];
+                bndtollb = new double[0];
+                bndtolub = new double[0];
                 effc = new double[0];
-                colscales = new double[0];
             }
             public override alglib.apobject make_copy()
             {
@@ -42523,8 +45223,9 @@ public partial class alglib
                 _result.bndlb = (double[])bndlb.Clone();
                 _result.bndub = (double[])bndub.Clone();
                 _result.bndtb = (int[])bndtb.Clone();
+                _result.bndtollb = (double[])bndtollb.Clone();
+                _result.bndtolub = (double[])bndtolub.Clone();
                 _result.effc = (double[])effc.Clone();
-                _result.colscales = (double[])colscales.Clone();
                 return _result;
             }
         };
@@ -42536,7 +45237,6 @@ public partial class alglib
         *************************************************************************/
         public class dualsimplexstate : apobject
         {
-            public double[] varscales;
             public double[] rowscales;
             public double[] rawbndl;
             public double[] rawbndu;
@@ -42549,32 +45249,53 @@ public partial class alglib
             public dualsimplexsubproblem phase1;
             public dualsimplexsubproblem phase3;
             public double[] repx;
-            public double[] repy;
-            public double[] repdx;
+            public double[] replagbc;
+            public double[] replaglc;
             public int[] repstats;
-            public double repf;
-            public double repprimalerror;
-            public double repdualerror;
             public int repterminationtype;
             public int repiterationscount;
             public int repiterationscount1;
             public int repiterationscount2;
             public int repiterationscount3;
+            public int repphase1time;
+            public int repphase2time;
+            public int repphase3time;
+            public int repdualpricingtime;
+            public int repdualbtrantime;
+            public int repdualpivotrowtime;
+            public int repdualratiotesttime;
+            public int repdualftrantime;
+            public int repdualupdatesteptime;
+            public double repfillpivotrow;
+            public int repfillpivotrowcnt;
+            public double repfillrhor;
+            public int repfillrhorcnt;
+            public double repfilldensemu;
+            public int repfilldensemucnt;
+            public bool dotrace;
+            public bool dodetailedtrace;
+            public bool dotimers;
+            public double[] btrantmp0;
+            public double[] btrantmp1;
+            public double[] btrantmp2;
+            public double[] ftrantmp0;
+            public double[] ftrantmp1;
             public int[] possibleflips;
             public int possibleflipscnt;
             public double[] dfctmp0;
             public double[] dfctmp1;
             public double[] dfctmp2;
             public int[] ustmpi;
+            public apserv.apbuffers xydsbuf;
             public double[] tmp0;
             public double[] tmp1;
             public double[] tmp2;
-            public double[] alphar;
-            public double[] rhor;
+            public dssvector alphar;
+            public dssvector rhor;
             public double[] tau;
             public double[] alphaq;
             public double[] alphaqim;
-            public int[] eligibleset;
+            public int[] eligiblealphar;
             public int[] harrisset;
             public dualsimplexstate()
             {
@@ -42582,7 +45303,6 @@ public partial class alglib
             }
             public override void init()
             {
-                varscales = new double[0];
                 rowscales = new double[0];
                 rawbndl = new double[0];
                 rawbndu = new double[0];
@@ -42593,29 +45313,34 @@ public partial class alglib
                 phase1 = new dualsimplexsubproblem();
                 phase3 = new dualsimplexsubproblem();
                 repx = new double[0];
-                repy = new double[0];
-                repdx = new double[0];
+                replagbc = new double[0];
+                replaglc = new double[0];
                 repstats = new int[0];
+                btrantmp0 = new double[0];
+                btrantmp1 = new double[0];
+                btrantmp2 = new double[0];
+                ftrantmp0 = new double[0];
+                ftrantmp1 = new double[0];
                 possibleflips = new int[0];
                 dfctmp0 = new double[0];
                 dfctmp1 = new double[0];
                 dfctmp2 = new double[0];
                 ustmpi = new int[0];
+                xydsbuf = new apserv.apbuffers();
                 tmp0 = new double[0];
                 tmp1 = new double[0];
                 tmp2 = new double[0];
-                alphar = new double[0];
-                rhor = new double[0];
+                alphar = new dssvector();
+                rhor = new dssvector();
                 tau = new double[0];
                 alphaq = new double[0];
                 alphaqim = new double[0];
-                eligibleset = new int[0];
+                eligiblealphar = new int[0];
                 harrisset = new int[0];
             }
             public override alglib.apobject make_copy()
             {
                 dualsimplexstate _result = new dualsimplexstate();
-                _result.varscales = (double[])varscales.Clone();
                 _result.rowscales = (double[])rowscales.Clone();
                 _result.rawbndl = (double[])rawbndl.Clone();
                 _result.rawbndu = (double[])rawbndu.Clone();
@@ -42628,32 +45353,53 @@ public partial class alglib
                 _result.phase1 = (dualsimplexsubproblem)phase1.make_copy();
                 _result.phase3 = (dualsimplexsubproblem)phase3.make_copy();
                 _result.repx = (double[])repx.Clone();
-                _result.repy = (double[])repy.Clone();
-                _result.repdx = (double[])repdx.Clone();
+                _result.replagbc = (double[])replagbc.Clone();
+                _result.replaglc = (double[])replaglc.Clone();
                 _result.repstats = (int[])repstats.Clone();
-                _result.repf = repf;
-                _result.repprimalerror = repprimalerror;
-                _result.repdualerror = repdualerror;
                 _result.repterminationtype = repterminationtype;
                 _result.repiterationscount = repiterationscount;
                 _result.repiterationscount1 = repiterationscount1;
                 _result.repiterationscount2 = repiterationscount2;
                 _result.repiterationscount3 = repiterationscount3;
+                _result.repphase1time = repphase1time;
+                _result.repphase2time = repphase2time;
+                _result.repphase3time = repphase3time;
+                _result.repdualpricingtime = repdualpricingtime;
+                _result.repdualbtrantime = repdualbtrantime;
+                _result.repdualpivotrowtime = repdualpivotrowtime;
+                _result.repdualratiotesttime = repdualratiotesttime;
+                _result.repdualftrantime = repdualftrantime;
+                _result.repdualupdatesteptime = repdualupdatesteptime;
+                _result.repfillpivotrow = repfillpivotrow;
+                _result.repfillpivotrowcnt = repfillpivotrowcnt;
+                _result.repfillrhor = repfillrhor;
+                _result.repfillrhorcnt = repfillrhorcnt;
+                _result.repfilldensemu = repfilldensemu;
+                _result.repfilldensemucnt = repfilldensemucnt;
+                _result.dotrace = dotrace;
+                _result.dodetailedtrace = dodetailedtrace;
+                _result.dotimers = dotimers;
+                _result.btrantmp0 = (double[])btrantmp0.Clone();
+                _result.btrantmp1 = (double[])btrantmp1.Clone();
+                _result.btrantmp2 = (double[])btrantmp2.Clone();
+                _result.ftrantmp0 = (double[])ftrantmp0.Clone();
+                _result.ftrantmp1 = (double[])ftrantmp1.Clone();
                 _result.possibleflips = (int[])possibleflips.Clone();
                 _result.possibleflipscnt = possibleflipscnt;
                 _result.dfctmp0 = (double[])dfctmp0.Clone();
                 _result.dfctmp1 = (double[])dfctmp1.Clone();
                 _result.dfctmp2 = (double[])dfctmp2.Clone();
                 _result.ustmpi = (int[])ustmpi.Clone();
+                _result.xydsbuf = (apserv.apbuffers)xydsbuf.make_copy();
                 _result.tmp0 = (double[])tmp0.Clone();
                 _result.tmp1 = (double[])tmp1.Clone();
                 _result.tmp2 = (double[])tmp2.Clone();
-                _result.alphar = (double[])alphar.Clone();
-                _result.rhor = (double[])rhor.Clone();
+                _result.alphar = (dssvector)alphar.make_copy();
+                _result.rhor = (dssvector)rhor.make_copy();
                 _result.tau = (double[])tau.Clone();
                 _result.alphaq = (double[])alphaq.Clone();
                 _result.alphaqim = (double[])alphaqim.Clone();
-                _result.eligibleset = (int[])eligibleset.Clone();
+                _result.eligiblealphar = (int[])eligiblealphar.Clone();
                 _result.harrisset = (int[])harrisset.Clone();
                 return _result;
             }
@@ -42664,12 +45410,10 @@ public partial class alglib
 
         public const int maxforcedrestarts = 1;
         public const int safetrfage = 5;
-        public const int defaultmaxtrfage = 50;
+        public const int defaultmaxtrfage = 100;
         public const double minbeta = 1.0E-4;
         public const double maxudecay = 0.001;
         public const double shiftlen = 1.0E-12;
-        public const double dtol = 1.0E-6;
-        public const double xtol = 1.0E-9;
         public const double alphatrigger = 1.0E8*math.machineepsilon;
         public const double alphatrigger2 = 0.001;
         public const int ssinvalid = 0;
@@ -42686,6 +45430,9 @@ public partial class alglib
         public static void dsssettingsinit(dualsimplexsettings settings,
             alglib.xparams _params)
         {
+            settings.xtolabs = 1.0E-6;
+            settings.dtolabs = 1.0E-6;
+            settings.xtolrelabs = 0.01;
             settings.pivottol = 10*Math.Sqrt(math.machineepsilon);
             settings.perturbmag = 10*settings.pivottol;
             settings.maxtrfage = defaultmaxtrfage;
@@ -42715,25 +45462,26 @@ public partial class alglib
             alglib.ap.assert(n>0, "DSSInit: N<=0");
             s.ns = n;
             s.m = 0;
-            apserv.rvectorsetlengthatleast(ref s.varscales, n, _params);
-            apserv.rvectorsetlengthatleast(ref s.rawbndl, n, _params);
-            apserv.rvectorsetlengthatleast(ref s.rawbndu, n, _params);
+            apserv.rvectorgrowto(ref s.rawbndl, n, _params);
+            apserv.rvectorgrowto(ref s.rawbndu, n, _params);
             for(i=0; i<=n-1; i++)
             {
-                s.varscales[i] = 1.0;
                 s.rawbndl[i] = 0.0;
                 s.rawbndu[i] = 0.0;
             }
             subprobleminit(n, s.primary, _params);
             basisinit(n, 0, s.basis, _params);
-            apserv.rvectorsetlengthatleast(ref s.repx, n, _params);
-            apserv.rvectorsetlengthatleast(ref s.repdx, 0, _params);
-            apserv.ivectorsetlengthatleast(ref s.repstats, n, _params);
+            apserv.rvectorgrowto(ref s.repx, n, _params);
+            apserv.rvectorgrowto(ref s.replagbc, n, _params);
+            apserv.ivectorgrowto(ref s.repstats, n, _params);
             for(i=0; i<=n-1; i++)
             {
                 s.repx[i] = 0.0;
                 s.repstats[i] = 1;
             }
+            s.dotrace = false;
+            s.dodetailedtrace = false;
+            s.dotimers = false;
         }
 
 
@@ -42745,9 +45493,9 @@ public partial class alglib
             
             BndL    -   lower bounds, array[N].
             BndU    -   upper bounds, array[N].
-            SV      -   scales, array[N].
             
-            DenseA  -   dense array[K,N], dense linear constraints
+            DenseA  -   dense array[K,N], dense linear constraints (not supported
+                        in present version)
             SparseA -   sparse linear constraints, sparsematrix[K,N] in CRS format
             AKind   -   type of A: 0 for dense, 1 for sparse
             AL, AU  -   lower and upper bounds, array[K]
@@ -42767,7 +45515,6 @@ public partial class alglib
             double[] c,
             double[] bndl,
             double[] bndu,
-            double[] sv,
             double[,] densea,
             sparse.sparsematrix sparsea,
             int akind,
@@ -42790,7 +45537,6 @@ public partial class alglib
             int oldm = 0;
             bool basisinitialized = new bool();
             double v = 0;
-            double vv = 0;
 
             ns = state.primary.ns;
             oldm = state.primary.m;
@@ -42800,8 +45546,6 @@ public partial class alglib
             //
             alglib.ap.assert(alglib.ap.len(bndl)>=ns, "DSSSetProblem: Length(BndL)<N");
             alglib.ap.assert(alglib.ap.len(bndu)>=ns, "DSSSetProblem: Length(BndU)<N");
-            alglib.ap.assert(alglib.ap.len(sv)>=ns, "DSSSetProblem: Length(SV)<N");
-            alglib.ap.assert(apserv.isfinitevector(sv, ns, _params), "DSSSetProblem: SV contains infinite or NaN elements");
             alglib.ap.assert(alglib.ap.len(c)>=ns, "SubproblemSetCost: Length(C)<N");
             alglib.ap.assert(apserv.isfinitevector(c, ns, _params), "SubproblemSetCost: C contains infinite or NaN elements");
             alglib.ap.assert(akind==0 || akind==1, "DSSSetProblem: incorrect AKind");
@@ -42832,6 +45576,8 @@ public partial class alglib
             apserv.rvectorgrowto(ref state.primary.bndlb, k, _params);
             apserv.rvectorgrowto(ref state.primary.bndub, k, _params);
             apserv.ivectorgrowto(ref state.primary.bndtb, k, _params);
+            apserv.rvectorgrowto(ref state.primary.bndtollb, k, _params);
+            apserv.rvectorgrowto(ref state.primary.bndtolub, k, _params);
             
             //
             // Save original problem formulation
@@ -42840,7 +45586,6 @@ public partial class alglib
             state.m = k;
             for(i=0; i<=ns-1; i++)
             {
-                state.varscales[i] = sv[i];
                 state.rawbndl[i] = bndl[i];
                 state.rawbndu[i] = bndu[i];
             }
@@ -42848,18 +45593,19 @@ public partial class alglib
             //
             // Setup cost, scale and box constraints
             //
+            ablasf.rsetv(ns+k, 0.0, state.primary.rawc, _params);
+            ablasf.rsetv(ns+k, 0.0, state.primary.effc, _params);
             for(i=0; i<=ns-1; i++)
             {
-                alglib.ap.assert(sv[i]>0, "DSSSetProblem: SV<=0");
-                state.primary.rawc[i] = c[i]*sv[i];
-                state.primary.effc[i] = c[i]*sv[i];
+                state.primary.rawc[i] = c[i];
+                state.primary.effc[i] = c[i];
             }
             for(i=0; i<=ns-1; i++)
             {
                 alglib.ap.assert(math.isfinite(bndl[i]) || Double.IsNegativeInfinity(bndl[i]), "DSSSetProblem: BndL contains NAN or +INF");
                 alglib.ap.assert(math.isfinite(bndu[i]) || Double.IsPositiveInfinity(bndu[i]), "DSSSetProblem: BndU contains NAN or -INF");
-                state.primary.bndl[i] = bndl[i]/sv[i];
-                state.primary.bndu[i] = bndu[i]/sv[i];
+                state.primary.bndl[i] = bndl[i];
+                state.primary.bndu[i] = bndu[i];
                 
                 //
                 // Set bound type
@@ -42947,13 +45693,12 @@ public partial class alglib
                 {
                     j0 = state.at.ridx[i];
                     j1 = state.at.ridx[i+1]-1;
-                    v = sv[i];
                     for(j=j0; j<=j1; j++)
                     {
-                        vv = v*state.at.vals[j];
+                        v = state.at.vals[j];
                         jj = state.at.idx[j];
-                        state.at.vals[j] = vv;
-                        state.rowscales[jj] = state.rowscales[jj]+vv*vv;
+                        state.at.vals[j] = v;
+                        state.rowscales[jj] = state.rowscales[jj]+v*v;
                     }
                 }
                 apserv.rvectorsetlengthatleast(ref state.tmp0, k, _params);
@@ -42986,6 +45731,7 @@ public partial class alglib
                 }
                 state.at.m = state.at.m+k;
                 sparse.sparseinitduidx(state.at, _params);
+                sparse.sparsecopytransposecrsbuf(state.at, state.a, _params);
                 processed = true;
             }
             alglib.ap.assert(processed, "DSSSetProblem: integrity check failed (akind)");
@@ -43082,8 +45828,7 @@ public partial class alglib
                 basisinit(state.primary.ns, state.primary.m, state.basis, _params);
                 basisfreshtrf(state.basis, state.at, settings, _params);
             }
-            apserv.rvectorgrowto(ref state.repy, state.primary.m, _params);
-            apserv.rvectorgrowto(ref state.repdx, state.primary.m, _params);
+            apserv.rvectorgrowto(ref state.replaglc, state.primary.m, _params);
             apserv.ivectorgrowto(ref state.repstats, state.primary.ns+state.primary.m, _params);
         }
 
@@ -43110,7 +45855,7 @@ public partial class alglib
 
 
         /*************************************************************************
-        This function performs actual solution.
+        This function solves LP problem with dual simplex solver.
 
         INPUT PARAMETERS:
             State   -   state
@@ -43125,228 +45870,245 @@ public partial class alglib
             dualsimplexsettings settings,
             alglib.xparams _params)
         {
-            int nx = 0;
-            int m = 0;
             int i = 0;
-            int j = 0;
-            int j0 = 0;
-            int j1 = 0;
+            int nx = 0;
             double v = 0;
-            hqrnd.hqrndstate rs = new hqrnd.hqrndstate();
+            int cnt1 = 0;
+            int cnt2 = 0;
+            int cntfx = 0;
+            int cntfr = 0;
+            int cntif = 0;
+            int ttotal = 0;
 
             nx = state.primary.ns+state.primary.m;
-            m = state.primary.m;
+            ttotal = 0;
+            
+            //
+            // Trace settings
+            //
+            state.dotrace = ap.istraceenabled("DUALSIMPLEX", _params);
+            state.dodetailedtrace = state.dotrace && ap.istraceenabled("DUALSIMPLEX.DETAILED", _params);
+            state.dotimers = ap.istraceenabled("TIMERS.DUALSIMPLEX", _params);
             
             //
             // Init report fields
             //
-            state.repf = 0;
             state.repiterationscount = 0;
             state.repiterationscount1 = 0;
             state.repiterationscount2 = 0;
             state.repiterationscount3 = 0;
             state.repterminationtype = 1;
-            state.repprimalerror = 0;
-            state.repdualerror = 0;
+            state.repphase1time = 0;
+            state.repphase2time = 0;
+            state.repphase3time = 0;
+            state.repdualpricingtime = 0;
+            state.repdualbtrantime = 0;
+            state.repdualpivotrowtime = 0;
+            state.repdualratiotesttime = 0;
+            state.repdualftrantime = 0;
+            state.repdualupdatesteptime = 0;
+            state.repfillpivotrow = 0;
+            state.repfillpivotrowcnt = 0;
+            state.repfillrhor = 0;
+            state.repfillrhorcnt = 0;
+            state.repfilldensemu = 0;
+            state.repfilldensemucnt = 0;
+            basisclearstats(state.basis, _params);
             
             //
-            // Handle case when M=0; after this block we assume that M>0.
+            // Setup timer (if needed)
             //
-            if( m==0 )
+            if( state.dotimers )
             {
-                solveboxonly(state, _params);
-                state.repf = 0;
+                ttotal = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            
+            //
+            // Trace output (if needed)
+            //
+            if( state.dotrace || state.dotimers )
+            {
+                alglib.ap.trace("\n\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+                alglib.ap.trace("//  DUAL SIMPLEX SOLVER STARTED                                                                   //\n");
+                alglib.ap.trace("////////////////////////////////////////////////////////////////////////////////////////////////////\n");
+                alglib.ap.trace("> problem size:\n");
+                alglib.ap.trace(System.String.Format("N         = {0,12:d} (variables)\n", state.primary.ns));
+                alglib.ap.trace(System.String.Format("M         = {0,12:d} (constraints)\n", state.primary.m));
+            }
+            if( state.dotrace )
+            {
+                alglib.ap.trace("> variable stats:\n");
+                if( state.dodetailedtrace )
+                {
+                }
+                cnt1 = 0;
+                cnt2 = 0;
+                cntfx = 0;
+                cntfr = 0;
+                cntif = 0;
                 for(i=0; i<=state.primary.ns-1; i++)
                 {
-                    state.repf = state.repf+state.repx[i]*state.primary.rawc[i];
-                }
-                unscaleandenforce(state.repx, state.repy, state.repdx, state, _params);
-                return;
-            }
-            
-            //
-            // Most basic check for correctness of box constraints
-            //
-            for(i=0; i<=nx-1; i++)
-            {
-                if( state.primary.bndt[i]==ccinfeasible )
-                {
-                    state.repterminationtype = -3;
-                    setzeroxystats(state, _params);
-                    return;
-                }
-            }
-            
-            //
-            // Initialization:
-            // * column scales, initial perturbed C[]
-            //
-            hqrnd.hqrndseed(7456, 2355, rs, _params);
-            apserv.rvectorsetlengthatleast(ref state.primary.colscales, nx, _params);
-            for(i=0; i<=nx-1; i++)
-            {
-                
-                //
-                // compute column scales
-                //
-                v = Math.Abs(state.primary.rawc[i]);
-                j0 = state.at.ridx[i];
-                j1 = state.at.ridx[i+1]-1;
-                for(j=j0; j<=j1; j++)
-                {
-                    v = Math.Max(v, Math.Abs(state.at.vals[j]));
-                }
-                state.primary.colscales[i] = apserv.coalesce(v, 1.0, _params);
-                
-                //
-                // apply perturbation
-                //
-                if( !isfree(state.primary, i, _params) )
-                {
-                    v = settings.perturbmag*state.primary.colscales[i]*(1+hqrnd.hqrnduniformr(rs, _params));
-                    if( hasbndu(state.primary, i, _params) )
+                    if( state.primary.bndt[i]==cclower || state.primary.bndt[i]==ccupper )
                     {
-                        v = -v;
+                        apserv.inc(ref cnt1, _params);
                     }
-                    state.primary.effc[i] = state.primary.rawc[i]+v;
+                    if( state.primary.bndt[i]==ccrange )
+                    {
+                        apserv.inc(ref cnt2, _params);
+                    }
+                    if( state.primary.bndt[i]==ccfixed )
+                    {
+                        apserv.inc(ref cntfx, _params);
+                    }
+                    if( state.primary.bndt[i]==ccfree )
+                    {
+                        apserv.inc(ref cntfr, _params);
+                    }
+                    if( state.primary.bndt[i]==ccinfeasible )
+                    {
+                        apserv.inc(ref cntif, _params);
+                    }
                 }
+                alglib.ap.trace(System.String.Format("UBnd/LBnd   = {0,12:d}\n", cnt1));
+                alglib.ap.trace(System.String.Format("Range       = {0,12:d}\n", cnt2));
+                alglib.ap.trace(System.String.Format("Fixed       = {0,12:d}\n", cntfx));
+                alglib.ap.trace(System.String.Format("Free        = {0,12:d}\n", cntfr));
+                alglib.ap.trace(System.String.Format("Infeas      = {0,12:d}\n", cntif));
+                alglib.ap.trace("> constraint stats:\n");
+                if( state.dodetailedtrace )
+                {
+                }
+                cnt1 = 0;
+                cnt2 = 0;
+                cntfx = 0;
+                cntfr = 0;
+                cntif = 0;
+                for(i=state.primary.ns-1; i<=nx-1; i++)
+                {
+                    if( state.primary.bndt[i]==cclower || state.primary.bndt[i]==ccupper )
+                    {
+                        apserv.inc(ref cnt1, _params);
+                    }
+                    if( state.primary.bndt[i]==ccrange )
+                    {
+                        apserv.inc(ref cnt2, _params);
+                    }
+                    if( state.primary.bndt[i]==ccfixed )
+                    {
+                        apserv.inc(ref cntfx, _params);
+                    }
+                    if( state.primary.bndt[i]==ccfree )
+                    {
+                        apserv.inc(ref cntfr, _params);
+                    }
+                    if( state.primary.bndt[i]==ccinfeasible )
+                    {
+                        apserv.inc(ref cntif, _params);
+                    }
+                }
+                alglib.ap.trace(System.String.Format("ubnd/lbnd   = {0,12:d}\n", cnt1));
+                alglib.ap.trace(System.String.Format("range       = {0,12:d}\n", cnt2));
+                alglib.ap.trace(System.String.Format("fixed       = {0,12:d}\n", cntfx));
+                alglib.ap.trace(System.String.Format("free        = {0,12:d}\n", cntfr));
+                alglib.ap.trace(System.String.Format("infeas      = {0,12:d}\n", cntif));
+                v = 0;
+                for(i=0; i<=state.primary.ns-1; i++)
+                {
+                    if( math.isfinite(state.primary.bndl[i]) )
+                    {
+                        v = Math.Max(v, Math.Abs(state.primary.bndl[i]));
+                    }
+                }
+                alglib.ap.trace(System.String.Format("|BndL|      = {0,0:E3}\n", v));
+                v = 0;
+                for(i=0; i<=state.primary.ns-1; i++)
+                {
+                    if( math.isfinite(state.primary.bndu[i]) )
+                    {
+                        v = Math.Max(v, Math.Abs(state.primary.bndu[i]));
+                    }
+                }
+                alglib.ap.trace(System.String.Format("|BndU|      = {0,0:E3}\n", v));
+                v = 0;
+                for(i=state.primary.ns; i<=nx-1; i++)
+                {
+                    if( math.isfinite(state.primary.bndl[i]) )
+                    {
+                        v = Math.Max(v, Math.Abs(state.primary.bndl[i]));
+                    }
+                }
+                alglib.ap.trace(System.String.Format("|AL|        = {0,0:E3}\n", v));
+                v = 0;
+                for(i=state.primary.ns; i<=nx-1; i++)
+                {
+                    if( math.isfinite(state.primary.bndu[i]) )
+                    {
+                        v = Math.Max(v, Math.Abs(state.primary.bndu[i]));
+                    }
+                }
+                alglib.ap.trace(System.String.Format("|AU|        = {0,0:E3}\n", v));
             }
             
             //
-            // Solve phase 1 subproblem, then perturbed subproblem
+            // Call actual workhorse function
             //
-            basisfreshtrf(state.basis, state.at, settings, _params);
-            if( state.primary.state==ssinvalid )
-            {
-                subprobleminferinitialxn(state, state.primary, _params);
-            }
-            if( state.primary.state==ssvalidxn )
-            {
-                subproblemhandlexnupdate(state, state.primary, _params);
-            }
-            alglib.ap.assert(state.primary.state==ssvalid, "DSS: integrity check failed (init)");
-            invokephase1(state, settings, _params);
-            if( state.repterminationtype<=0 )
-            {
-                
-                //
-                // Primal unbounded, dual infeasible
-                //
-                alglib.ap.assert(state.repterminationtype==-4, "DSS: integrity check for InvokePhase1() result failed");
-                state.repf = 0;
-                state.repprimalerror = 0;
-                state.repdualerror = 0;
-                setzeroxystats(state, _params);
-                return;
-            }
-            solvesubproblemdual(state, state.primary, false, settings, ref state.repterminationtype, _params);
-            if( state.repterminationtype<=0 )
-            {
-                
-                //
-                // Primal infeasible
-                //
-                alglib.ap.assert(state.repterminationtype==-3, "DSS: integrity check for SolveSubproblemDual() result failed");
-                state.repf = 0;
-                state.repprimalerror = 0;
-                state.repdualerror = 0;
-                setzeroxystats(state, _params);
-                return;
-            }
+            dssoptimizewrk(state, settings, _params);
             
             //
-            // Remove perturbation from the cost vector,
-            // then use primal simplex to enforce dual feasibility
-            // after removal of the perturbation (if necessary).
+            // Print reports
             //
-            subprobleminitphase3(state.primary, state.phase3, _params);
-            for(i=0; i<=nx-1; i++)
+            if( state.dotrace )
             {
-                state.phase3.effc[i] = state.primary.rawc[i];
-            }
-            alglib.ap.assert(state.phase3.state>=ssvalidxn, "DSS: integrity check failed (remove perturbation)");
-            subproblemhandlexnupdate(state, state.phase3, _params);
-            solvesubproblemprimal(state, state.phase3, settings, ref state.repterminationtype, _params);
-            if( state.repterminationtype<=0 )
-            {
-                
-                //
-                // Dual infeasible, primal unbounded
-                //
-                alglib.ap.assert(state.repterminationtype==-4, "DSS: integrity check for SolveSubproblemPrimal() result failed");
-                state.repf = 0;
-                state.repprimalerror = 0;
-                state.repdualerror = 0;
-                setzeroxystats(state, _params);
-                return;
-            }
-            for(i=0; i<=nx-1; i++)
-            {
-                state.primary.xa[i] = state.phase3.xa[i];
-                if( hasbndl(state.primary, i, _params) )
+                alglib.ap.trace("\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+                alglib.ap.trace("*   PRINTING ITERATION STATISTICS                                                                  *\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+                alglib.ap.trace("> iteration counts:\n");
+                alglib.ap.trace(System.String.Format("Phase 1     = {0,12:d}\n", state.repiterationscount1));
+                alglib.ap.trace(System.String.Format("Phase 2     = {0,12:d}\n", state.repiterationscount2));
+                alglib.ap.trace(System.String.Format("Phase 3     = {0,12:d}\n", state.repiterationscount3));
+                alglib.ap.trace("> factorization statistics:\n");
+                alglib.ap.trace(System.String.Format("FactCnt     = {0,12:d} (LU factorizations)\n", state.basis.statfact));
+                alglib.ap.trace(System.String.Format("UpdtCnt     = {0,12:d} (LU updates)\n", state.basis.statupdt));
+                alglib.ap.trace(System.String.Format("RefactPeriod= {0,12:F1} (average refactorization interval)\n", (state.basis.statfact+state.basis.statupdt)/apserv.coalesce(state.basis.statfact, 1, _params)));
+                alglib.ap.trace(System.String.Format("LU-NZR      = {0,12:F1} (average LU nonzeros per row)\n", state.basis.statoffdiag/(apserv.coalesce(state.m, 1, _params)*apserv.coalesce(state.basis.statfact+state.basis.statupdt, 1, _params))));
+                alglib.ap.trace("> sparsity counters (average fill factors):\n");
+                if( state.dodetailedtrace )
                 {
-                    state.primary.xa[i] = Math.Max(state.primary.xa[i], state.primary.bndl[i]);
+                    alglib.ap.trace(System.String.Format("RhoR        = {0,12:F4} (BTran result)\n", state.repfillrhor/apserv.coalesce(state.repfillrhorcnt, 1, _params)));
+                    alglib.ap.trace(System.String.Format("AlphaR      = {0,12:F4} (pivot row)\n", state.repfillpivotrow/apserv.coalesce(state.repfillpivotrowcnt, 1, _params)));
+                    if( state.basis.trftype==3 )
+                    {
+                        alglib.ap.trace(System.String.Format("Mu          = {0,12:F4} (Forest-Tomlin factor)\n", state.repfilldensemu/apserv.coalesce(state.repfilldensemucnt, 1, _params)));
+                    }
                 }
-                if( hasbndu(state.primary, i, _params) )
+                else
                 {
-                    state.primary.xa[i] = Math.Min(state.primary.xa[i], state.primary.bndu[i]);
+                    alglib.ap.trace("...skipped, need DUALSIMPLEX.DETAILED trace tag\n");
                 }
             }
-            
-            //
-            // Primal and dual feasible, problem solved
-            //
-            apserv.rvectorsetlengthatleast(ref state.tmp0, m, _params);
-            apserv.rvectorsetlengthatleast(ref state.tmp1, m, _params);
-            state.repf = 0;
-            for(i=0; i<=state.primary.ns-1; i++)
+            if( state.dotimers )
             {
-                state.repf = state.repf+state.primary.xa[i]*state.primary.rawc[i];
+                ttotal = unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-ttotal;
+                alglib.ap.trace("\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+                alglib.ap.trace("*   PRINTING DUAL SIMPLEX TIMERS                                                                   *\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+                alglib.ap.trace("> total time:\n");
+                alglib.ap.trace(System.String.Format("Time        = {0,12:d} ms\n", ttotal));
+                alglib.ap.trace("> time by phase:\n");
+                alglib.ap.trace(System.String.Format("Phase 1     = {0,12:d} ms\n", state.repphase1time));
+                alglib.ap.trace(System.String.Format("Phase 2     = {0,12:d} ms\n", state.repphase2time));
+                alglib.ap.trace(System.String.Format("Phase 3     = {0,12:d} ms\n", state.repphase3time));
+                alglib.ap.trace("> time by step (dual phases 1 and 2):\n");
+                alglib.ap.trace(System.String.Format("Pricing     = {0,12:d} ms\n", state.repdualpricingtime));
+                alglib.ap.trace(System.String.Format("BTran       = {0,12:d} ms\n", state.repdualbtrantime));
+                alglib.ap.trace(System.String.Format("PivotRow    = {0,12:d} ms\n", state.repdualpivotrowtime));
+                alglib.ap.trace(System.String.Format("RatioTest   = {0,12:d} ms\n", state.repdualratiotesttime));
+                alglib.ap.trace(System.String.Format("FTran       = {0,12:d} ms\n", state.repdualftrantime));
+                alglib.ap.trace(System.String.Format("Update      = {0,12:d} ms\n", state.repdualupdatesteptime));
             }
-            state.repprimalerror = 0;
-            state.repdualerror = 0;
-            state.repterminationtype = 1;
-            for(i=0; i<=m-1; i++)
-            {
-                state.tmp0[i] = state.primary.rawc[state.basis.idx[i]];
-            }
-            basissolvet(state.basis, state.tmp0, ref state.tmp1, ref state.tmp2, _params);
-            computeantv(state, state.tmp1, ref state.primary.d, _params);
-            for(i=0; i<=state.ns-1; i++)
-            {
-                j = state.basis.nidx[i];
-                state.primary.d[j] = state.primary.rawc[j]-state.primary.d[j];
-            }
-            for(i=0; i<=m-1; i++)
-            {
-                state.repy[i] = state.tmp1[i];
-                state.repdx[i] = state.primary.d[state.ns+i];
-            }
-            for(i=0; i<=nx-1; i++)
-            {
-                if( state.basis.isbasic[i] )
-                {
-                    state.repstats[i] = 0;
-                    continue;
-                }
-                if( hasbndl(state.primary, i, _params) && (double)(state.primary.xa[i])==(double)(state.primary.bndl[i]) )
-                {
-                    state.repstats[i] = -1;
-                    continue;
-                }
-                if( hasbndu(state.primary, i, _params) && (double)(state.primary.xa[i])==(double)(state.primary.bndu[i]) )
-                {
-                    state.repstats[i] = 1;
-                    continue;
-                }
-                alglib.ap.assert(!hasbndl(state.primary, i, _params) && !hasbndu(state.primary, i, _params), "DSSOptimize: integrity check failed (zetta5)");
-                state.repstats[i] = 0;
-            }
-            for(i=0; i<=state.primary.ns-1; i++)
-            {
-                state.repx[i] = state.primary.xa[i];
-            }
-            unscaleandenforce(state.repx, state.repy, state.repdx, state, _params);
         }
 
 
@@ -43412,7 +46174,6 @@ public partial class alglib
             s1.m = s0.m;
             apserv.copyrealarray(s0.rawc, ref s1.rawc, _params);
             apserv.copyrealarray(s0.effc, ref s1.effc, _params);
-            apserv.copyrealarray(s0.colscales, ref s1.colscales, _params);
             apserv.copyrealarray(s0.bndl, ref s1.bndl, _params);
             apserv.copyrealarray(s0.bndu, ref s1.bndu, _params);
             apserv.copyintegerarray(s0.bndt, ref s1.bndt, _params);
@@ -43421,6 +46182,8 @@ public partial class alglib
             apserv.copyrealarray(s0.bndlb, ref s1.bndlb, _params);
             apserv.copyrealarray(s0.bndub, ref s1.bndub, _params);
             apserv.copyintegerarray(s0.bndtb, ref s1.bndtb, _params);
+            apserv.copyrealarray(s0.bndtollb, ref s1.bndtollb, _params);
+            apserv.copyrealarray(s0.bndtolub, ref s1.bndtolub, _params);
             apserv.copyrealarray(s0.d, ref s1.d, _params);
             for(i=0; i<=s1.ns+s1.m-1; i++)
             {
@@ -43485,7 +46248,6 @@ public partial class alglib
             s1.m = s0.m;
             apserv.copyrealarray(s0.rawc, ref s1.rawc, _params);
             apserv.copyrealarray(s0.effc, ref s1.effc, _params);
-            apserv.copyrealarray(s0.colscales, ref s1.colscales, _params);
             apserv.copyrealarray(s0.bndl, ref s1.bndl, _params);
             apserv.copyrealarray(s0.bndu, ref s1.bndu, _params);
             apserv.copyintegerarray(s0.bndt, ref s1.bndt, _params);
@@ -43494,6 +46256,8 @@ public partial class alglib
             apserv.copyrealarray(s0.bndlb, ref s1.bndlb, _params);
             apserv.copyrealarray(s0.bndub, ref s1.bndub, _params);
             apserv.copyintegerarray(s0.bndtb, ref s1.bndtb, _params);
+            apserv.copyrealarray(s0.bndtollb, ref s1.bndtollb, _params);
+            apserv.copyrealarray(s0.bndtolub, ref s1.bndtolub, _params);
             apserv.copyrealarray(s0.d, ref s1.d, _params);
             s1.state = ssvalidxn;
         }
@@ -43762,6 +46526,8 @@ public partial class alglib
         * AlphaR - pivot row
         * Delta - delta from pricing step
         * Q - variable selected by ratio test
+        * AlphaRPiv - pivot element, Q-th element of  AlphaR  (because  alphaR  is
+          stored in compressed format, we can't extract it easily)
         * ThetaD - dual step length
 
         If no shifts are necessary, it silently returns. If shifts are  necessary,
@@ -43772,9 +46538,10 @@ public partial class alglib
         *************************************************************************/
         private static void shifting(dualsimplexstate state,
             dualsimplexsubproblem s,
-            double[] alphar,
+            dssvector alphar,
             double delta,
             int q,
+            double alpharpiv,
             ref double thetad,
             dualsimplexsettings settings,
             alglib.xparams _params)
@@ -43790,6 +46557,10 @@ public partial class alglib
             // No shifts
             //
             if( settings.shifting==0 )
+            {
+                return;
+            }
+            if( q<0 )
             {
                 return;
             }
@@ -43829,29 +46600,29 @@ public partial class alglib
                 //
                 // Shift Q-th coefficient
                 //
-                sft = thetad*(dir*alphar[q])-s.d[q];
+                sft = thetad*(dir*alpharpiv)-s.d[q];
                 s.effc[q] = s.effc[q]+sft;
                 s.d[q] = s.d[q]+sft;
                 
                 //
                 // Shift other coefficients
                 //
-                for(ii=0; ii<=s.ns-1; ii++)
+                for(ii=0; ii<=alphar.k-1; ii++)
                 {
-                    j = state.basis.nidx[ii];
+                    j = alphar.idx[ii];
                     bndt = s.bndt[j];
                     if( (j==q || bndt==ccfixed) || bndt==ccfree )
                     {
                         continue;
                     }
-                    sft = thetad*(dir*alphar[j])-s.d[j];
+                    sft = thetad*(dir*alphar.vals[ii])-s.d[j];
                     
                     //
                     // Handle variables at lower bound
                     //
                     if( bndt==cclower || (bndt==ccrange && s.xa[j]==s.bndl[j]) )
                     {
-                        sft = sft-dtol;
+                        sft = sft-settings.dtolabs;
                         if( sft>0 )
                         {
                             s.effc[j] = s.effc[j]+sft;
@@ -43861,7 +46632,7 @@ public partial class alglib
                     }
                     if( bndt==ccupper || (bndt==ccrange && s.xa[j]==s.bndu[j]) )
                     {
-                        sft = sft+dtol;
+                        sft = sft+settings.dtolabs;
                         if( sft<0 )
                         {
                             s.effc[j] = s.effc[j]+sft;
@@ -43922,11 +46693,11 @@ public partial class alglib
             double vdiff = 0;
             double vtest = 0;
             double invw = 0;
-            double tol = 0;
             int bndt = 0;
             bool hasboth = new bool();
             bool hasl = new bool();
             bool hasu = new bool();
+            int t0 = 0;
 
             p = 0;
             r = 0;
@@ -43941,6 +46712,15 @@ public partial class alglib
             alglib.ap.assert(m>0, "PricingStep: M<=0");
             
             //
+            // Timers
+            //
+            t0 = 0;
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            
+            //
             // Pricing
             //
             if( settings.pricing==0 )
@@ -43949,13 +46729,10 @@ public partial class alglib
                 //
                 // "Most infeasible" pricing
                 //
-                // NOTE: VTarget is initialized by XTol because we want to skip
-                //       violations below XTol
-                //
                 p = -1;
                 r = -1;
                 delta = 0;
-                vtarget = xtol;
+                vtarget = 0;
                 for(i=0; i<=m-1; i++)
                 {
                     bndt = s.bndtb[i];
@@ -43968,7 +46745,7 @@ public partial class alglib
                         bndl = s.bndlb[i];
                         vdiff = xbi-bndl;
                         v = -vdiff;
-                        if( v>vtarget )
+                        if( v>s.bndtollb[i] && v>vtarget )
                         {
                             
                             //
@@ -43994,7 +46771,7 @@ public partial class alglib
                         bndu = s.bndub[i];
                         vdiff = xbi-bndu;
                         v = vdiff;
-                        if( v>vtarget )
+                        if( v>s.bndtolub[i] && v>vtarget )
                         {
                             
                             //
@@ -44016,6 +46793,24 @@ public partial class alglib
                         }
                     }
                 }
+                
+                //
+                // Trace/profile
+                //
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> pricing: most infeasible variable removed\n");
+                    alglib.ap.trace(System.String.Format("P           = {0,12:d} (R={1,0:d})\n", p, r));
+                    alglib.ap.trace(System.String.Format("Delta       = {0,12:E3}\n", delta));
+                }
+                if( state.dotimers )
+                {
+                    state.repdualpricingtime = state.repdualpricingtime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+                }
+                
+                //
+                // Done
+                //
                 return;
             }
             if( settings.pricing==-1 || settings.pricing==1 )
@@ -44037,14 +46832,13 @@ public partial class alglib
                     hasl = hasboth || bndt==1;
                     hasu = hasboth || bndt==2;
                     xbi = s.xb[i];
-                    tol = xtol;
                     invw = 1/state.basis.dseweights[i];
                     if( hasl )
                     {
                         bndl = s.bndlb[i];
                         vdiff = xbi-bndl;
                         vtest = vdiff*vdiff*invw;
-                        if( vdiff<-tol && (p<0 || vtest>vtarget) )
+                        if( vdiff<-s.bndtollb[i] && (p<0 || vtest>vtarget) )
                         {
                             
                             //
@@ -44070,7 +46864,7 @@ public partial class alglib
                         bndu = s.bndub[i];
                         vdiff = xbi-bndu;
                         vtest = vdiff*vdiff*invw;
-                        if( vdiff>tol && (p<0 || vtest>vtarget) )
+                        if( vdiff>s.bndtolub[i] && (p<0 || vtest>vtarget) )
                         {
                             
                             //
@@ -44092,9 +46886,323 @@ public partial class alglib
                         }
                     }
                 }
+                
+                //
+                // Trace/profile
+                //
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> dual steepest edge pricing: leaving variable found\n");
+                    alglib.ap.trace(System.String.Format("P           = {0,12:d}  (variable index)\n", p));
+                    alglib.ap.trace(System.String.Format("R           = {0,12:d}  (variable index in basis)\n", r));
+                    alglib.ap.trace(System.String.Format("Delta       = {0,12:E3}  (primal infeasibility removed)\n", delta));
+                }
+                if( state.dotimers )
+                {
+                    state.repdualpricingtime = state.repdualpricingtime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+                }
+                
+                //
+                // Done
+                //
                 return;
             }
             alglib.ap.assert(false, "PricingStep: unknown pricing type");
+        }
+
+
+        /*************************************************************************
+        This function performs BTran step
+
+        Accepts:
+        * R, index of the leaving variable in the basis, in [0,M) range
+
+        Returns:
+        * RhoR, array[M], BTran result
+
+          -- ALGLIB --
+             Copyright 19.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void btranstep(dualsimplexstate state,
+            dualsimplexsubproblem s,
+            int r,
+            dssvector rhor,
+            dualsimplexsettings settings,
+            alglib.xparams _params)
+        {
+            int m = 0;
+            int i = 0;
+            int t0 = 0;
+
+            m = s.m;
+            
+            //
+            // Integrity checks
+            //
+            alglib.ap.assert(m>0, "BTranStep: M<=0");
+            
+            //
+            // Timers
+            //
+            t0 = 0;
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            
+            //
+            // BTran
+            //
+            apserv.rvectorsetlengthatleast(ref state.btrantmp0, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.btrantmp1, m, _params);
+            apserv.rvectorsetlengthatleast(ref state.btrantmp2, m, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                state.btrantmp0[i] = 0;
+            }
+            state.btrantmp0[r] = 1;
+            dvalloc(rhor, m, _params);
+            basissolvet(state.basis, state.btrantmp0, ref rhor.dense, ref state.btrantmp1, _params);
+            dvdensetosparse(rhor, _params);
+            
+            //
+            // Timers
+            //
+            if( state.dotimers )
+            {
+                state.repdualbtrantime = state.repdualbtrantime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+            }
+        }
+
+
+        /*************************************************************************
+        This function performs PivotRow step
+
+        Accepts:
+        * RhoR, BTRan result
+
+        Returns:
+        * AlphaR, array[N+M], pivot row
+
+          -- ALGLIB --
+             Copyright 19.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void pivotrowstep(dualsimplexstate state,
+            dualsimplexsubproblem s,
+            dssvector rhor,
+            dssvector alphar,
+            dualsimplexsettings settings,
+            alglib.xparams _params)
+        {
+            int m = 0;
+            int ns = 0;
+            int nx = 0;
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            int jj = 0;
+            int j0 = 0;
+            int j1 = 0;
+            int alphark = 0;
+            double v = 0;
+            int t0 = 0;
+            double avgcolwise = 0;
+            double avgrowwise = 0;
+
+            m = s.m;
+            ns = s.ns;
+            nx = s.ns+s.m;
+            
+            //
+            // Integrity checks
+            //
+            alglib.ap.assert(m>0, "BTranStep: M<=0");
+            
+            //
+            // Timers
+            //
+            t0 = 0;
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            
+            //
+            // Determine operation counts for columnwise and rowwise approaches
+            //
+            avgrowwise = rhor.k*((double)state.at.ridx[nx]/(double)m);
+            avgcolwise = ns*((double)state.at.ridx[nx]/(double)nx);
+            
+            //
+            // Pivot row
+            //
+            if( (double)(avgrowwise)<(double)(avgcolwise) )
+            {
+                
+                //
+                // Use rowwise algorithm
+                //
+                dvinit(alphar, nx, _params);
+                for(i=0; i<=rhor.k-1; i++)
+                {
+                    k = rhor.idx[i];
+                    v = rhor.vals[i];
+                    j0 = state.a.ridx[k];
+                    j1 = state.a.ridx[k+1]-1;
+                    for(j=j0; j<=j1; j++)
+                    {
+                        jj = state.a.idx[j];
+                        alphar.dense[jj] = alphar.dense[jj]+v*state.a.vals[j];
+                    }
+                }
+                alphark = 0;
+                for(i=0; i<=nx-1; i++)
+                {
+                    if( !state.basis.isbasic[i] )
+                    {
+                        
+                        //
+                        // Fetch nonbasic nonzeros to sparse part
+                        //
+                        v = alphar.dense[i];
+                        if( v!=0.0 )
+                        {
+                            alphar.idx[alphark] = i;
+                            alphar.vals[alphark] = v;
+                            alphark = alphark+1;
+                        }
+                    }
+                    else
+                    {
+                        
+                        //
+                        // Enforce condition that basic elements of AlphaR are exactly zero
+                        //
+                        alphar.dense[i] = 0;
+                    }
+                }
+                alphar.k = alphark;
+            }
+            else
+            {
+                
+                //
+                // Use colwise algorithm
+                //
+                dvalloc(alphar, nx, _params);
+                alphark = 0;
+                for(i=0; i<=ns-1; i++)
+                {
+                    k = state.basis.nidx[i];
+                    j0 = state.at.ridx[k];
+                    j1 = state.at.ridx[k+1]-1;
+                    v = 0;
+                    for(j=j0; j<=j1; j++)
+                    {
+                        v = v+state.at.vals[j]*rhor.dense[state.at.idx[j]];
+                    }
+                    if( v!=0.0 )
+                    {
+                        alphar.idx[alphark] = k;
+                        alphar.vals[alphark] = v;
+                        alphark = alphark+1;
+                    }
+                }
+                alphar.k = alphark;
+                dvsparsetodense(alphar, _params);
+            }
+            
+            //
+            // Timers and tracing
+            //
+            if( state.dodetailedtrace )
+            {
+                updateavgcounter(rhor.k/apserv.coalesce(rhor.n, 1, _params), ref state.repfillrhor, ref state.repfillrhorcnt, _params);
+                updateavgcounter(alphar.k/apserv.coalesce(alphar.n, 1, _params), ref state.repfillpivotrow, ref state.repfillpivotrowcnt, _params);
+            }
+            if( state.dotimers )
+            {
+                state.repdualpivotrowtime = state.repdualpivotrowtime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+            }
+        }
+
+
+        /*************************************************************************
+        This function performs FTran step
+
+        Accepts:
+        * RhoR, array[M]
+        * Q, index of the entering variable, in [0,NX) range
+
+        Returns:
+        * AlphaQ,   array[M], FTran result
+        * AlphaQim, array[M], intermediate FTran result used by Forest-Tomlin update
+        * Tau,      array[M], used to compute DSE temporaries
+
+          -- ALGLIB --
+             Copyright 19.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void ftranstep(dualsimplexstate state,
+            dualsimplexsubproblem s,
+            dssvector rhor,
+            int q,
+            ref double[] alphaq,
+            ref double[] alphaqim,
+            ref double[] tau,
+            dualsimplexsettings settings,
+            alglib.xparams _params)
+        {
+            int m = 0;
+            int i = 0;
+            int j = 0;
+            int j0 = 0;
+            int j1 = 0;
+            int t0 = 0;
+
+            m = s.m;
+            
+            //
+            // Integrity checks
+            //
+            alglib.ap.assert(m>0, "BTranStep: M<=0");
+            
+            //
+            // Timers
+            //
+            t0 = 0;
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            
+            //
+            // FTran
+            //
+            apserv.rvectorsetlengthatleast(ref state.ftrantmp0, m, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                state.ftrantmp0[i] = 0;
+            }
+            j0 = state.at.ridx[q];
+            j1 = state.at.ridx[q+1]-1;
+            for(j=j0; j<=j1; j++)
+            {
+                state.ftrantmp0[state.at.idx[j]] = state.at.vals[j];
+            }
+            basissolvex(state.basis, state.ftrantmp0, ref alphaq, ref alphaqim, true, ref state.ftrantmp1, _params);
+            alglib.ap.assert((settings.pricing==-1 || settings.pricing==0) || settings.pricing==1, "FTran: unexpected Settings.Pricing");
+            if( settings.pricing==1 )
+            {
+                basissolve(state.basis, rhor.dense, ref tau, ref state.ftrantmp1, _params);
+            }
+            
+            //
+            // Timers
+            //
+            if( state.dotimers )
+            {
+                state.repdualftrantime = state.repdualftrantime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+            }
         }
 
 
@@ -44108,23 +47216,26 @@ public partial class alglib
 
         It returns following results:
         * Q - non-negative value for success, negative for primal infeasible problem
+        * AlphaRPiv - AlphaR[Q] (due to AlphaR being stored in sparse format this
+          value is difficult to extract by index Q).
         * ThetaD - dual step length
         * PossibleFlips[PossibleFlipsCnt] - for possible flip indexes (for BFRT
           this set coincides with actual flips, but stabilizing BFRT is a bit more
           complex - some variables in PossibleFlips[] may need flipping and some not)
 
         Internally it uses following fields of State for temporaries:
-        * EligibleSet
+        * EligibleAlphaR
 
           -- ALGLIB --
              Copyright 19.07.2018 by Bochkanov Sergey
         *************************************************************************/
         private static void ratiotest(dualsimplexstate state,
             dualsimplexsubproblem s,
-            double[] alphar,
+            dssvector alphar,
             double delta,
             int p,
             ref int q,
+            ref double alpharpiv,
             ref double thetad,
             ref int[] possibleflips,
             ref int possibleflipscnt,
@@ -44132,34 +47243,48 @@ public partial class alglib
             alglib.xparams _params)
         {
             int nx = 0;
-            int nn = 0;
-            int i = 0;
             int j = 0;
             int nj = 0;
-            int jj = 0;
             int dir = 0;
-            double sinv = 0;
             double vx = 0;
             double vp = 0;
+            int ej = 0;
+            double alpharej = 0;
             double vtarget = 0;
             double vtest = 0;
             int eligiblecnt = 0;
+            int originaleligiblecnt = 0;
             int bndt = 0;
             double alphawaver = 0;
             double adelta = 0;
             int idx = 0;
             double vtheta = 0;
-            double thetamax = 0;
-            int harrissetsize = 0;
-            bool hasnonboxedvars = new bool();
+            int t0 = 0;
 
             q = 0;
+            alpharpiv = 0;
             thetad = 0;
 
             nx = s.ns+s.m;
-            nn = s.ns;
             alglib.ap.assert((double)(delta)!=(double)(0), "RatioTest: zero delta");
             alglib.ap.assert(s.state==ssvalid, "RatioTest: invalid X");
+            
+            //
+            // Timers
+            //
+            t0 = 0;
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            
+            //
+            // Clear output
+            //
+            q = -1;
+            alpharpiv = 0;
+            thetad = 0;
+            possibleflipscnt = 0;
             
             //
             // Prepare temporaries
@@ -44168,7 +47293,6 @@ public partial class alglib
             // scale of I-th tolerance is calculated as ratio of ColScale[I] and ColScale[P].
             //
             dir = Math.Sign(delta);
-            sinv = 1.0/s.colscales[p];
             apserv.ivectorsetlengthatleast(ref possibleflips, nx, _params);
             
             //
@@ -44176,11 +47300,11 @@ public partial class alglib
             //
             // NOTE: free variables are immediately chosen at this stage
             //
-            apserv.ivectorsetlengthatleast(ref state.eligibleset, nn, _params);
+            apserv.ivectorsetlengthatleast(ref state.eligiblealphar, alphar.k, _params);
             eligiblecnt = 0;
-            for(j=0; j<=nn-1; j++)
+            for(j=0; j<=alphar.k-1; j++)
             {
-                nj = state.basis.nidx[j];
+                nj = alphar.idx[j];
                 bndt = s.bndt[nj];
                 
                 //
@@ -44195,6 +47319,17 @@ public partial class alglib
                 {
                     q = nj;
                     thetad = 0;
+                    alpharpiv = alphar.vals[j];
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> ratio test: quick exit, found free nonbasic variable\n");
+                        alglib.ap.trace(System.String.Format("Q           = {0,12:d}  (variable selected)\n", q));
+                        alglib.ap.trace(System.String.Format("ThetaD      = {0,12:E3}  (dual step length)\n", thetad));
+                    }
+                    if( state.dotimers )
+                    {
+                        state.repdualratiotesttime = state.repdualratiotesttime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+                    }
                     return;
                 }
                 
@@ -44202,13 +47337,13 @@ public partial class alglib
                 // Handle lower/upper/range constraints
                 //
                 vx = s.xa[nj];
-                vp = settings.pivottol*(s.colscales[nj]*sinv);
-                alphawaver = dir*alphar[nj];
+                vp = settings.pivottol;
+                alphawaver = dir*alphar.vals[j];
                 if( bndt==cclower || (bndt==ccrange && vx==s.bndl[nj]) )
                 {
                     if( alphawaver>vp )
                     {
-                        state.eligibleset[eligiblecnt] = nj;
+                        state.eligiblealphar[eligiblecnt] = j;
                         eligiblecnt = eligiblecnt+1;
                         continue;
                     }
@@ -44217,39 +47352,63 @@ public partial class alglib
                 {
                     if( alphawaver<-vp )
                     {
-                        state.eligibleset[eligiblecnt] = nj;
+                        state.eligiblealphar[eligiblecnt] = j;
                         eligiblecnt = eligiblecnt+1;
                         continue;
                     }
                 }
             }
+            originaleligiblecnt = eligiblecnt;
             
             //
             // Simple ratio test.
             //
             if( settings.ratiotest==0 )
             {
-                q = -1;
-                thetad = 0;
+                
+                //
+                // Ratio test
+                //
                 vtarget = 0;
-                possibleflipscnt = 0;
                 for(j=0; j<=eligiblecnt-1; j++)
                 {
-                    nj = state.eligibleset[j];
+                    ej = state.eligiblealphar[j];
+                    nj = alphar.idx[ej];
+                    alpharej = alphar.vals[ej];
                     
                     //
                     // More general case
                     //
-                    alphawaver = dir*alphar[nj];
+                    alphawaver = dir*alpharej;
                     vtest = s.d[nj]/alphawaver;
                     if( q<0 || vtest<vtarget )
                     {
                         q = nj;
+                        alpharpiv = alpharej;
                         vtarget = vtest;
-                        thetad = s.d[nj]/alphar[nj];
+                        thetad = s.d[nj]/alpharej;
                     }
                 }
-                shifting(state, s, alphar, delta, q, ref thetad, settings, _params);
+                shifting(state, s, alphar, delta, q, alpharpiv, ref thetad, settings, _params);
+                
+                //
+                // Trace
+                //
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> dual ratio test:\n");
+                    alglib.ap.trace(System.String.Format("|E|         = {0,12:d}  (eligible set size)\n", originaleligiblecnt));
+                    alglib.ap.trace(System.String.Format("Q           = {0,12:d}  (variable selected)\n", q));
+                    alglib.ap.trace(System.String.Format("ThetaD      = {0,12:E3}  (dual step length)\n", thetad));
+                }
+                if( state.dotimers )
+                {
+                    state.repdualratiotesttime = state.repdualratiotesttime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+                }
+                
+                //
+                // Done
+                //
                 return;
             }
             
@@ -44258,9 +47417,6 @@ public partial class alglib
             //
             if( settings.ratiotest==1 )
             {
-                q = -1;
-                thetad = 0;
-                possibleflipscnt = 0;
                 adelta = Math.Abs(delta);
                 
                 //
@@ -44268,6 +47424,10 @@ public partial class alglib
                 //
                 if( eligiblecnt==0 )
                 {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> ratio test: quick exit, no eligible variables\n");
+                    }
                     return;
                 }
                 
@@ -44282,15 +47442,19 @@ public partial class alglib
                     //
                     idx = -1;
                     q = -1;
+                    alpharpiv = 0;
                     vtarget = 0;
                     for(j=0; j<=eligiblecnt-1; j++)
                     {
-                        nj = state.eligibleset[j];
-                        vtheta = s.d[nj]/alphar[nj];
+                        ej = state.eligiblealphar[j];
+                        nj = alphar.idx[ej];
+                        alpharej = alphar.vals[ej];
+                        vtheta = s.d[nj]/alpharej;
                         vtest = dir*vtheta;
                         if( q<0 || vtest<vtarget )
                         {
                             q = nj;
+                            alpharpiv = alpharej;
                             vtarget = vtest;
                             thetad = vtheta;
                             idx = j;
@@ -44315,7 +47479,7 @@ public partial class alglib
                     // Update and test ADelta. Break BFRT mini-iterations once
                     // we get negative slope.
                     //
-                    adelta = adelta-(s.bndu[q]-s.bndl[q])*Math.Abs(alphar[q]);
+                    adelta = adelta-(s.bndu[q]-s.bndl[q])*Math.Abs(alpharpiv);
                     if( (double)(adelta)<=(double)(0) )
                     {
                         break;
@@ -44324,167 +47488,34 @@ public partial class alglib
                     //
                     // Update eligible set, record flip
                     //
-                    alglib.ap.assert(state.eligibleset[idx]==q, "RatioTest: unexpected failure");
-                    possibleflips[possibleflipscnt] = q;
+                    possibleflips[possibleflipscnt] = state.eligiblealphar[idx];
                     possibleflipscnt = possibleflipscnt+1;
-                    state.eligibleset[idx] = state.eligibleset[eligiblecnt-1];
+                    state.eligiblealphar[idx] = state.eligiblealphar[eligiblecnt-1];
                     eligiblecnt = eligiblecnt-1;
                 }
                 alglib.ap.assert(q>=0, "RatioTest: unexpected failure");
-                thetad = s.d[q]/alphar[q];
-                shifting(state, s, alphar, delta, q, ref thetad, settings, _params);
-                return;
-            }
-            
-            //
-            // Stabilizing bounds flipping ratio test
-            //
-            if( settings.ratiotest==2 )
-            {
-                q = -1;
-                thetad = 0;
-                possibleflipscnt = 0;
-                adelta = Math.Abs(delta);
-                apserv.ivectorgrowto(ref state.harrisset, eligiblecnt, _params);
+                thetad = s.d[q]/alpharpiv;
+                shifting(state, s, alphar, delta, q, alpharpiv, ref thetad, settings, _params);
                 
                 //
-                // Quick exit
+                // Trace
                 //
-                if( eligiblecnt==0 )
+                if( state.dotrace )
                 {
-                    return;
+                    alglib.ap.trace("> dual bounds flipping ratio test:\n");
+                    alglib.ap.trace(System.String.Format("|E|         = {0,12:d}  (eligible set size)\n", originaleligiblecnt));
+                    alglib.ap.trace(System.String.Format("Q           = {0,12:d}  (variable selected)\n", q));
+                    alglib.ap.trace(System.String.Format("ThetaD      = {0,12:E3}  (dual step length)\n", thetad));
+                    alglib.ap.trace(System.String.Format("Flips       = {0,12:d}  (possible bound flips)\n", state.possibleflipscnt));
+                }
+                if( state.dotimers )
+                {
+                    state.repdualratiotesttime = state.repdualratiotesttime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
                 }
                 
                 //
-                // BFRT
+                // Done
                 //
-                while( eligiblecnt>0 )
-                {
-                    
-                    //
-                    // Determine ThetaMax according to stabilizing BFRT
-                    //
-                    thetamax = math.maxrealnumber;
-                    for(j=0; j<=eligiblecnt-1; j++)
-                    {
-                        nj = state.eligibleset[j];
-                        alphawaver = dir*alphar[nj];
-                        if( alphawaver>0 )
-                        {
-                            vtest = (s.d[nj]+dtol)/alphawaver;
-                        }
-                        else
-                        {
-                            vtest = (s.d[nj]-dtol)/alphawaver;
-                        }
-                        if( vtest<thetamax )
-                        {
-                            thetamax = vtest;
-                        }
-                    }
-                    
-                    //
-                    // Determine Harris set, entering index Q
-                    // Save flips
-                    //
-                    harrissetsize = 0;
-                    hasnonboxedvars = false;
-                    q = -1;
-                    vtarget = -1;
-                    for(j=0; j<=eligiblecnt-1; j++)
-                    {
-                        nj = state.eligibleset[j];
-                        alphawaver = dir*alphar[nj];
-                        if( s.d[nj]/alphawaver>thetamax )
-                        {
-                            continue;
-                        }
-                        state.harrisset[harrissetsize] = nj;
-                        harrissetsize = harrissetsize+1;
-                        hasnonboxedvars = hasnonboxedvars || s.bndt[nj]!=ccrange;
-                        vtest = Math.Abs(alphawaver);
-                        if( vtest>vtarget )
-                        {
-                            q = nj;
-                            vtarget = vtest;
-                        }
-                    }
-                    alglib.ap.assert(q>=0, "RatioTest: integrity check failed (Harris set selection)");
-                    if( harrissetsize==eligiblecnt )
-                    {
-                        break;
-                    }
-                    
-                    //
-                    // Remove Harris set from the eligible set
-                    //
-                    j = 0;
-                    jj = 0;
-                    for(i=0; i<=eligiblecnt-1; i++)
-                    {
-                        if( j==harrissetsize || state.eligibleset[i]!=state.harrisset[j] )
-                        {
-                            
-                            //
-                            // I-th element not present in Harris set, leave it in the eligible set
-                            //
-                            state.eligibleset[jj] = state.eligibleset[i];
-                            jj = jj+1;
-                        }
-                        else
-                        {
-                            
-                            //
-                            // I-th element is present in Harris set, skip it
-                            //
-                            j = j+1;
-                        }
-                    }
-                    eligiblecnt = eligiblecnt-harrissetsize;
-                    alglib.ap.assert(j==harrissetsize, "RatioTest: integrity check failed");
-                    alglib.ap.assert(jj==eligiblecnt, "RatioTest: integrity check failed");
-                    
-                    //
-                    // Update and test |delta|.
-                    //
-                    // Break BFRT mini-iterations once we get negative slope.
-                    //
-                    for(j=0; j<=harrissetsize-1; j++)
-                    {
-                        nj = state.harrisset[j];
-                        if( !hasnonboxedvars || s.bndt[nj]==ccrange )
-                        {
-                            adelta = adelta-(s.bndu[nj]-s.bndl[nj])*Math.Abs(alphar[nj]);
-                        }
-                        else
-                        {
-                            adelta = -1;
-                        }
-                    }
-                    if( (double)(adelta)<=(double)(0) )
-                    {
-                        break;
-                    }
-                    alglib.ap.assert(!hasnonboxedvars, "RatioTest: integrity check failed");
-                    for(j=0; j<=harrissetsize-1; j++)
-                    {
-                        possibleflips[possibleflipscnt] = state.harrisset[j];
-                        possibleflipscnt = possibleflipscnt+1;
-                    }
-                }
-                alglib.ap.assert(q>=0, "RatioTest: unexpected failure");
-                if( eligiblecnt==0 && adelta<0 )
-                {
-                    
-                    //
-                    // Eligible set exhausted, declare dual unboundedness
-                    //
-                    q = -1;
-                    thetad = 0;
-                    return;
-                }
-                thetad = s.d[q]/alphar[q];
-                shifting(state, s, alphar, delta, q, ref thetad, settings, _params);
                 return;
             }
             
@@ -44519,9 +47550,10 @@ public partial class alglib
                      Forest-Tomlin update, not referenced when other update scheme is set
         * AlphaR   - pivot row
         * Tau - tau-vector for DSE pricing (ignored if simple pricing is used)
-        * PossibleFlips, PossibleFlipsCnt - outputs of the RatioTest(), information
-          about possible variable flips (however, we have to check residual costs
-          before actually flipping variables - it is possible that some variables
+        * PossibleAlphaRFlips, PossibleAlphaRFlipsCnt - outputs of the RatioTest()
+          information about possible variable flips - indexes of AlphaR positions
+          which are considered for flipping due to BFRT (however, we have to check
+          residual costs before actually flipping variables - it is possible that some variables
           in this set actually do not need flipping)
 
         It performs following operations:
@@ -44543,19 +47575,19 @@ public partial class alglib
             double thetad,
             double[] alphaq,
             double[] alphaqim,
-            double[] alphar,
+            dssvector alphar,
             double[] tau,
-            int[] possibleflips,
-            int possibleflipscnt,
+            int[] possiblealpharflips,
+            int possiblealpharflipscnt,
             dualsimplexsettings settings,
             alglib.xparams _params)
         {
-            int nn = 0;
             int nx = 0;
             int m = 0;
             int ii = 0;
             int j = 0;
             int k = 0;
+            int aj = 0;
             int k0 = 0;
             int k1 = 0;
             double bndl = 0;
@@ -44566,8 +47598,9 @@ public partial class alglib
             int dir = 0;
             int idx = 0;
             int actualflipscnt = 0;
+            int t0 = 0;
+            int alpharlen = 0;
 
-            nn = s.ns;
             nx = s.ns+s.m;
             m = s.m;
             
@@ -44581,9 +47614,19 @@ public partial class alglib
             alglib.ap.assert((double)(alphapiv)!=(double)(0), "UpdateStep: AlphaPiv=0");
             
             //
+            // Timers
+            //
+            t0 = 0;
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            
+            //
             // Prepare
             //
             dir = Math.Sign(delta);
+            alpharlen = alphar.k;
             flip = 0;
             apserv.rvectorsetlengthatleast(ref state.tmp0, m, _params);
             for(k=0; k<=m-1; k++)
@@ -44596,14 +47639,15 @@ public partial class alglib
             //
             // Evaluate and update non-basic elements of D
             //
-            for(ii=0; ii<=nn-1; ii++)
+            for(ii=0; ii<=alpharlen-1; ii++)
             {
-                j = state.basis.nidx[ii];
-                s.d[j] = s.d[j]-thetad*state.alphar[j];
+                j = alphar.idx[ii];
+                s.d[j] = s.d[j]-thetad*alphar.vals[ii];
             }
-            for(ii=0; ii<=possibleflipscnt-1; ii++)
+            for(ii=0; ii<=possiblealpharflipscnt-1; ii++)
             {
-                j = possibleflips[ii];
+                aj = possiblealpharflips[ii];
+                j = alphar.idx[aj];
                 dj = s.d[j];
                 bndl = s.bndl[j];
                 bndu = s.bndu[j];
@@ -44623,7 +47667,7 @@ public partial class alglib
                 }
                 if( flipped )
                 {
-                    delta = delta-dir*(bndu-bndl)*Math.Abs(alphar[j]);
+                    delta = delta-dir*(bndu-bndl)*Math.Abs(alphar.vals[aj]);
                     state.ustmpi[actualflipscnt] = j;
                     actualflipscnt = actualflipscnt+1;
                     k0 = state.at.ridx[j];
@@ -44682,7 +47726,7 @@ public partial class alglib
             {
                 for(j=0; j<=m-1; j++)
                 {
-                    s.xb[j] = s.xb[j]-thetap*state.alphaq[j];
+                    s.xb[j] = s.xb[j]-thetap*alphaq[j];
                 }
                 s.xb[r] = s.xa[q]+thetap;
                 if( dir<0 )
@@ -44698,14 +47742,27 @@ public partial class alglib
             //
             // Update basis
             //
-            basisupdatetrf(state.basis, state.at, p, q, state.alphaq, state.alphaqim, r, tau, settings, _params);
+            basisupdatetrf(state.basis, state.at, p, q, alphaq, alphaqim, r, tau, settings, _params);
             
             //
             // Update cached variables
             //
-            s.bndlb[r] = s.bndl[q];
-            s.bndub[r] = s.bndu[q];
-            s.bndtb[r] = s.bndt[q];
+            cacheboundinfo(s, r, q, settings, _params);
+            
+            //
+            // Tracing and timers
+            //
+            if( state.dodetailedtrace )
+            {
+                if( state.basis.trftype==3 )
+                {
+                    updateavgcounter(sparsityof(state.basis.densemu, state.basis.trfage*m, _params), ref state.repfilldensemu, ref state.repfilldensemucnt, _params);
+                }
+            }
+            if( state.dotimers )
+            {
+                state.repdualupdatesteptime = state.repdualupdatesteptime+(unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0);
+            }
         }
 
 
@@ -44719,7 +47776,9 @@ public partial class alglib
         private static bool refactorizationrequired(dualsimplexstate state,
             dualsimplexsubproblem s,
             int q,
+            double alpharpiv,
             int r,
+            double alphaqpiv,
             alglib.xparams _params)
         {
             bool result = new bool();
@@ -44755,9 +47814,35 @@ public partial class alglib
                 }
             }
             mx = Math.Sqrt(mx);
-            result = result || (double)(Math.Abs(state.alphaq[r]-state.alphar[q]))>(double)(alphatrigger*(1.0+mx));
-            result = result || (double)(Math.Abs(state.alphaq[r]-state.alphar[q]))>(double)(alphatrigger2*Math.Abs(state.alphar[q]));
+            result = result || (double)(Math.Abs(alphaqpiv-alpharpiv))>(double)(alphatrigger*(1.0+mx));
+            result = result || (double)(Math.Abs(alphaqpiv-alpharpiv))>(double)(alphatrigger2*Math.Abs(alpharpiv));
             return result;
+        }
+
+
+        /*************************************************************************
+        This function caches information for I-th column of the  basis,  which  is
+        assumed to store variable K:
+        * lower bound in S.BndLB[I]=S.BndL[K]
+        * upper bound in S.BndUB[I]=S.BndU[K]
+        * bound type in  S.BndTB[I]=S.BndT[K]
+        * lower bound primal error tolerance in S.BndTolLB[I] (nonnegative)
+        * upper bound primal error tolerance in S.BndTolLB[I] (nonnegative).
+
+          -- ALGLIB --
+             Copyright 18.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void cacheboundinfo(dualsimplexsubproblem s,
+            int i,
+            int k,
+            dualsimplexsettings settings,
+            alglib.xparams _params)
+        {
+            s.bndlb[i] = s.bndl[k];
+            s.bndub[i] = s.bndu[k];
+            s.bndtb[i] = s.bndt[k];
+            s.bndtollb[i] = settings.xtolabs+settings.xtolrelabs*settings.xtolabs*Math.Abs(s.bndlb[i]);
+            s.bndtolub[i] = settings.xtolabs+settings.xtolrelabs*settings.xtolabs*Math.Abs(s.bndub[i]);
         }
 
 
@@ -44795,17 +47880,15 @@ public partial class alglib
             int nx = 0;
             int m = 0;
             int i = 0;
-            int j = 0;
             int p = 0;
             int r = 0;
             int q = 0;
-            double alphapiv = 0;
+            double alpharpiv = 0;
+            double alphaqpiv = 0;
             double thetad = 0;
             double thetap = 0;
             double delta = 0;
             int forcedrestarts = 0;
-            int j0 = 0;
-            int j1 = 0;
 
             info = 0;
 
@@ -44822,16 +47905,32 @@ public partial class alglib
             {
                 alglib.ap.assert(s.bndt[i]!=ccinfeasible, "SolveSubproblemDual: infeasible box constraints");
             }
-            alglib.ap.assert(isdualfeasible(state, s, _params), "SolveSubproblemDual: dual infeasible initial basis");
+            alglib.ap.assert(isdualfeasible(state, s, settings, _params), "SolveSubproblemDual: dual infeasible initial basis");
             
             //
             // Actual processing
             //
-            offloadbasiccomponents(s, state.basis, _params);
+            offloadbasiccomponents(s, state.basis, settings, _params);
             info = 0;
             apserv.rvectorsetlengthatleast(ref state.tmp0, m, _params);
             while( true )
             {
+                
+                //
+                // Iteration report
+                //
+                if( state.dotrace )
+                {
+                    i = state.repiterationscount2;
+                    if( isphase1 )
+                    {
+                        i = state.repiterationscount1;
+                    }
+                    alglib.ap.trace(System.String.Format("=== ITERATION {0,5:d} STARTED ========================================================================\n", i));
+                    if( state.dodetailedtrace )
+                    {
+                    }
+                }
                 
                 //
                 // Pricing
@@ -44843,6 +47942,10 @@ public partial class alglib
                     //
                     // Solved! Feasible and bounded!
                     //
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> pricing: feasible point found\n");
+                    }
                     recombinebasicnonbasicx(s, state.basis, _params);
                     info = 1;
                     return;
@@ -44851,22 +47954,17 @@ public partial class alglib
                 //
                 // BTran
                 //
-                for(i=0; i<=m-1; i++)
-                {
-                    state.tmp0[i] = 0;
-                }
-                state.tmp0[r] = 1;
-                basissolvet(state.basis, state.tmp0, ref state.rhor, ref state.tmp2, _params);
+                btranstep(state, s, r, state.rhor, settings, _params);
                 
                 //
                 // Pivot row
                 //
-                computeantv(state, state.rhor, ref state.alphar, _params);
+                pivotrowstep(state, s, state.rhor, state.alphar, settings, _params);
                 
                 //
                 // Ratio test
                 //
-                ratiotest(state, s, state.alphar, delta, p, ref q, ref thetad, ref state.possibleflips, ref state.possibleflipscnt, settings, _params);
+                ratiotest(state, s, state.alphar, delta, p, ref q, ref alpharpiv, ref thetad, ref state.possibleflips, ref state.possibleflipscnt, settings, _params);
                 if( q<0 )
                 {
                     
@@ -44876,9 +47974,13 @@ public partial class alglib
                     //
                     if( state.basis.trfage>0 && forcedrestarts<maxforcedrestarts )
                     {
+                        if( state.dotrace )
+                        {
+                            alglib.ap.trace(System.String.Format("> ratio test: failed, basis is old (age={0,0:d}), forcing restart ({1,0:d} of {2,0:d})\n", state.basis.trfage, forcedrestarts, maxforcedrestarts-1));
+                        }
                         basisfreshtrf(state.basis, state.at, settings, _params);
                         subproblemhandlexnupdate(state, s, _params);
-                        offloadbasiccomponents(s, state.basis, _params);
+                        offloadbasiccomponents(s, state.basis, settings, _params);
                         apserv.inc(ref forcedrestarts, _params);
                         continue;
                     }
@@ -44886,56 +47988,45 @@ public partial class alglib
                     //
                     // Dual unbounded, primal infeasible
                     //
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> ratio test: failed, results are accepted\n");
+                    }
                     recombinebasicnonbasicx(s, state.basis, _params);
                     info = -3;
                     return;
                 }
-                alphapiv = state.alphar[q];
+                thetap = delta/alpharpiv;
                 
                 //
-                // FTran
+                // FTran, including additional FTran for DSE weights (if needed)
                 //
                 // NOTE: AlphaQim is filled by intermediate FTran result which is useful
                 //       for Forest-Tomlin update scheme. If not Forest-Tomlin update is
                 //       used, then it is not set.
                 //
-                for(i=0; i<=m-1; i++)
-                {
-                    state.tmp0[i] = 0;
-                }
-                j0 = state.at.ridx[q];
-                j1 = state.at.ridx[q+1]-1;
-                for(j=j0; j<=j1; j++)
-                {
-                    state.tmp0[state.at.idx[j]] = state.at.vals[j];
-                }
-                basissolvex(state.basis, state.tmp0, ref state.alphaq, ref state.alphaqim, true, ref state.tmp2, _params);
+                ftranstep(state, s, state.rhor, q, ref state.alphaq, ref state.alphaqim, ref state.tau, settings, _params);
+                alphaqpiv = state.alphaq[r];
                 
                 //
                 // Check numerical accuracy, trigger refactorization if needed
                 //
-                if( refactorizationrequired(state, s, q, r, _params) )
+                if( refactorizationrequired(state, s, q, alpharpiv, r, alphaqpiv, _params) )
                 {
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> refactorization test: numerical errors are too large, forcing refactorization and restart\n");
+                    }
                     basisfreshtrf(state.basis, state.at, settings, _params);
                     subproblemhandlexnupdate(state, s, _params);
-                    offloadbasiccomponents(s, state.basis, _params);
+                    offloadbasiccomponents(s, state.basis, settings, _params);
                     continue;
-                }
-                
-                //
-                // One more FTRan for DSE weights (if needed)
-                //
-                alglib.ap.assert((settings.pricing==-1 || settings.pricing==0) || settings.pricing==1, "SolveSubproblemDual: unexpected Settings.Pricing");
-                if( settings.pricing==1 )
-                {
-                    basissolve(state.basis, state.rhor, ref state.tau, ref state.tmp2, _params);
                 }
                 
                 //
                 // Basis change and update
                 //
-                thetap = delta/alphapiv;
-                updatestep(state, s, p, q, r, delta, alphapiv, thetap, thetad, state.alphaq, state.alphaqim, state.alphar, state.tau, state.possibleflips, state.possibleflipscnt, settings, _params);
+                updatestep(state, s, p, q, r, delta, alpharpiv, thetap, thetad, state.alphaq, state.alphaqim, state.alphar, state.tau, state.possibleflips, state.possibleflipscnt, settings, _params);
                 apserv.inc(ref state.repiterationscount, _params);
                 if( isphase1 )
                 {
@@ -45029,6 +48120,18 @@ public partial class alglib
             {
                 
                 //
+                // Iteration report
+                //
+                if( state.dotrace )
+                {
+                    i = state.repiterationscount3;
+                    alglib.ap.trace(System.String.Format("=== ITERATION {0,5:d} STARTED ========================================================================\n", i));
+                    if( state.dodetailedtrace )
+                    {
+                    }
+                }
+                
+                //
                 // Primal simplex pricing step: we implement the very basic version
                 // of the pricing step because it is expected that primal simplex method
                 // is used just to apply quick correction after removal of the perturbation.
@@ -45104,15 +48207,25 @@ public partial class alglib
                     }
                     continue;
                 }
-                if( vmax<=dtol )
+                if( vmax<=settings.dtolabs )
                 {
                     
                     //
                     // Solved: primal and dual feasible!
                     //
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> primal pricing: feasible point found\n");
+                    }
                     return;
                 }
                 alglib.ap.assert(q>=0, "SolveSubproblemPrimal: integrity check failed");
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> primal pricing: found entering variable\n");
+                    alglib.ap.trace(System.String.Format("Q           = {0,12:d}  (variable selected)\n", q));
+                    alglib.ap.trace(System.String.Format("|D|         = {0,12:E3}  (dual infeasibility)\n", vmax));
+                }
                 
                 //
                 // FTran and textbook ratio test (again, we expect primal phase to terminate quickly)
@@ -45192,7 +48305,18 @@ public partial class alglib
                     // Primal unbounded
                     //
                     info = -4;
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("> primal ratio test: dual infeasible, primal unbounded\n");
+                    }
                     return;
+                }
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> primal ratio test: found leaving variable\n");
+                    alglib.ap.trace(System.String.Format("P           = {0,12:d}  (variable index)\n", p));
+                    alglib.ap.trace(System.String.Format("R           = {0,12:d}  (variable index in basis)\n", r));
+                    alglib.ap.trace(System.String.Format("ThetaP      = {0,12:E3}  (primal step length)\n", thetap));
                 }
                 
                 //
@@ -45281,6 +48405,7 @@ public partial class alglib
             alglib.xparams _params)
         {
             int m = 0;
+            double dualerr = 0;
 
             m = state.primary.m;
             state.repterminationtype = 0;
@@ -45294,17 +48419,46 @@ public partial class alglib
             //
             // Is it dual feasible from the very beginning (or maybe after initial DFC)?
             //
-            if( (double)(initialdualfeasibilitycorrection(state, state.primary, settings, _params))<=(double)(dtol) )
+            if( state.dotrace )
             {
+                alglib.ap.trace("> performing initial dual feasibility correction...\n");
+            }
+            dualerr = initialdualfeasibilitycorrection(state, state.primary, settings, _params);
+            if( state.dotrace )
+            {
+                alglib.ap.trace(System.String.Format("> initial dual feasibility correction done\ndualErr = {0,0:E3}\n", dualerr));
+            }
+            if( (double)(dualerr)<=(double)(settings.dtolabs) )
+            {
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> solution is dual feasible, phase 1 is done\n");
+                }
                 state.repterminationtype = 1;
                 return;
+            }
+            if( state.dotrace )
+            {
+                alglib.ap.trace("> solution is not dual feasible, proceeding to full-scale phase 1\n");
+                alglib.ap.trace("\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+                alglib.ap.trace("*   PHASE 1 OF DUAL SIMPLEX SOLVER                                                                 *\n");
+                alglib.ap.trace("****************************************************************************************************\n");
             }
             
             //
             // Solve phase #1 subproblem
             //
             subprobleminitphase1(state.primary, state.basis, state.phase1, _params);
-            initialdualfeasibilitycorrection(state, state.phase1, settings, _params);
+            if( state.dotrace )
+            {
+                alglib.ap.trace("> performing phase 1 dual feasibility correction...\n");
+            }
+            dualerr = initialdualfeasibilitycorrection(state, state.phase1, settings, _params);
+            if( state.dotrace )
+            {
+                alglib.ap.trace(System.String.Format("> phase 1 dual feasibility correction done\ndualErr = {0,0:E3}\n", dualerr));
+            }
             solvesubproblemdual(state, state.phase1, true, settings, ref state.repterminationtype, _params);
             alglib.ap.assert(state.repterminationtype>0, "DualSimplexSolver: unexpected failure of phase #1");
             state.repterminationtype = 1;
@@ -45312,13 +48466,244 @@ public partial class alglib
             //
             // Setup initial basis for phase #2 using solution of phase #1
             //
-            subprobleminferinitialxn(state, state.primary, _params);
-            if( (double)(initialdualfeasibilitycorrection(state, state.primary, settings, _params))>(double)(dtol) )
+            if( state.dotrace )
             {
+                alglib.ap.trace("> setting up phase 2 initial solution\n");
+            }
+            subprobleminferinitialxn(state, state.primary, _params);
+            dualerr = initialdualfeasibilitycorrection(state, state.primary, settings, _params);
+            if( (double)(dualerr)>(double)(settings.dtolabs) )
+            {
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> initial dual feasibility correction failed! terminating...\n");
+                }
                 state.repterminationtype = -4;
                 return;
             }
             state.repterminationtype = 1;
+        }
+
+
+        /*************************************************************************
+        This function performs actual solution.
+
+        INPUT PARAMETERS:
+            State   -   state
+            
+        Solution results can be found in fields  of  State  which  are  explicitly
+        declared as accessible by external code.
+
+          -- ALGLIB --
+             Copyright 19.07.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void dssoptimizewrk(dualsimplexstate state,
+            dualsimplexsettings settings,
+            alglib.xparams _params)
+        {
+            int nx = 0;
+            int m = 0;
+            int i = 0;
+            int j = 0;
+            double v = 0;
+            hqrnd.hqrndstate rs = new hqrnd.hqrndstate();
+            int t0 = 0;
+
+            nx = state.primary.ns+state.primary.m;
+            m = state.primary.m;
+            t0 = 0;
+            
+            //
+            // Handle case when M=0; after this block we assume that M>0.
+            //
+            if( m==0 )
+            {
+                
+                //
+                // Trace
+                //
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> box-only LP problem, quick solution\n");
+                }
+                
+                //
+                // Solve
+                //
+                solveboxonly(state, _params);
+                return;
+            }
+            
+            //
+            // Most basic check for correctness of box and/or linear constraints
+            //
+            for(j=0; j<=nx-1; j++)
+            {
+                if( state.primary.bndt[j]==ccinfeasible )
+                {
+                    
+                    //
+                    // Set error flag and generate some point to return
+                    //
+                    if( state.dotrace )
+                    {
+                        alglib.ap.trace("[WARNING] infeasible box constraint (or range constraint with AL>AU) found, terminating\n");
+                    }
+                    state.repterminationtype = -3;
+                    setzeroxystats(state, _params);
+                    return;
+                }
+            }
+            
+            //
+            // Initialization:
+            // * initial perturbed C[]
+            //
+            hqrnd.hqrndseed(7456, 2355, rs, _params);
+            for(i=0; i<=nx-1; i++)
+            {
+                if( !isfree(state.primary, i, _params) )
+                {
+                    
+                    //
+                    // apply perturbation
+                    //
+                    v = settings.perturbmag*(1+Math.Abs(state.primary.rawc[i]))*(1+hqrnd.hqrnduniformr(rs, _params));
+                    if( !hasbndl(state.primary, i, _params) )
+                    {
+                        v = -v;
+                    }
+                    state.primary.effc[i] = state.primary.rawc[i]+v;
+                }
+            }
+            
+            //
+            // Solve phase 1 subproblem, then perturbed subproblem
+            //
+            basisfreshtrf(state.basis, state.at, settings, _params);
+            if( state.primary.state==ssinvalid )
+            {
+                subprobleminferinitialxn(state, state.primary, _params);
+            }
+            if( state.primary.state==ssvalidxn )
+            {
+                subproblemhandlexnupdate(state, state.primary, _params);
+            }
+            alglib.ap.assert(state.primary.state==ssvalid, "DSS: integrity check failed (init)");
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            invokephase1(state, settings, _params);
+            if( state.dotimers )
+            {
+                state.repphase1time = unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0;
+            }
+            if( state.repterminationtype<=0 )
+            {
+                
+                //
+                // Primal unbounded, dual infeasible
+                //
+                alglib.ap.assert(state.repterminationtype==-4, "DSS: integrity check for InvokePhase1() result failed");
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> the problem is dual infeasible, primal unbounded\n> done\n");
+                }
+                setxydstats(state, state.primary, state.basis, state.xydsbuf, ref state.repx, ref state.replagbc, ref state.replaglc, ref state.repstats, _params);
+                return;
+            }
+            if( state.dotrace )
+            {
+                alglib.ap.trace("\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+                alglib.ap.trace("*   PHASE 2 OF DUAL SIMPLEX SOLVER                                                                 *\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+            }
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            solvesubproblemdual(state, state.primary, false, settings, ref state.repterminationtype, _params);
+            if( state.dotimers )
+            {
+                state.repphase2time = unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0;
+            }
+            if( state.repterminationtype<=0 )
+            {
+                
+                //
+                // Primal infeasible
+                //
+                alglib.ap.assert(state.repterminationtype==-3, "DSS: integrity check for SolveSubproblemDual() result failed");
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> the problem is primal infeasible\n> done\n");
+                }
+                setxydstats(state, state.primary, state.basis, state.xydsbuf, ref state.repx, ref state.replagbc, ref state.replaglc, ref state.repstats, _params);
+                return;
+            }
+            
+            //
+            // Remove perturbation from the cost vector,
+            // then use primal simplex to enforce dual feasibility
+            // after removal of the perturbation (if necessary).
+            //
+            if( state.dotrace )
+            {
+                alglib.ap.trace("\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+                alglib.ap.trace("*   PHASE 3 OF DUAL SIMPLEX SOLVER (perturbation removed from cost vector)                         *\n");
+                alglib.ap.trace("****************************************************************************************************\n");
+            }
+            if( state.dotimers )
+            {
+                t0 = unchecked((int)(System.DateTime.UtcNow.Ticks/10000));
+            }
+            subprobleminitphase3(state.primary, state.phase3, _params);
+            for(i=0; i<=nx-1; i++)
+            {
+                state.phase3.effc[i] = state.primary.rawc[i];
+            }
+            alglib.ap.assert(state.phase3.state>=ssvalidxn, "DSS: integrity check failed (remove perturbation)");
+            subproblemhandlexnupdate(state, state.phase3, _params);
+            solvesubproblemprimal(state, state.phase3, settings, ref state.repterminationtype, _params);
+            if( state.dotimers )
+            {
+                state.repphase3time = unchecked((int)(System.DateTime.UtcNow.Ticks/10000))-t0;
+            }
+            if( state.repterminationtype<=0 )
+            {
+                
+                //
+                // Dual infeasible, primal unbounded
+                //
+                alglib.ap.assert(state.repterminationtype==-4, "DSS: integrity check for SolveSubproblemPrimal() result failed");
+                if( state.dotrace )
+                {
+                    alglib.ap.trace("> the problem is primal unbounded\n> done\n");
+                }
+                setxydstats(state, state.phase3, state.basis, state.xydsbuf, ref state.repx, ref state.replagbc, ref state.replaglc, ref state.repstats, _params);
+                return;
+            }
+            for(i=0; i<=nx-1; i++)
+            {
+                state.primary.xa[i] = state.phase3.xa[i];
+                if( hasbndl(state.primary, i, _params) )
+                {
+                    state.primary.xa[i] = Math.Max(state.primary.xa[i], state.primary.bndl[i]);
+                }
+                if( hasbndu(state.primary, i, _params) )
+                {
+                    state.primary.xa[i] = Math.Min(state.primary.xa[i], state.primary.bndu[i]);
+                }
+            }
+            
+            //
+            // Primal and dual feasible, problem solved
+            //
+            state.repterminationtype = 1;
+            setxydstats(state, state.primary, state.basis, state.xydsbuf, ref state.repx, ref state.replagbc, ref state.replaglc, ref state.repstats, _params);
         }
 
 
@@ -45337,6 +48722,7 @@ public partial class alglib
 
             ns = state.primary.ns;
             alglib.ap.assert(state.primary.m==0, "SolveBoxOnly: integrity check failed");
+            ablasf.rsetv(ns, 0.0, state.replagbc, _params);
             for(i=0; i<=ns-1; i++)
             {
                 
@@ -45346,8 +48732,9 @@ public partial class alglib
                 if( state.primary.bndt[i]==ccinfeasible )
                 {
                     state.repterminationtype = -3;
-                    setzeroxystats(state, _params);
-                    return;
+                    state.repx[i] = 0.5*(state.primary.bndl[i]+state.primary.bndu[i]);
+                    state.repstats[i] = 0;
+                    continue;
                 }
                 
                 //
@@ -45357,6 +48744,7 @@ public partial class alglib
                 {
                     state.repx[i] = state.primary.bndl[i];
                     state.repstats[i] = -1;
+                    state.replagbc[i] = -state.primary.rawc[i];
                     continue;
                 }
                 
@@ -45367,24 +48755,56 @@ public partial class alglib
                 {
                     if( state.primary.bndt[i]!=ccrange && state.primary.bndt[i]!=cclower )
                     {
-                        state.repterminationtype = -4;
-                        setzeroxystats(state, _params);
-                        return;
+                        if( state.repterminationtype>0 )
+                        {
+                            state.repterminationtype = -4;
+                        }
+                        if( state.primary.bndt[i]==ccupper )
+                        {
+                            state.repx[i] = state.primary.bndu[i];
+                            state.repstats[i] = 1;
+                        }
+                        else
+                        {
+                            state.repx[i] = 0;
+                            state.repstats[i] = 0;
+                        }
+                        state.replagbc[i] = 0;
                     }
-                    state.repx[i] = state.primary.bndl[i];
-                    state.repstats[i] = -1;
+                    else
+                    {
+                        state.repx[i] = state.primary.bndl[i];
+                        state.repstats[i] = -1;
+                        state.replagbc[i] = -state.primary.rawc[i];
+                    }
                     continue;
                 }
                 if( (double)(state.primary.rawc[i])<(double)(0) )
                 {
                     if( state.primary.bndt[i]!=ccrange && state.primary.bndt[i]!=ccupper )
                     {
-                        state.repterminationtype = -4;
-                        setzeroxystats(state, _params);
-                        return;
+                        if( state.repterminationtype>0 )
+                        {
+                            state.repterminationtype = -4;
+                        }
+                        if( state.primary.bndt[i]==cclower )
+                        {
+                            state.repx[i] = state.primary.bndl[i];
+                            state.repstats[i] = -1;
+                        }
+                        else
+                        {
+                            state.repx[i] = 0;
+                            state.repstats[i] = 0;
+                        }
+                        state.replagbc[i] = 0;
                     }
-                    state.repx[i] = state.primary.bndu[i];
-                    state.repstats[i] = 1;
+                    else
+                    {
+                        state.repx[i] = state.primary.bndu[i];
+                        state.repstats[i] = 1;
+                        state.replagbc[i] = -state.primary.rawc[i];
+                    }
                     continue;
                 }
                 
@@ -45395,12 +48815,14 @@ public partial class alglib
                 {
                     state.repx[i] = state.primary.bndu[i];
                     state.repstats[i] = 1;
+                    state.replagbc[i] = 0;
                     continue;
                 }
                 if( state.primary.bndt[i]==cclower )
                 {
                     state.repx[i] = state.primary.bndl[i];
                     state.repstats[i] = -1;
+                    state.replagbc[i] = 0;
                     continue;
                 }
                 
@@ -45410,12 +48832,13 @@ public partial class alglib
                 alglib.ap.assert(state.primary.bndt[i]==ccfree, "DSSOptimize: integrity check failed");
                 state.repx[i] = 0;
                 state.repstats[i] = 0;
+                state.replagbc[i] = 0;
             }
         }
 
 
         /*************************************************************************
-        Zero-fill RepX, RepY, RepStats.
+        Zero-fill RepX, RepLagBC, RepLagLC, RepStats.
 
           -- ALGLIB --
              Copyright 19.07.2018 by Bochkanov Sergey
@@ -45428,11 +48851,11 @@ public partial class alglib
             for(i=0; i<=state.primary.ns-1; i++)
             {
                 state.repx[i] = 0;
+                state.replagbc[i] = 0;
             }
             for(i=0; i<=state.primary.m-1; i++)
             {
-                state.repy[i] = 0;
-                state.repdx[i] = 0;
+                state.replaglc[i] = 0;
             }
             for(i=0; i<=state.primary.ns+state.primary.m-1; i++)
             {
@@ -45479,6 +48902,22 @@ public partial class alglib
                 s.dseweights[i] = 1.0;
             }
             s.dsevalid = false;
+            basisclearstats(s, _params);
+        }
+
+
+        /*************************************************************************
+        This function clears internal performance counters of the basis
+
+          -- ALGLIB --
+             Copyright 19.07.2018 by Bochkanov Sergey
+        *************************************************************************/
+        private static void basisclearstats(dualsimplexbasis s,
+            alglib.xparams _params)
+        {
+            s.statfact = 0;
+            s.statupdt = 0;
+            s.statoffdiag = 0;
         }
 
 
@@ -45702,6 +49141,7 @@ public partial class alglib
             double newminu = 0;
 
             alglib.ap.assert(s0.ns==s1.ns, "BasisImportFrom: structural variable counts do not match");
+            basisclearstats(s0, _params);
             s0.m = s1.m;
             for(i=0; i<=s0.m-1; i++)
             {
@@ -45845,6 +49285,8 @@ public partial class alglib
                 pivottobwd(s.tmpi, m, ref s.rowpermbwd, _params);
                 s.isvalidtrf = true;
                 s.trfage = 0;
+                s.statfact = s.statfact+1;
+                s.statoffdiag = s.statoffdiag+math.sqr(m-1);
                 result = basisminimumdiagonalelement(s, _params);
                 return result;
             }
@@ -46130,6 +49572,8 @@ public partial class alglib
                 sparse.sparsecopytransposecrsbuf(s.sparseu, s.sparseut, _params);
                 s.isvalidtrf = true;
                 s.trfage = 0;
+                s.statfact = s.statfact+1;
+                s.statoffdiag = s.statoffdiag+(s.sparsel.ridx[m]-m)+(s.sparseu.ridx[m]-m);
                 result = basisminimumdiagonalelement(s, _params);
                 return result;
             }
@@ -46340,6 +49784,8 @@ public partial class alglib
                         }
                     }
                     apserv.inc(ref s.trfage, _params);
+                    s.statupdt = s.statupdt+1;
+                    s.statoffdiag = s.statoffdiag+math.sqr(m-1);
                     processed = true;
                 }
                 if( s.trftype==3 )
@@ -46502,6 +49948,8 @@ public partial class alglib
                     // Done
                     //
                     apserv.inc(ref s.trfage, _params);
+                    s.statupdt = s.statupdt+1;
+                    s.statoffdiag = s.statoffdiag+(s.sparsel.ridx[m]-m)+(s.sparseu.ridx[m]-m);
                     processed = true;
                 }
                 alglib.ap.assert(processed, "BasisUpdateTrf: unexpected TRF type");
@@ -47215,11 +50663,12 @@ public partial class alglib
         *************************************************************************/
         private static bool isdualfeasible(dualsimplexstate state,
             dualsimplexsubproblem s,
+            dualsimplexsettings settings,
             alglib.xparams _params)
         {
             bool result = new bool();
 
-            result = (double)(dualfeasibilityerror(state, s, _params))<=(double)(dtol);
+            result = (double)(dualfeasibilityerror(state, s, _params))<=(double)(settings.dtolabs);
             return result;
         }
 
@@ -47296,6 +50745,7 @@ public partial class alglib
         *************************************************************************/
         private static void offloadbasiccomponents(dualsimplexsubproblem s,
             dualsimplexbasis basis,
+            dualsimplexsettings settings,
             alglib.xparams _params)
         {
             int i = 0;
@@ -47305,9 +50755,7 @@ public partial class alglib
             for(i=0; i<=m-1; i++)
             {
                 s.xb[i] = s.xa[basis.idx[i]];
-                s.bndlb[i] = s.bndl[basis.idx[i]];
-                s.bndub[i] = s.bndu[basis.idx[i]];
-                s.bndtb[i] = s.bndt[basis.idx[i]];
+                cacheboundinfo(s, i, basis.idx[i], settings, _params);
             }
         }
 
@@ -47334,51 +50782,313 @@ public partial class alglib
 
 
         /*************************************************************************
-        Restores original scale of the variables, enforces box constraints (just
-        to be sure)
+        Computes Stats array
+
+        INPUT PARAMETERS:
+            S           -   problem, contains current solution at S.XA
+            Basis       -   basis
+            X           -   possibly preallocated output buffer
+            LagBC       -   possibly preallocated output buffer
+            LagLC       -   possibly preallocated output buffer
+            Stats       -   possibly preallocated output buffer
+            Buffers     -   temporary buffers
+
+        OUTPUT PARAMETERS:
+            X           -   array[NS], solution
+            LagBC       -   array[NS], Lagrange multipliers for box constraints
+            LagLC       -   array[M], Lagrange multipliers for linear constraints
+            Stats       -   array[NS+M], primary/slack variable stats:
+                            * -1 = variable at lower bound
+                            * +1 = variable at upper bound
+                            *  0 = basic or free (possibly nonbasic) variable
+                            fixed variables may be set to +1 or -1
 
           -- ALGLIB --
              Copyright 24.01.2019 by Bochkanov Sergey
         *************************************************************************/
-        private static void unscaleandenforce(double[] repx,
-            double[] repy,
-            double[] repdx,
-            dualsimplexstate s,
+        private static void setxydstats(dualsimplexstate state,
+            dualsimplexsubproblem s,
+            dualsimplexbasis basis,
+            apserv.apbuffers buffers,
+            ref double[] x,
+            ref double[] lagbc,
+            ref double[] laglc,
+            ref int[] stats,
             alglib.xparams _params)
         {
             int i = 0;
-            int ns = 0;
+            int j = 0;
             int m = 0;
+            int ns = 0;
+            int nx = 0;
 
-            ns = s.ns;
+            
+            //
+            // Prepare
+            //
             m = s.m;
+            ns = s.ns;
+            nx = s.ns+s.m;
+            apserv.rvectorsetlengthatleast(ref x, ns, _params);
+            apserv.rvectorsetlengthatleast(ref laglc, m, _params);
+            apserv.ivectorsetlengthatleast(ref stats, nx, _params);
+            ablasf.rsetallocv(ns, 0.0, ref lagbc, _params);
+            
+            //
+            // Compute Y (in Buffers.RA1) and D (in Buffers.RA3)
+            //
+            apserv.rvectorsetlengthatleast(ref buffers.ra0, m, _params);
+            apserv.rvectorsetlengthatleast(ref buffers.ra1, m, _params);
+            apserv.rvectorsetlengthatleast(ref buffers.ra3, nx, _params);
+            for(i=0; i<=m-1; i++)
+            {
+                buffers.ra0[i] = s.rawc[basis.idx[i]];
+            }
+            basissolvet(basis, buffers.ra0, ref buffers.ra1, ref buffers.ra2, _params);
+            computeantv(state, buffers.ra1, ref buffers.ra3, _params);
             for(i=0; i<=ns-1; i++)
             {
-                if( s.repstats[i]<0 )
+                j = state.basis.nidx[i];
+                buffers.ra3[j] = state.primary.rawc[j]-buffers.ra3[j];
+                if( j<ns )
                 {
-                    repx[i] = s.rawbndl[i];
-                    continue;
-                }
-                if( s.repstats[i]>0 )
-                {
-                    repx[i] = s.rawbndu[i];
-                    continue;
-                }
-                repx[i] = repx[i]*s.varscales[i];
-                if( math.isfinite(s.rawbndl[i]) )
-                {
-                    repx[i] = Math.Max(repx[i], s.rawbndl[i]);
-                }
-                if( math.isfinite(s.rawbndu[i]) )
-                {
-                    repx[i] = Math.Min(repx[i], s.rawbndu[i]);
+                    lagbc[j] = -buffers.ra3[j];
                 }
             }
             for(i=0; i<=m-1; i++)
             {
-                repy[i] = repy[i]/s.rowscales[i];
-                repdx[i] = repdx[i]/s.rowscales[i];
+                buffers.ra3[state.basis.idx[i]] = 0;
             }
+            
+            //
+            // Compute X, Y, Stats
+            //
+            for(i=0; i<=ns-1; i++)
+            {
+                x[i] = s.xa[i];
+                if( math.isfinite(state.rawbndl[i]) )
+                {
+                    x[i] = Math.Max(x[i], state.rawbndl[i]);
+                }
+                if( math.isfinite(state.rawbndu[i]) )
+                {
+                    x[i] = Math.Min(x[i], state.rawbndu[i]);
+                }
+            }
+            for(i=0; i<=ns-1; i++)
+            {
+                if( basis.isbasic[i] )
+                {
+                    lagbc[i] = 0;
+                    continue;
+                }
+                if( s.bndt[i]==ccfixed )
+                {
+                    continue;
+                }
+                if( hasbndl(s, i, _params) && (double)(s.xa[i])==(double)(s.bndl[i]) )
+                {
+                    lagbc[i] = Math.Min(lagbc[i], 0.0);
+                    continue;
+                }
+                if( hasbndu(s, i, _params) && (double)(s.xa[i])==(double)(s.bndu[i]) )
+                {
+                    lagbc[i] = Math.Max(lagbc[i], 0.0);
+                    continue;
+                }
+                alglib.ap.assert(!hasbndl(s, i, _params) && !hasbndu(s, i, _params), "SetStats: integrity check failed (zetta5)");
+                lagbc[i] = 0;
+            }
+            for(i=0; i<=m-1; i++)
+            {
+                laglc[i] = -(buffers.ra1[i]/state.rowscales[i]);
+            }
+            for(i=0; i<=nx-1; i++)
+            {
+                if( basis.isbasic[i] )
+                {
+                    stats[i] = 0;
+                    continue;
+                }
+                if( hasbndl(s, i, _params) && (double)(s.xa[i])==(double)(s.bndl[i]) )
+                {
+                    stats[i] = -1;
+                    continue;
+                }
+                if( hasbndu(s, i, _params) && (double)(s.xa[i])==(double)(s.bndu[i]) )
+                {
+                    stats[i] = 1;
+                    continue;
+                }
+                alglib.ap.assert(!hasbndl(s, i, _params) && !hasbndu(s, i, _params), "SetStats: integrity check failed (zetta5)");
+                stats[i] = 0;
+            }
+        }
+
+
+        /*************************************************************************
+        Initializes vector, sets all internal arrays to length N (so that  we  may
+        store any vector without reallocation).  Previously  allocated  memory  is
+        reused as much as possible.
+
+        No zero-filling is performed, X.K is undefined. Only X.N is set.
+
+        INPUT PARAMETERS:
+            X           -   temporary buffers
+
+        OUTPUT PARAMETERS:
+            X           -   preallocated vector, X.N=N, contents undefined
+
+          -- ALGLIB --
+             Copyright 24.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void dvalloc(dssvector x,
+            int n,
+            alglib.xparams _params)
+        {
+            apserv.ivectorsetlengthatleast(ref x.idx, n, _params);
+            apserv.rvectorsetlengthatleast(ref x.vals, n, _params);
+            apserv.rvectorsetlengthatleast(ref x.dense, n, _params);
+            x.n = n;
+        }
+
+
+        /*************************************************************************
+        Initializes vector, sets all internal arrays to length  N  and  zero-fills
+        them. Previously allocated memory is reused as much as possible.
+
+        INPUT PARAMETERS:
+            X           -   temporary buffers
+
+        OUTPUT PARAMETERS:
+            X           -   preallocated vector:
+                            * X.N=N
+                            * X.K=0
+                            * X.Dense is zero-filled.
+
+          -- ALGLIB --
+             Copyright 24.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void dvinit(dssvector x,
+            int n,
+            alglib.xparams _params)
+        {
+            apserv.ivectorsetlengthatleast(ref x.idx, n, _params);
+            apserv.rvectorsetlengthatleast(ref x.vals, n, _params);
+            apserv.rvectorsetlengthatleast(ref x.dense, n, _params);
+            ablasf.rsetv(n, 0.0, x.dense, _params);
+            x.n = n;
+            x.k = 0;
+        }
+
+
+        /*************************************************************************
+        Copies dense part to sparse one.
+
+        INPUT PARAMETERS:
+            X           -   allocated vector; dense part must be valid
+
+        OUTPUT PARAMETERS:
+            X           -   both dense and sparse parts are valid.
+
+          -- ALGLIB --
+             Copyright 24.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void dvdensetosparse(dssvector x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int k = 0;
+            double v = 0;
+
+            n = x.n;
+            apserv.ivectorsetlengthatleast(ref x.idx, n, _params);
+            apserv.rvectorsetlengthatleast(ref x.vals, n, _params);
+            k = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                v = x.dense[i];
+                if( v!=0.0 )
+                {
+                    x.idx[k] = i;
+                    x.vals[k] = v;
+                    k = k+1;
+                }
+            }
+            x.k = k;
+        }
+
+
+        /*************************************************************************
+        Copies sparse part to dense one.
+
+        INPUT PARAMETERS:
+            X           -   allocated vector; sparse part must be valid
+
+        OUTPUT PARAMETERS:
+            X           -   both dense and sparse parts are valid.
+
+          -- ALGLIB --
+             Copyright 24.07.2020 by Bochkanov Sergey
+        *************************************************************************/
+        private static void dvsparsetodense(dssvector x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+            int k = 0;
+
+            n = x.n;
+            k = x.k;
+            ablasf.rsetv(n, 0.0, x.dense, _params);
+            for(i=0; i<=k-1; i++)
+            {
+                x.dense[x.idx[i]] = x.vals[i];
+            }
+        }
+
+
+        private static double sparsityof(double[] x,
+            int n,
+            alglib.xparams _params)
+        {
+            double result = 0;
+            int i = 0;
+            int k = 0;
+            double mx = 0;
+
+            if( n<=1 )
+            {
+                result = 0;
+                return result;
+            }
+            mx = 1.0;
+            for(i=0; i<=n-1; i++)
+            {
+                mx = Math.Max(mx, Math.Abs(x[i]));
+            }
+            mx = 1.0E5*math.machineepsilon*mx;
+            k = 0;
+            for(i=0; i<=n-1; i++)
+            {
+                if( (double)(Math.Abs(x[i]))>(double)(mx) )
+                {
+                    k = k+1;
+                }
+            }
+            result = (double)k/(double)n;
+            return result;
+        }
+
+
+        private static void updateavgcounter(double v,
+            ref double acc,
+            ref int cnt,
+            alglib.xparams _params)
+        {
+            acc = acc+v;
+            cnt = cnt+1;
         }
 
 
@@ -47394,6 +51104,7 @@ public partial class alglib
         {
             public int n;
             public int algokind;
+            public double ipmlambda;
             public double[] s;
             public double[] c;
             public double[] bndl;
@@ -47403,16 +51114,29 @@ public partial class alglib
             public double[] al;
             public double[] au;
             public double[] xs;
-            public double[] ys;
+            public double[] lagbc;
+            public double[] laglc;
             public int[] cs;
             public double repf;
             public double repprimalerror;
             public double repdualerror;
+            public double repslackerror;
             public int repiterationscount;
             public int repterminationtype;
+            public int repn;
+            public int repm;
+            public double dsseps;
+            public double ipmeps;
             public reviseddualsimplex.dualsimplexstate dss;
+            public vipmsolver.vipmstate ipm;
             public int[] adddtmpi;
             public double[] adddtmpr;
+            public double[] tmpax;
+            public double[] tmpg;
+            public lpqppresolve.presolveinfo presolver;
+            public double[] zeroorigin;
+            public double[] units;
+            public sparse.sparsematrix ipmquadratic;
             public minlpstate()
             {
                 init();
@@ -47427,17 +51151,26 @@ public partial class alglib
                 al = new double[0];
                 au = new double[0];
                 xs = new double[0];
-                ys = new double[0];
+                lagbc = new double[0];
+                laglc = new double[0];
                 cs = new int[0];
                 dss = new reviseddualsimplex.dualsimplexstate();
+                ipm = new vipmsolver.vipmstate();
                 adddtmpi = new int[0];
                 adddtmpr = new double[0];
+                tmpax = new double[0];
+                tmpg = new double[0];
+                presolver = new lpqppresolve.presolveinfo();
+                zeroorigin = new double[0];
+                units = new double[0];
+                ipmquadratic = new sparse.sparsematrix();
             }
             public override alglib.apobject make_copy()
             {
                 minlpstate _result = new minlpstate();
                 _result.n = n;
                 _result.algokind = algokind;
+                _result.ipmlambda = ipmlambda;
                 _result.s = (double[])s.Clone();
                 _result.c = (double[])c.Clone();
                 _result.bndl = (double[])bndl.Clone();
@@ -47447,16 +51180,29 @@ public partial class alglib
                 _result.al = (double[])al.Clone();
                 _result.au = (double[])au.Clone();
                 _result.xs = (double[])xs.Clone();
-                _result.ys = (double[])ys.Clone();
+                _result.lagbc = (double[])lagbc.Clone();
+                _result.laglc = (double[])laglc.Clone();
                 _result.cs = (int[])cs.Clone();
                 _result.repf = repf;
                 _result.repprimalerror = repprimalerror;
                 _result.repdualerror = repdualerror;
+                _result.repslackerror = repslackerror;
                 _result.repiterationscount = repiterationscount;
                 _result.repterminationtype = repterminationtype;
+                _result.repn = repn;
+                _result.repm = repm;
+                _result.dsseps = dsseps;
+                _result.ipmeps = ipmeps;
                 _result.dss = (reviseddualsimplex.dualsimplexstate)dss.make_copy();
+                _result.ipm = (vipmsolver.vipmstate)ipm.make_copy();
                 _result.adddtmpi = (int[])adddtmpi.Clone();
                 _result.adddtmpr = (double[])adddtmpr.Clone();
+                _result.tmpax = (double[])tmpax.Clone();
+                _result.tmpg = (double[])tmpg.Clone();
+                _result.presolver = (lpqppresolve.presolveinfo)presolver.make_copy();
+                _result.zeroorigin = (double[])zeroorigin.Clone();
+                _result.units = (double[])units.Clone();
+                _result.ipmquadratic = (sparse.sparsematrix)ipmquadratic.make_copy();
                 return _result;
             }
         };
@@ -47465,9 +51211,13 @@ public partial class alglib
         /*************************************************************************
         This structure stores optimization report:
         * f                         target function value
+        * lagbc                     Lagrange coefficients for box constraints
+        * laglc                     Lagrange coefficients for linear constraints
         * y                         dual variables
         * stats                     array[N+M], statuses of box (N) and linear (M)
-                                    constraints:
+                                    constraints. This array is filled only by  DSS
+                                    algorithm because IPM always stops at INTERIOR
+                                    point:
                                     * stats[i]>0  =>  constraint at upper bound
                                                       (also used for free non-basic
                                                       variables set to zero)
@@ -47476,8 +51226,11 @@ public partial class alglib
                                                       variable
         * primalerror               primal feasibility error
         * dualerror                 dual feasibility error
+        * slackerror                complementary slackness error
         * iterationscount           iteration count
         * terminationtype           completion code (see below)
+
+        COMPLETION CODES
 
         Completion codes:
         * -4    LP problem is primal unbounded (dual infeasible)
@@ -47487,14 +51240,30 @@ public partial class alglib
         *  7    stopping conditions are too stringent,
                 further improvement is impossible,
                 X contains best point found so far.
+                
+        LAGRANGE COEFFICIENTS
+
+        Positive Lagrange coefficient means that constraint is at its upper bound.
+        Negative coefficient means that constraint is at its lower  bound.  It  is
+        expected that at solution the dual feasibility condition holds:
+
+            C + SUM(Ei*LagBC[i],i=0..n-1) + SUM(Ai*LagLC[i],i=0..m-1) ~ 0
+            
+        where
+        * C is a cost vector (linear term)
+        * Ei is a vector with 1.0 at position I and 0 in other positions
+        * Ai is an I-th row of linear constraint matrix
         *************************************************************************/
         public class minlpreport : apobject
         {
             public double f;
+            public double[] lagbc;
+            public double[] laglc;
             public double[] y;
             public int[] stats;
             public double primalerror;
             public double dualerror;
+            public double slackerror;
             public int iterationscount;
             public int terminationtype;
             public minlpreport()
@@ -47503,6 +51272,8 @@ public partial class alglib
             }
             public override void init()
             {
+                lagbc = new double[0];
+                laglc = new double[0];
                 y = new double[0];
                 stats = new int[0];
             }
@@ -47510,10 +51281,13 @@ public partial class alglib
             {
                 minlpreport _result = new minlpreport();
                 _result.f = f;
+                _result.lagbc = (double[])lagbc.Clone();
+                _result.laglc = (double[])laglc.Clone();
                 _result.y = (double[])y.Clone();
                 _result.stats = (int[])stats.Clone();
                 _result.primalerror = primalerror;
                 _result.dualerror = dualerror;
+                _result.slackerror = slackerror;
                 _result.iterationscount = iterationscount;
                 _result.terminationtype = terminationtype;
                 return _result;
@@ -47544,13 +51318,17 @@ public partial class alglib
           [*] minlpaddlc2()       to add one row to constraint matrix (compressed format)
         * call minlpoptimize() to run the solver and  minlpresults()  to  get  the
           solution vector and additional information.
+          
+        By  default,  LP  solver uses best algorithm available. As of ALGLIB 3.17,
+        sparse interior point (barrier) solver is used. Future releases of  ALGLIB
+        may introduce other solvers.
 
-        Presently  this  optimizer  supports  only  revised  simplex   method   as
-        underlying solver. DSE pricing and bounds flipping ratio  test  (aka  long
-        dual step) are supported. Large-scale sparse LU solver with  Forest-Tomlin
-        is used internally as linear algebra driver.
-
-        Future releases of ALGLIB may introduce other solvers.
+        User may choose specific LP algorithm by calling:
+        * minlpsetalgodss() for revised dual simplex method with DSE  pricing  and
+          bounds flipping ratio test (aka long dual step).  Large-scale  sparse LU
+          solverwith  Forest-Tomlin update is used internally  as  linear  algebra
+          driver.
+        * minlpsetalgoipm() for sparse interior point method
 
         INPUT PARAMETERS:
             N       -   problem size
@@ -47574,7 +51352,8 @@ public partial class alglib
             //
             state.n = n;
             state.m = 0;
-            state.algokind = 1;
+            minlpsetalgoipm(state, 0.0, _params);
+            state.ipmlambda = 0;
             state.c = new double[n];
             state.s = new double[n];
             state.bndl = new double[n];
@@ -47589,6 +51368,127 @@ public partial class alglib
                 state.xs[i] = 1.0;
             }
             clearreportfields(state, _params);
+        }
+
+
+        /*************************************************************************
+        This function sets LP algorithm to revised dual simplex method.
+
+        ALGLIB implementation of dual simplex method supports advanced performance
+        and stability improvements like DSE pricing , bounds flipping  ratio  test
+        (aka long dual step), Forest-Tomlin update, shifting.
+
+        INPUT PARAMETERS:
+            State   -   optimizer
+            Eps     -   stopping condition, Eps>=0:
+                        * should be small number about 1E-6 or 1E-7.
+                        * zero value means that solver automatically selects good
+                          value (can be different in different ALGLIB versions)
+                        * default value is zero
+                        Algorithm stops when relative error is less than Eps.
+
+        ===== TRACING DSS SOLVER =================================================
+
+        DSS solver supports advanced tracing capabilities. You can trace algorithm
+        output by specifying following trace symbols (case-insensitive)  by  means
+        of trace_file() call:
+        * 'DSS'         - for basic trace of algorithm  steps and decisions.  Only
+                          short scalars (function values and deltas) are  printed.
+                          N-dimensional quantities like search directions are  NOT
+                          printed.
+        * 'DSS.DETAILED'- for output of points being visited and search directions
+                          This  symbol  also  implicitly  defines  'DSS'. You  can
+                          control output format by additionally specifying:
+                          * nothing     to output in  6-digit exponential format
+                          * 'PREC.E15'  to output in 15-digit exponential format
+                          * 'PREC.F6'   to output in  6-digit fixed-point format
+
+        By default trace is disabled and adds  no  overhead  to  the  optimization
+        process. However, specifying any of the symbols adds some  formatting  and
+        output-related overhead.
+
+        You may specify multiple symbols by separating them with commas:
+        >
+        > alglib::trace_file("DSS,PREC.F6", "path/to/trace.log")
+        > 
+
+          -- ALGLIB --
+             Copyright 08.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minlpsetalgodss(minlpstate state,
+            double eps,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(math.isfinite(eps), "MinLPSetAlgoDSS: Eps is not finite number");
+            alglib.ap.assert((double)(eps)>=(double)(0), "MinLPSetAlgoDSS: Eps<0");
+            state.algokind = 1;
+            if( (double)(eps)==(double)(0) )
+            {
+                eps = 1.0E-6;
+            }
+            state.dsseps = eps;
+        }
+
+
+        /*************************************************************************
+        This function sets LP algorithm to sparse interior point method.
+
+        ALGORITHM INFORMATION:
+
+        * this  algorithm  is  our implementation  of  interior  point  method  as
+          formulated by  R.J.Vanderbei, with minor modifications to the  algorithm
+          (damped Newton directions are extensively used)
+        * like all interior point methods, this algorithm  tends  to  converge  in
+          roughly same number of iterations (between 15 and 50) independently from
+          the problem dimensionality
+
+        INPUT PARAMETERS:
+            State   -   optimizer
+            Eps     -   stopping condition, Eps>=0:
+                        * should be small number about 1E-7 or 1E-8.
+                        * zero value means that solver automatically selects good
+                          value (can be different in different ALGLIB versions)
+                        * default value is zero
+                        Algorithm  stops  when  primal  error  AND  dual error AND
+                        duality gap are less than Eps.
+
+        ===== TRACING IPM SOLVER =================================================
+
+        IPM solver supports advanced tracing capabilities. You can trace algorithm
+        output by specifying following trace symbols (case-insensitive)  by  means
+        of trace_file() call:
+        * 'IPM'         - for basic trace of algorithm  steps and decisions.  Only
+                          short scalars (function values and deltas) are  printed.
+                          N-dimensional quantities like search directions are  NOT
+                          printed.
+        * 'IPM.DETAILED'- for output of points being visited and search directions
+                          This  symbol  also  implicitly  defines  'IPM'. You  can
+                          control output format by additionally specifying:
+                          * nothing     to output in  6-digit exponential format
+                          * 'PREC.E15'  to output in 15-digit exponential format
+                          * 'PREC.F6'   to output in  6-digit fixed-point format
+
+        By default trace is disabled and adds  no  overhead  to  the  optimization
+        process. However, specifying any of the symbols adds some  formatting  and
+        output-related overhead.
+
+        You may specify multiple symbols by separating them with commas:
+        >
+        > alglib::trace_file("IPM,PREC.F6", "path/to/trace.log")
+        > 
+
+          -- ALGLIB --
+             Copyright 08.11.2020 by Bochkanov Sergey
+        *************************************************************************/
+        public static void minlpsetalgoipm(minlpstate state,
+            double eps,
+            alglib.xparams _params)
+        {
+            alglib.ap.assert(math.isfinite(eps), "MinLPSetAlgoIPM: Eps is not finite number");
+            alglib.ap.assert((double)(eps)>=(double)(0), "MinLPSetAlgoIPM: Eps<0");
+            state.algokind = 2;
+            state.ipmeps = eps;
+            state.ipmlambda = 0.0;
         }
 
 
@@ -48311,6 +52211,7 @@ public partial class alglib
             state.a.uidx[m] = uidx;
             state.a.ridx[m+1] = offsdst+1;
             state.a.m = m+1;
+            state.a.ninitialized = state.a.ninitialized+nnz;
             state.al[m] = al;
             state.au[m] = au;
             state.m = m+1;
@@ -48335,9 +52236,11 @@ public partial class alglib
             int n = 0;
             int m = 0;
             int i = 0;
+            double v = 0;
             reviseddualsimplex.dualsimplexsettings settings = new reviseddualsimplex.dualsimplexsettings();
             double[,] dummy = new double[0,0];
             reviseddualsimplex.dualsimplexbasis dummybasis = new reviseddualsimplex.dualsimplexbasis();
+            bool badconstr = new bool();
 
             n = state.n;
             m = state.m;
@@ -48346,60 +52249,184 @@ public partial class alglib
             //
             // Most basic check for correctness of constraints
             //
+            badconstr = false;
             for(i=0; i<=n-1; i++)
             {
-                if( (double)(state.bndl[i])>(double)(state.bndu[i]) )
+                if( (math.isfinite(state.bndl[i]) && math.isfinite(state.bndu[i])) && (double)(state.bndl[i])>(double)(state.bndu[i]) )
                 {
-                    state.repterminationtype = -3;
-                    return;
+                    badconstr = true;
                 }
             }
             for(i=0; i<=m-1; i++)
             {
-                if( (double)(state.al[i])>(double)(state.au[i]) )
+                if( (math.isfinite(state.al[i]) && math.isfinite(state.au[i])) && (double)(state.al[i])>(double)(state.au[i]) )
                 {
-                    state.repterminationtype = -3;
-                    return;
+                    badconstr = true;
                 }
+            }
+            if( badconstr )
+            {
+                state.repterminationtype = -3;
+                state.repn = n;
+                state.repm = m;
+                ablasf.rsetallocv(n, 0.0, ref state.xs, _params);
+                ablasf.rsetallocv(n, 0.0, ref state.lagbc, _params);
+                ablasf.rsetallocv(m, 0.0, ref state.laglc, _params);
+                ablasf.isetallocv(n+m, 0, ref state.cs, _params);
+                state.repf = 0;
+                state.repprimalerror = 0;
+                for(i=0; i<=n-1; i++)
+                {
+                    if( math.isfinite(state.bndl[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, state.bndl[i]-0);
+                    }
+                    if( math.isfinite(state.bndu[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, 0-state.bndu[i]);
+                    }
+                }
+                for(i=0; i<=m-1; i++)
+                {
+                    if( math.isfinite(state.al[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, state.al[i]-0);
+                    }
+                    if( math.isfinite(state.au[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, 0-state.au[i]);
+                    }
+                }
+                state.repdualerror = 0;
+                for(i=0; i<=n-1; i++)
+                {
+                    state.repdualerror = Math.Max(state.repdualerror, Math.Abs(state.c[i]));
+                }
+                state.repslackerror = 0;
+                return;
             }
             
             //
             // Call current solver
             //
-            if( state.algokind==1 )
+            if( state.algokind==1 || state.algokind==2 )
             {
                 
                 //
-                // Dual simplex method
+                // Call the solver
                 //
-                reviseddualsimplex.dsssettingsinit(settings, _params);
-                reviseddualsimplex.dssinit(n, state.dss, _params);
-                reviseddualsimplex.dsssetproblem(state.dss, state.c, state.bndl, state.bndu, state.s, dummy, state.a, 1, state.al, state.au, m, dummybasis, alllogicalsbasis, settings, _params);
-                reviseddualsimplex.dssoptimize(state.dss, settings, _params);
+                if( state.algokind==1 )
+                {
+                    
+                    //
+                    // Dual simplex method with presolve
+                    //
+                    lpqppresolve.presolvenonescaleuser(state.s, state.c, state.bndl, state.bndu, n, state.a, state.al, state.au, m, state.presolver, _params);
+                    reviseddualsimplex.dsssettingsinit(settings, _params);
+                    settings.xtolabs = state.dsseps;
+                    settings.dtolabs = state.dsseps;
+                    reviseddualsimplex.dssinit(state.presolver.newn, state.dss, _params);
+                    reviseddualsimplex.dsssetproblem(state.dss, state.presolver.c, state.presolver.bndl, state.presolver.bndu, dummy, state.presolver.sparsea, 1, state.presolver.al, state.presolver.au, state.presolver.newm, dummybasis, alllogicalsbasis, settings, _params);
+                    reviseddualsimplex.dssoptimize(state.dss, settings, _params);
+                    
+                    //
+                    // Export results, convert from presolve
+                    //
+                    apserv.rvectorsetlengthatleast(ref state.xs, state.presolver.newn, _params);
+                    apserv.rvectorsetlengthatleast(ref state.lagbc, state.presolver.newn, _params);
+                    apserv.rvectorsetlengthatleast(ref state.laglc, state.presolver.newm, _params);
+                    apserv.ivectorsetlengthatleast(ref state.cs, state.presolver.newn+state.presolver.newm, _params);
+                    for(i=0; i<=state.presolver.newn-1; i++)
+                    {
+                        state.xs[i] = state.dss.repx[i];
+                        state.lagbc[i] = state.dss.replagbc[i];
+                    }
+                    for(i=0; i<=state.presolver.newm-1; i++)
+                    {
+                        state.laglc[i] = state.dss.replaglc[i];
+                    }
+                    for(i=0; i<=state.presolver.newn+state.presolver.newm-1; i++)
+                    {
+                        state.cs[i] = state.dss.repstats[i];
+                    }
+                    state.repiterationscount = state.dss.repiterationscount;
+                    state.repterminationtype = state.dss.repterminationtype;
+                    lpqppresolve.presolvebwd(state.presolver, state.xs, state.cs, state.lagbc, state.laglc, _params);
+                    state.repn = n;
+                    state.repm = m;
+                }
+                if( state.algokind==2 )
+                {
+                    
+                    //
+                    // Interior point method with presolve
+                    //
+                    lpqppresolve.presolvenonescaleuser(state.s, state.c, state.bndl, state.bndu, n, state.a, state.al, state.au, m, state.presolver, _params);
+                    ablasf.rsetallocv(state.presolver.newn, 1.0, ref state.units, _params);
+                    ablasf.rsetallocv(state.presolver.newn, 0.0, ref state.zeroorigin, _params);
+                    sparse.sparsecreatesksbandbuf(state.presolver.newn, state.presolver.newn, 0, state.ipmquadratic, _params);
+                    for(i=0; i<=state.presolver.newn-1; i++)
+                    {
+                        sparse.sparseset(state.ipmquadratic, i, i, state.ipmlambda, _params);
+                    }
+                    sparse.sparseconverttocrs(state.ipmquadratic, _params);
+                    vipmsolver.vipminitsparse(state.ipm, state.units, state.zeroorigin, state.presolver.newn, _params);
+                    vipmsolver.vipmsetquadraticlinear(state.ipm, dummy, state.ipmquadratic, 1, false, state.presolver.c, _params);
+                    vipmsolver.vipmsetconstraints(state.ipm, state.presolver.bndl, state.presolver.bndu, state.presolver.sparsea, state.presolver.newm, dummy, 0, state.presolver.al, state.presolver.au, _params);
+                    vipmsolver.vipmsetcond(state.ipm, state.ipmeps, state.ipmeps, state.ipmeps, _params);
+                    vipmsolver.vipmoptimize(state.ipm, true, ref state.xs, ref state.lagbc, ref state.laglc, ref state.repterminationtype, _params);
+                    
+                    //
+                    // Export results, convert from presolve
+                    //
+                    ablasf.isetallocv(state.presolver.newn+state.presolver.newm, 0, ref state.cs, _params);
+                    lpqppresolve.presolvebwd(state.presolver, state.xs, state.cs, state.lagbc, state.laglc, _params);
+                    state.repn = n;
+                    state.repm = m;
+                }
                 
                 //
-                // Export results
+                // Compute F, primal and dual errors
                 //
-                apserv.rvectorsetlengthatleast(ref state.xs, n, _params);
-                apserv.rvectorsetlengthatleast(ref state.ys, m, _params);
-                apserv.ivectorsetlengthatleast(ref state.cs, n+m, _params);
+                state.repf = ablasf.rdotv(n, state.xs, state.c, _params);
+                state.repprimalerror = 0;
+                state.repdualerror = 0;
+                state.repslackerror = 0;
+                ablasf.rcopyallocv(n, state.c, ref state.tmpg, _params);
+                if( m>0 )
+                {
+                    sparse.sparsemv(state.a, state.xs, ref state.tmpax, _params);
+                    sparse.sparsegemv(state.a, 1.0, 1, state.laglc, 0, 1.0, state.tmpg, 0, _params);
+                }
+                ablasf.raddv(n, 1.0, state.lagbc, state.tmpg, _params);
                 for(i=0; i<=n-1; i++)
                 {
-                    state.xs[i] = state.dss.repx[i];
+                    if( math.isfinite(state.bndl[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, state.bndl[i]-state.xs[i]);
+                        state.repslackerror = Math.Max(state.repslackerror, Math.Max(state.xs[i]-state.bndl[i], 0.0)*Math.Max(-state.lagbc[i], 0.0));
+                    }
+                    if( math.isfinite(state.bndu[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, state.xs[i]-state.bndu[i]);
+                        state.repslackerror = Math.Max(state.repslackerror, Math.Max(state.bndu[i]-state.xs[i], 0.0)*Math.Max(state.lagbc[i], 0.0));
+                    }
+                    state.repdualerror = Math.Max(state.repdualerror, Math.Abs(state.tmpg[i]));
                 }
                 for(i=0; i<=m-1; i++)
                 {
-                    state.ys[i] = state.dss.repy[i];
+                    v = state.tmpax[i];
+                    if( math.isfinite(state.al[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, state.al[i]-v);
+                        state.repslackerror = Math.Max(state.repslackerror, Math.Max(v-state.al[i], 0.0)*Math.Max(-state.laglc[i], 0.0));
+                    }
+                    if( math.isfinite(state.au[i]) )
+                    {
+                        state.repprimalerror = Math.Max(state.repprimalerror, v-state.au[i]);
+                        state.repslackerror = Math.Max(state.repslackerror, Math.Max(state.au[i]-v, 0.0)*Math.Max(state.laglc[i], 0.0));
+                    }
                 }
-                for(i=0; i<=n+m-1; i++)
-                {
-                    state.cs[i] = state.dss.repstats[i];
-                }
-                state.repf = state.dss.repf;
-                state.repprimalerror = state.dss.repprimalerror;
-                state.repdualerror = state.dss.repdualerror;
-                state.repiterationscount = state.dss.repiterationscount;
-                state.repterminationtype = state.dss.repterminationtype;
                 return;
             }
             
@@ -48417,7 +52444,7 @@ public partial class alglib
             State   -   algorithm state
 
         OUTPUT PARAMETERS:
-            X       -   array[N], solution. Filled by zeros on failure.
+            X       -   array[N], solution (on failure: last trial point)
             Rep     -   optimization report. You should check Rep.TerminationType,
                         which contains completion code, and you may check  another
                         fields which contain another information  about  algorithm
@@ -48426,6 +52453,8 @@ public partial class alglib
                         Failure codes returned by algorithm are:
                         * -4    LP problem is primal unbounded (dual infeasible)
                         * -3    LP problem is primal infeasible (dual unbounded)
+                        * -2    IPM solver detected that problem is either
+                                infeasible or unbounded
                         
                         Success codes:
                         *  1..4 successful completion
@@ -48462,47 +52491,36 @@ public partial class alglib
             alglib.xparams _params)
         {
             int i = 0;
+            int repn = 0;
+            int repm = 0;
 
-            if( alglib.ap.len(x)<state.n )
+            repn = state.repn;
+            repm = state.repm;
+            if( alglib.ap.len(x)<repn )
             {
-                x = new double[state.n];
+                x = new double[repn];
             }
-            rep.y = new double[state.m];
-            rep.stats = new int[state.n+state.m];
+            rep.y = new double[repm];
+            rep.stats = new int[repn+repm];
             rep.f = state.repf;
             rep.primalerror = state.repprimalerror;
             rep.dualerror = state.repdualerror;
+            rep.slackerror = state.repslackerror;
             rep.iterationscount = state.repiterationscount;
             rep.terminationtype = state.repterminationtype;
-            if( state.repterminationtype>0 )
+            ablasf.rcopyallocv(repm, state.laglc, ref rep.laglc, _params);
+            ablasf.rcopyallocv(repn, state.lagbc, ref rep.lagbc, _params);
+            for(i=0; i<=repn-1; i++)
             {
-                for(i=0; i<=state.n-1; i++)
-                {
-                    x[i] = state.xs[i];
-                }
-                for(i=0; i<=state.m-1; i++)
-                {
-                    rep.y[i] = state.ys[i];
-                }
-                for(i=0; i<=state.n+state.m-1; i++)
-                {
-                    rep.stats[i] = state.cs[i];
-                }
+                x[i] = state.xs[i];
             }
-            else
+            for(i=0; i<=repm-1; i++)
             {
-                for(i=0; i<=state.n-1; i++)
-                {
-                    x[i] = 0;
-                }
-                for(i=0; i<=state.m-1; i++)
-                {
-                    rep.y[i] = 0;
-                }
-                for(i=0; i<=state.n+state.m-1; i++)
-                {
-                    rep.stats[i] = 0;
-                }
+                rep.y[i] = -rep.laglc[i];
+            }
+            for(i=0; i<=repn+repm-1; i++)
+            {
+                rep.stats[i] = state.cs[i];
             }
         }
 
@@ -48521,6 +52539,8 @@ public partial class alglib
             state.repdualerror = 0.0;
             state.repiterationscount = 0;
             state.repterminationtype = 0;
+            state.repn = 0;
+            state.repm = 0;
         }
 
 
@@ -48532,6 +52552,7 @@ public partial class alglib
         *************************************************************************/
         public class minslpsubsolver : apobject
         {
+            public lpqppresolve.presolveinfo presolver;
             public reviseddualsimplex.dualsimplexstate dss;
             public reviseddualsimplex.dualsimplexsettings dsssettings;
             public reviseddualsimplex.dualsimplexbasis lastbasis;
@@ -48554,12 +52575,17 @@ public partial class alglib
             public double[] tmp1;
             public double[] sk;
             public double[] yk;
+            public double[] xs;
+            public double[] laglc;
+            public double[] lagbc;
+            public int[] cs;
             public minslpsubsolver()
             {
                 init();
             }
             public override void init()
             {
+                presolver = new lpqppresolve.presolveinfo();
                 dss = new reviseddualsimplex.dualsimplexstate();
                 dsssettings = new reviseddualsimplex.dualsimplexsettings();
                 lastbasis = new reviseddualsimplex.dualsimplexbasis();
@@ -48579,10 +52605,15 @@ public partial class alglib
                 tmp1 = new double[0];
                 sk = new double[0];
                 yk = new double[0];
+                xs = new double[0];
+                laglc = new double[0];
+                lagbc = new double[0];
+                cs = new int[0];
             }
             public override alglib.apobject make_copy()
             {
                 minslpsubsolver _result = new minslpsubsolver();
+                _result.presolver = (lpqppresolve.presolveinfo)presolver.make_copy();
                 _result.dss = (reviseddualsimplex.dualsimplexstate)dss.make_copy();
                 _result.dsssettings = (reviseddualsimplex.dualsimplexsettings)dsssettings.make_copy();
                 _result.lastbasis = (reviseddualsimplex.dualsimplexbasis)lastbasis.make_copy();
@@ -48605,6 +52636,10 @@ public partial class alglib
                 _result.tmp1 = (double[])tmp1.Clone();
                 _result.sk = (double[])sk.Clone();
                 _result.yk = (double[])yk.Clone();
+                _result.xs = (double[])xs.Clone();
+                _result.laglc = (double[])laglc.Clone();
+                _result.lagbc = (double[])lagbc.Clone();
+                _result.cs = (int[])cs.Clone();
                 return _result;
             }
         };
@@ -48991,13 +53026,11 @@ public partial class alglib
             minslpstate state,
             alglib.xparams _params)
         {
-            int nslack = 0;
             int i = 0;
             int j = 0;
             double v = 0;
             double vv = 0;
 
-            nslack = n+2*(nec+nlec)+(nic+nlic);
             state.n = n;
             state.nec = nec;
             state.nic = nic;
@@ -49818,7 +53851,6 @@ public partial class alglib
             //
             reviseddualsimplex.dsssettingsinit(subsolver.dsssettings, _params);
             subsolver.dsssettings.pricing = 0;
-            reviseddualsimplex.dssinit(nslack, subsolver.dss, _params);
             
             //
             // Allocate temporaries
@@ -50426,8 +54458,15 @@ public partial class alglib
             {
                 subsolver.tmp0[i] = state.trustrad;
             }
-            reviseddualsimplex.dsssetproblem(subsolver.dss, subsolver.curb, subsolver.curbndl, subsolver.curbndu, subsolver.tmp0, subsolver.densedummy, subsolver.sparseefflc, 1, subsolver.cural, subsolver.curau, subsolver.sparseefflc.m, subsolver.lastbasis, basisinittype, subsolver.dsssettings, _params);
+            lpqppresolve.presolvenonescaleuser(subsolver.tmp0, subsolver.curb, subsolver.curbndl, subsolver.curbndu, nslack, subsolver.sparseefflc, subsolver.cural, subsolver.curau, subsolver.sparseefflc.m, subsolver.presolver, _params);
+            reviseddualsimplex.dssinit(subsolver.presolver.newn, subsolver.dss, _params);
+            reviseddualsimplex.dsssetproblem(subsolver.dss, subsolver.presolver.c, subsolver.presolver.bndl, subsolver.presolver.bndu, subsolver.densedummy, subsolver.presolver.sparsea, 1, subsolver.presolver.al, subsolver.presolver.au, subsolver.presolver.newm, subsolver.lastbasis, basisinittype, subsolver.dsssettings, _params);
             reviseddualsimplex.dssoptimize(subsolver.dss, subsolver.dsssettings, _params);
+            ablasf.rcopyallocv(subsolver.presolver.newn, subsolver.dss.repx, ref subsolver.xs, _params);
+            ablasf.rcopyallocv(subsolver.presolver.newn, subsolver.dss.replagbc, ref subsolver.lagbc, _params);
+            ablasf.rcopyallocv(subsolver.presolver.newm, subsolver.dss.replaglc, ref subsolver.laglc, _params);
+            ablasf.icopyallocv(subsolver.presolver.newn+subsolver.presolver.newm, subsolver.dss.repstats, ref subsolver.cs, _params);
+            lpqppresolve.presolvebwd(subsolver.presolver, subsolver.xs, subsolver.cs, subsolver.lagbc, subsolver.laglc, _params);
             state.repsimplexiterations = state.repsimplexiterations+subsolver.dss.repiterationscount;
             state.repsimplexiterations1 = state.repsimplexiterations1+subsolver.dss.repiterationscount1;
             state.repsimplexiterations2 = state.repsimplexiterations2+subsolver.dss.repiterationscount2;
@@ -50456,11 +54495,11 @@ public partial class alglib
             //
             for(i=0; i<=nslack-1; i++)
             {
-                d[i] = subsolver.dss.repx[i];
+                d[i] = subsolver.xs[i];
             }
             for(i=0; i<=lccnt-1; i++)
             {
-                lagmult[i] = -subsolver.dss.repdx[i];
+                lagmult[i] = subsolver.laglc[i];
             }
             return result;
         }
@@ -53745,7 +57784,10 @@ public partial class alglib
                           before line search  in  order  to  build  human-readable
                           chart of the raw  Lagrangian  (~40  additional  function
                           evaluations is performed for  each  line  search).  This
-                          symbol also implicitly defines 'SQP'.
+                          symbol  also  implicitly  defines  'SQP'  and  activates
+                          OptGuard integrity checker which detects continuity  and
+                          smoothness violations. An OptGuard log is printed at the
+                          end of the file.
 
         By default trace is disabled and adds  no  overhead  to  the  optimization
         process. However, specifying any of the symbols adds some  formatting  and
@@ -53837,6 +57879,7 @@ public partial class alglib
             int nh = 0;
             double vleft = 0;
             double vright = 0;
+            bool b = new bool();
             int i_ = 0;
 
             
@@ -53857,6 +57900,7 @@ public partial class alglib
                 n = state.rstate.ia[2];
                 ng = state.rstate.ia[3];
                 nh = state.rstate.ia[4];
+                b = state.rstate.ba[0];
                 vleft = state.rstate.ra[0];
                 vright = state.rstate.ra[1];
             }
@@ -53867,8 +57911,9 @@ public partial class alglib
                 n = -919;
                 ng = -909;
                 nh = 81;
-                vleft = 255;
-                vright = 74;
+                b = true;
+                vleft = 74;
+                vright = -788;
             }
             if( state.rstate.stage==0 )
             {
@@ -53995,7 +58040,10 @@ public partial class alglib
             nh = state.nh;
             clearrequestfields(state, _params);
             alglib.ap.assert(state.smoothnessguardlevel==0 || state.smoothnessguardlevel==1, "MinNLCIteration: integrity check failed");
-            optserv.smoothnessmonitorinit(state.smonitor, n, 1+ng+nh, state.smoothnessguardlevel>0, _params);
+            b = state.smoothnessguardlevel>0;
+            b = b || (state.solvertype==1 && ap.istraceenabled("SLP.PROBING", _params));
+            b = b || (state.solvertype==2 && ap.istraceenabled("SQP.PROBING", _params));
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, n, 1+ng+nh, b, _params);
             for(i=0; i<=n-1; i++)
             {
                 state.lastscaleused[i] = state.s[i];
@@ -54698,6 +58746,7 @@ public partial class alglib
             state.rstate.ia[2] = n;
             state.rstate.ia[3] = ng;
             state.rstate.ia[4] = nh;
+            state.rstate.ba[0] = b;
             state.rstate.ra[0] = vleft;
             state.rstate.ra[1] = vright;
             return result;
@@ -55228,6 +59277,7 @@ public partial class alglib
             // prepare RComm facilities
             //
             state.rstate.ia = new int[4+1];
+            state.rstate.ba = new bool[0+1];
             state.rstate.ra = new double[1+1];
             state.rstate.stage = -1;
             clearrequestfields(state, _params);
@@ -55431,7 +59481,7 @@ public partial class alglib
             //
             state.teststep = 0;
             state.smoothnessguardlevel = 0;
-            optserv.smoothnessmonitorinit(state.smonitor, 0, 0, false, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, 0, 0, false, _params);
             
             //
             // Initialize other params
@@ -56061,23 +60111,23 @@ public partial class alglib
             }
             else
             {
-                n = -788;
-                nec = 809;
-                nic = 205;
-                ng = -838;
-                nh = 939;
-                i = -526;
-                j = 763;
-                outerit = -541;
-                preccounter = -698;
-                v = -900;
-                vv = -318;
-                p = -940;
-                dp = 1016;
-                d2p = -229;
-                v0 = -536;
-                v1 = 487;
-                v2 = -115;
+                n = 809;
+                nec = 205;
+                nic = -838;
+                ng = 939;
+                nh = -526;
+                i = 763;
+                j = -541;
+                outerit = -698;
+                preccounter = -900;
+                v = -318;
+                vv = -940;
+                p = 1016;
+                dp = -229;
+                d2p = -536;
+                v0 = 487;
+                v1 = -115;
+                v2 = 886;
             }
             if( state.rstateaul.stage==0 )
             {
@@ -57572,7 +61622,7 @@ public partial class alglib
             apserv.rvectorsetlengthatleast(ref state.bufrho, m, _params);
             apserv.rvectorsetlengthatleast(ref state.buftheta, m, _params);
             apserv.rvectorsetlengthatleast(ref state.tmp0, n, _params);
-            optserv.smoothnessmonitorinit(state.smonitor, n, 1, state.smoothnessguardlevel>0, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, n, 1, state.smoothnessguardlevel>0, _params);
             for(i=0; i<=n-1; i++)
             {
                 state.lastscaleused[i] = state.s[i];
@@ -59310,7 +63360,7 @@ public partial class alglib
             //
             state.teststep = 0;
             state.smoothnessguardlevel = 0;
-            optserv.smoothnessmonitorinit(state.smonitor, 0, 0, false, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, 0, 0, false, _params);
             state.nmain = n;
             state.diffstep = diffstep;
             apserv.rvectorsetlengthatleast(ref state.bndl, n, _params);
@@ -65115,7 +69165,7 @@ public partial class alglib
             state.repiterationscount = 0;
             state.repnfev = 0;
             state.debugrestartscount = 0;
-            optserv.smoothnessmonitorinit(state.smonitor, n, 1, state.smoothnessguardlevel>0, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, n, 1, state.smoothnessguardlevel>0, _params);
             apserv.rvectorsetlengthatleast(ref state.invs, n, _params);
             for(i=0; i<=n-1; i++)
             {
@@ -66587,7 +70637,7 @@ public partial class alglib
             //
             state.teststep = 0;
             state.smoothnessguardlevel = 0;
-            optserv.smoothnessmonitorinit(state.smonitor, 0, 0, false, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, 0, 0, false, _params);
             state.n = n;
             state.diffstep = diffstep;
             state.lastgoodstep = 0;
@@ -67887,7 +71937,7 @@ public partial class alglib
             state.userterminationneeded = false;
             if( m>0 )
             {
-                optserv.smoothnessmonitorinit(state.smonitor, n, m, false, _params);
+                optserv.smoothnessmonitorinit(state.smonitor, state.s, n, m, false, _params);
             }
             for(i=0; i<=n-1; i++)
             {
@@ -69779,7 +73829,7 @@ public partial class alglib
         {
             int i = 0;
 
-            optserv.smoothnessmonitorinit(state.smonitor, 0, 0, false, _params);
+            optserv.smoothnessmonitorinit(state.smonitor, state.s, 0, 0, false, _params);
             if( n<=0 || m<0 )
             {
                 return;

@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.16.0 (source code generated 2019-12-19)
+ALGLIB 3.17.0 (source code generated 2020-12-27)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -3395,33 +3395,71 @@ public partial class alglib
 
     INPUT PARAMETERS
         A       -   sparse matrix, must be NxN exactly
-        N       -   size of A, N>0
         IsUpper -   which half of A is provided (another half is ignored)
         B       -   array[0..N-1], right part
 
     OUTPUT PARAMETERS
-        Rep     -   solver report, following fields are set:
-                    * rep.terminationtype - solver status; >0 for success,
-                      set to -3 on failure (degenerate or non-SPD system).
         X       -   array[N], it contains:
                     * rep.terminationtype>0    =>  solution
                     * rep.terminationtype=-3   =>  filled by zeros
+        Rep     -   solver report, following fields are set:
+                    * rep.terminationtype - solver status; >0 for success,
+                      set to -3 on failure (degenerate or non-SPD system).
 
       -- ALGLIB --
          Copyright 26.12.2017 by Bochkanov Sergey
     *************************************************************************/
-    public static void sparsesolvesks(sparsematrix a, int n, bool isupper, double[] b, out sparsesolverreport rep, out double[] x)
+    public static void sparsespdsolvesks(sparsematrix a, bool isupper, double[] b, out double[] x, out sparsesolverreport rep)
     {
-        rep = new sparsesolverreport();
         x = new double[0];
-        directsparsesolvers.sparsesolvesks(a.innerobj, n, isupper, b, rep.innerobj, ref x, null);
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsespdsolvesks(a.innerobj, isupper, b, ref x, rep.innerobj, null);
     }
     
-    public static void sparsesolvesks(sparsematrix a, int n, bool isupper, double[] b, out sparsesolverreport rep, out double[] x, alglib.xparams _params)
+    public static void sparsespdsolvesks(sparsematrix a, bool isupper, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
     {
-        rep = new sparsesolverreport();
         x = new double[0];
-        directsparsesolvers.sparsesolvesks(a.innerobj, n, isupper, b, rep.innerobj, ref x, _params);
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsespdsolvesks(a.innerobj, isupper, b, ref x, rep.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    Sparse linear solver for A*x=b with N*N  sparse  real  symmetric  positive
+    definite matrix A, N*1 vectors x and b.
+
+    This solver  converts  input  matrix  to  CRS  format,  performs  Cholesky
+    factorization using supernodal Cholesky  decomposition  with  permutation-
+    reducing ordering and uses sparse triangular solver to get solution of the
+    original system.
+
+    INPUT PARAMETERS
+        A       -   sparse matrix, must be NxN exactly
+        IsUpper -   which half of A is provided (another half is ignored)
+        B       -   array[N], right part
+
+    OUTPUT PARAMETERS
+        X       -   array[N], it contains:
+                    * rep.terminationtype>0    =>  solution
+                    * rep.terminationtype=-3   =>  filled by zeros
+        Rep     -   solver report, following fields are set:
+                    * rep.terminationtype - solver status; >0 for success,
+                      set to -3 on failure (degenerate or non-SPD system).
+
+      -- ALGLIB --
+         Copyright 26.12.2017 by Bochkanov Sergey
+    *************************************************************************/
+    public static void sparsespdsolve(sparsematrix a, bool isupper, double[] b, out double[] x, out sparsesolverreport rep)
+    {
+        x = new double[0];
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsespdsolve(a.innerobj, isupper, b, ref x, rep.innerobj, null);
+    }
+    
+    public static void sparsespdsolve(sparsematrix a, bool isupper, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
+    {
+        x = new double[0];
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsespdsolve(a.innerobj, isupper, b, ref x, rep.innerobj, _params);
     }
     
     /*************************************************************************
@@ -3429,38 +3467,38 @@ public partial class alglib
     matrix A given by its Cholesky decomposition, and N*1 vectors x and b.
 
     IMPORTANT: this solver requires input matrix to be in  the  SKS  (Skyline)
-               sparse storage format. An exception will be  generated  if  you
-               pass matrix in some other format (HASH or CRS).
+               or CRS (compressed row storage) format. An  exception  will  be
+               generated if you pass matrix in some other format.
 
     INPUT PARAMETERS
-        A       -   sparse NxN matrix stored in SKS format, must be NxN exactly
-        N       -   size of A, N>0
+        A       -   sparse NxN matrix stored in CRs or SKS format, must be NxN
+                    exactly
         IsUpper -   which half of A is provided (another half is ignored)
         B       -   array[N], right part
 
     OUTPUT PARAMETERS
-        Rep     -   solver report, following fields are set:
-                    * rep.terminationtype - solver status; >0 for success,
-                      set to -3 on failure (degenerate or non-SPD system).
         X       -   array[N], it contains:
                     * rep.terminationtype>0    =>  solution
                     * rep.terminationtype=-3   =>  filled by zeros
+        Rep     -   solver report, following fields are set:
+                    * rep.terminationtype - solver status; >0 for success,
+                      set to -3 on failure (degenerate or non-SPD system).
 
       -- ALGLIB --
          Copyright 26.12.2017 by Bochkanov Sergey
     *************************************************************************/
-    public static void sparsecholeskysolvesks(sparsematrix a, int n, bool isupper, double[] b, out sparsesolverreport rep, out double[] x)
+    public static void sparsespdcholeskysolve(sparsematrix a, bool isupper, double[] b, out double[] x, out sparsesolverreport rep)
     {
-        rep = new sparsesolverreport();
         x = new double[0];
-        directsparsesolvers.sparsecholeskysolvesks(a.innerobj, n, isupper, b, rep.innerobj, ref x, null);
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsespdcholeskysolve(a.innerobj, isupper, b, ref x, rep.innerobj, null);
     }
     
-    public static void sparsecholeskysolvesks(sparsematrix a, int n, bool isupper, double[] b, out sparsesolverreport rep, out double[] x, alglib.xparams _params)
+    public static void sparsespdcholeskysolve(sparsematrix a, bool isupper, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
     {
-        rep = new sparsesolverreport();
         x = new double[0];
-        directsparsesolvers.sparsecholeskysolvesks(a.innerobj, n, isupper, b, rep.innerobj, ref x, _params);
+        rep = new sparsesolverreport();
+        directsparsesolvers.sparsespdcholeskysolve(a.innerobj, isupper, b, ref x, rep.innerobj, _params);
     }
     
     /*************************************************************************
@@ -3486,18 +3524,18 @@ public partial class alglib
       -- ALGLIB --
          Copyright 26.12.2017 by Bochkanov Sergey
     *************************************************************************/
-    public static void sparsesolve(sparsematrix a, int n, double[] b, out double[] x, out sparsesolverreport rep)
+    public static void sparsesolve(sparsematrix a, double[] b, out double[] x, out sparsesolverreport rep)
     {
         x = new double[0];
         rep = new sparsesolverreport();
-        directsparsesolvers.sparsesolve(a.innerobj, n, b, ref x, rep.innerobj, null);
+        directsparsesolvers.sparsesolve(a.innerobj, b, ref x, rep.innerobj, null);
     }
     
-    public static void sparsesolve(sparsematrix a, int n, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
+    public static void sparsesolve(sparsematrix a, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
     {
         x = new double[0];
         rep = new sparsesolverreport();
-        directsparsesolvers.sparsesolve(a.innerobj, n, b, ref x, rep.innerobj, _params);
+        directsparsesolvers.sparsesolve(a.innerobj, b, ref x, rep.innerobj, _params);
     }
     
     /*************************************************************************
@@ -3526,18 +3564,18 @@ public partial class alglib
       -- ALGLIB --
          Copyright 26.12.2017 by Bochkanov Sergey
     *************************************************************************/
-    public static void sparselusolve(sparsematrix a, int[] p, int[] q, int n, double[] b, out double[] x, out sparsesolverreport rep)
+    public static void sparselusolve(sparsematrix a, int[] p, int[] q, double[] b, out double[] x, out sparsesolverreport rep)
     {
         x = new double[0];
         rep = new sparsesolverreport();
-        directsparsesolvers.sparselusolve(a.innerobj, p, q, n, b, ref x, rep.innerobj, null);
+        directsparsesolvers.sparselusolve(a.innerobj, p, q, b, ref x, rep.innerobj, null);
     }
     
-    public static void sparselusolve(sparsematrix a, int[] p, int[] q, int n, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
+    public static void sparselusolve(sparsematrix a, int[] p, int[] q, double[] b, out double[] x, out sparsesolverreport rep, alglib.xparams _params)
     {
         x = new double[0];
         rep = new sparsesolverreport();
-        directsparsesolvers.sparselusolve(a.innerobj, p, q, n, b, ref x, rep.innerobj, _params);
+        directsparsesolvers.sparselusolve(a.innerobj, p, q, b, ref x, rep.innerobj, _params);
     }
 
 }
@@ -10608,39 +10646,39 @@ public partial class alglib
 
         INPUT PARAMETERS
             A       -   sparse matrix, must be NxN exactly
-            N       -   size of A, N>0
             IsUpper -   which half of A is provided (another half is ignored)
             B       -   array[0..N-1], right part
 
         OUTPUT PARAMETERS
-            Rep     -   solver report, following fields are set:
-                        * rep.terminationtype - solver status; >0 for success,
-                          set to -3 on failure (degenerate or non-SPD system).
             X       -   array[N], it contains:
                         * rep.terminationtype>0    =>  solution
                         * rep.terminationtype=-3   =>  filled by zeros
+            Rep     -   solver report, following fields are set:
+                        * rep.terminationtype - solver status; >0 for success,
+                          set to -3 on failure (degenerate or non-SPD system).
 
           -- ALGLIB --
              Copyright 26.12.2017 by Bochkanov Sergey
         *************************************************************************/
-        public static void sparsesolvesks(sparse.sparsematrix a,
-            int n,
+        public static void sparsespdsolvesks(sparse.sparsematrix a,
             bool isupper,
             double[] b,
-            sparsesolverreport rep,
             ref double[] x,
+            sparsesolverreport rep,
             alglib.xparams _params)
         {
             int i = 0;
             sparse.sparsematrix a2 = new sparse.sparsematrix();
+            int n = 0;
 
             x = new double[0];
 
-            alglib.ap.assert(n>0, "SparseSolveSKS: N<=0");
-            alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseSolveSKS: rows(A)!=N");
-            alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseSolveSKS: cols(A)!=N");
-            alglib.ap.assert(alglib.ap.len(b)>=n, "SparseSolveSKS: length(B)<N");
-            alglib.ap.assert(apserv.isfinitevector(b, n, _params), "SparseSolveSKS: B contains infinities or NANs");
+            n = sparse.sparsegetnrows(a, _params);
+            alglib.ap.assert(n>0, "SparseSPDSolveSKS: N<=0");
+            alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseSPDSolveSKS: rows(A)!=N");
+            alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseSPDSolveSKS: cols(A)!=N");
+            alglib.ap.assert(alglib.ap.len(b)>=n, "SparseSPDSolveSKS: length(B)<N");
+            alglib.ap.assert(apserv.isfinitevector(b, n, _params), "SparseSPDSolveSKS: B contains infinities or NANs");
             initreport(rep, _params);
             x = new double[n];
             sparse.sparsecopytosks(a, a2, _params);
@@ -10672,48 +10710,133 @@ public partial class alglib
 
 
         /*************************************************************************
-        Sparse linear solver for A*x=b with N*N real  symmetric  positive definite
-        matrix A given by its Cholesky decomposition, and N*1 vectors x and b.
+        Sparse linear solver for A*x=b with N*N  sparse  real  symmetric  positive
+        definite matrix A, N*1 vectors x and b.
 
-        IMPORTANT: this solver requires input matrix to be in  the  SKS  (Skyline)
-                   sparse storage format. An exception will be  generated  if  you
-                   pass matrix in some other format (HASH or CRS).
+        This solver  converts  input  matrix  to  CRS  format,  performs  Cholesky
+        factorization using supernodal Cholesky  decomposition  with  permutation-
+        reducing ordering and uses sparse triangular solver to get solution of the
+        original system.
 
         INPUT PARAMETERS
-            A       -   sparse NxN matrix stored in SKS format, must be NxN exactly
-            N       -   size of A, N>0
+            A       -   sparse matrix, must be NxN exactly
             IsUpper -   which half of A is provided (another half is ignored)
             B       -   array[N], right part
 
         OUTPUT PARAMETERS
-            Rep     -   solver report, following fields are set:
-                        * rep.terminationtype - solver status; >0 for success,
-                          set to -3 on failure (degenerate or non-SPD system).
             X       -   array[N], it contains:
                         * rep.terminationtype>0    =>  solution
                         * rep.terminationtype=-3   =>  filled by zeros
+            Rep     -   solver report, following fields are set:
+                        * rep.terminationtype - solver status; >0 for success,
+                          set to -3 on failure (degenerate or non-SPD system).
 
           -- ALGLIB --
              Copyright 26.12.2017 by Bochkanov Sergey
         *************************************************************************/
-        public static void sparsecholeskysolvesks(sparse.sparsematrix a,
-            int n,
+        public static void sparsespdsolve(sparse.sparsematrix a,
             bool isupper,
             double[] b,
-            sparsesolverreport rep,
             ref double[] x,
+            sparsesolverreport rep,
             alglib.xparams _params)
         {
             int i = 0;
+            int j = 0;
+            sparse.sparsematrix a2 = new sparse.sparsematrix();
+            int n = 0;
+            double v = 0;
+            int[] p = new int[0];
 
             x = new double[0];
 
-            alglib.ap.assert(n>0, "SparseSolveSKS: N<=0");
-            alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseSolveSKS: rows(A)!=N");
-            alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseSolveSKS: cols(A)!=N");
-            alglib.ap.assert(sparse.sparseissks(a, _params), "SparseSolveSKS: A is not an SKS matrix");
-            alglib.ap.assert(alglib.ap.len(b)>=n, "SparseSolveSKS: length(B)<N");
-            alglib.ap.assert(apserv.isfinitevector(b, n, _params), "SparseSolveSKS: B contains infinities or NANs");
+            n = sparse.sparsegetnrows(a, _params);
+            alglib.ap.assert(n>0, "SparseSPDSolve: N<=0");
+            alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseSPDSolve: rows(A)!=N");
+            alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseSPDSolve: cols(A)!=N");
+            alglib.ap.assert(alglib.ap.len(b)>=n, "SparseSPDSolve: length(B)<N");
+            alglib.ap.assert(apserv.isfinitevector(b, n, _params), "SparseSPDSolve: B contains infinities or NANs");
+            initreport(rep, _params);
+            sparse.sparsecopytocrs(a, a2, _params);
+            if( !trfac.sparsecholeskyp(a2, isupper, ref p, _params) )
+            {
+                rep.terminationtype = -3;
+                ablasf.rsetallocv(n, 0.0, ref x, _params);
+                return;
+            }
+            ablasf.rcopyallocv(n, b, ref x, _params);
+            for(i=0; i<=n-1; i++)
+            {
+                j = p[i];
+                v = x[i];
+                x[i] = x[j];
+                x[j] = v;
+            }
+            if( isupper )
+            {
+                sparse.sparsetrsv(a2, isupper, false, 1, x, _params);
+                sparse.sparsetrsv(a2, isupper, false, 0, x, _params);
+            }
+            else
+            {
+                sparse.sparsetrsv(a2, isupper, false, 0, x, _params);
+                sparse.sparsetrsv(a2, isupper, false, 1, x, _params);
+            }
+            for(i=n-1; i>=0; i--)
+            {
+                j = p[i];
+                v = x[i];
+                x[i] = x[j];
+                x[j] = v;
+            }
+            rep.terminationtype = 1;
+        }
+
+
+        /*************************************************************************
+        Sparse linear solver for A*x=b with N*N real  symmetric  positive definite
+        matrix A given by its Cholesky decomposition, and N*1 vectors x and b.
+
+        IMPORTANT: this solver requires input matrix to be in  the  SKS  (Skyline)
+                   or CRS (compressed row storage) format. An  exception  will  be
+                   generated if you pass matrix in some other format.
+
+        INPUT PARAMETERS
+            A       -   sparse NxN matrix stored in CRs or SKS format, must be NxN
+                        exactly
+            IsUpper -   which half of A is provided (another half is ignored)
+            B       -   array[N], right part
+
+        OUTPUT PARAMETERS
+            X       -   array[N], it contains:
+                        * rep.terminationtype>0    =>  solution
+                        * rep.terminationtype=-3   =>  filled by zeros
+            Rep     -   solver report, following fields are set:
+                        * rep.terminationtype - solver status; >0 for success,
+                          set to -3 on failure (degenerate or non-SPD system).
+
+          -- ALGLIB --
+             Copyright 26.12.2017 by Bochkanov Sergey
+        *************************************************************************/
+        public static void sparsespdcholeskysolve(sparse.sparsematrix a,
+            bool isupper,
+            double[] b,
+            ref double[] x,
+            sparsesolverreport rep,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n = 0;
+
+            x = new double[0];
+
+            n = sparse.sparsegetnrows(a, _params);
+            alglib.ap.assert(n>0, "SparseSPDCholeskySolve: N<=0");
+            alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseSPDCholeskySolve: rows(A)!=N");
+            alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseSPDCholeskySolve: cols(A)!=N");
+            alglib.ap.assert(sparse.sparseissks(a, _params) || sparse.sparseiscrs(a, _params), "SparseSPDCholeskySolve: A is not an SKS/CRS matrix");
+            alglib.ap.assert(alglib.ap.len(b)>=n, "SparseSPDCholeskySolve: length(B)<N");
+            alglib.ap.assert(apserv.isfinitevector(b, n, _params), "SparseSPDCholeskySolve: B contains infinities or NANs");
             initreport(rep, _params);
             x = new double[n];
             for(i=0; i<=n-1; i++)
@@ -10770,7 +10893,6 @@ public partial class alglib
              Copyright 26.12.2017 by Bochkanov Sergey
         *************************************************************************/
         public static void sparsesolve(sparse.sparsematrix a,
-            int n,
             double[] b,
             ref double[] x,
             sparsesolverreport rep,
@@ -10778,6 +10900,7 @@ public partial class alglib
         {
             int i = 0;
             int j = 0;
+            int n = 0;
             double v = 0;
             sparse.sparsematrix a2 = new sparse.sparsematrix();
             int[] pivp = new int[0];
@@ -10785,6 +10908,7 @@ public partial class alglib
 
             x = new double[0];
 
+            n = sparse.sparsegetnrows(a, _params);
             alglib.ap.assert(n>0, "SparseSolve: N<=0");
             alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseSolve: rows(A)!=N");
             alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseSolve: cols(A)!=N");
@@ -10855,7 +10979,6 @@ public partial class alglib
         public static void sparselusolve(sparse.sparsematrix a,
             int[] p,
             int[] q,
-            int n,
             double[] b,
             ref double[] x,
             sparsesolverreport rep,
@@ -10864,9 +10987,11 @@ public partial class alglib
             int i = 0;
             int j = 0;
             double v = 0;
+            int n = 0;
 
             x = new double[0];
 
+            n = sparse.sparsegetnrows(a, _params);
             alglib.ap.assert(n>0, "SparseLUSolve: N<=0");
             alglib.ap.assert(sparse.sparsegetnrows(a, _params)==n, "SparseLUSolve: rows(A)!=N");
             alglib.ap.assert(sparse.sparsegetncols(a, _params)==n, "SparseLUSolve: cols(A)!=N");

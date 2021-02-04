@@ -1,5 +1,5 @@
 /*************************************************************************
-ALGLIB 3.16.0 (source code generated 2019-12-19)
+ALGLIB 3.17.0 (source code generated 2020-12-27)
 Copyright (c) Sergey Bochkanov (ALGLIB project).
 
 >>> SOURCE LICENSE >>>
@@ -1667,6 +1667,50 @@ public partial class alglib
     {
     
         return hqrnd.hqrndnormal(state.innerobj, _params);
+    }
+    
+    /*************************************************************************
+    Random number generator: vector with random entries (normal distribution)
+
+    This function generates N random numbers from normal distribution.
+
+    State structure must be initialized with HQRNDRandomize() or HQRNDSeed().
+
+      -- ALGLIB --
+         Copyright 02.12.2009 by Bochkanov Sergey
+    *************************************************************************/
+    public static void hqrndnormalv(hqrndstate state, int n, out double[] x)
+    {
+        x = new double[0];
+        hqrnd.hqrndnormalv(state.innerobj, n, ref x, null);
+    }
+    
+    public static void hqrndnormalv(hqrndstate state, int n, out double[] x, alglib.xparams _params)
+    {
+        x = new double[0];
+        hqrnd.hqrndnormalv(state.innerobj, n, ref x, _params);
+    }
+    
+    /*************************************************************************
+    Random number generator: matrix with random entries (normal distribution)
+
+    This function generates MxN random matrix.
+
+    State structure must be initialized with HQRNDRandomize() or HQRNDSeed().
+
+      -- ALGLIB --
+         Copyright 02.12.2009 by Bochkanov Sergey
+    *************************************************************************/
+    public static void hqrndnormalm(hqrndstate state, int m, int n, out double[,] x)
+    {
+        x = new double[0,0];
+        hqrnd.hqrndnormalm(state.innerobj, m, n, ref x, null);
+    }
+    
+    public static void hqrndnormalm(hqrndstate state, int m, int n, out double[,] x, alglib.xparams _params)
+    {
+        x = new double[0,0];
+        hqrnd.hqrndnormalm(state.innerobj, m, n, ref x, _params);
     }
     
     /*************************************************************************
@@ -5675,6 +5719,87 @@ public partial class alglib
             hqrndnormal2(state, ref v1, ref v2, _params);
             result = v1;
             return result;
+        }
+
+
+        /*************************************************************************
+        Random number generator: vector with random entries (normal distribution)
+
+        This function generates N random numbers from normal distribution.
+
+        State structure must be initialized with HQRNDRandomize() or HQRNDSeed().
+
+          -- ALGLIB --
+             Copyright 02.12.2009 by Bochkanov Sergey
+        *************************************************************************/
+        public static void hqrndnormalv(hqrndstate state,
+            int n,
+            ref double[] x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int n2 = 0;
+            double v1 = 0;
+            double v2 = 0;
+
+            x = new double[0];
+
+            n2 = n/2;
+            ablasf.rallocv(n, ref x, _params);
+            for(i=0; i<=n2-1; i++)
+            {
+                hqrndnormal2(state, ref v1, ref v2, _params);
+                x[2*i+0] = v1;
+                x[2*i+1] = v2;
+            }
+            if( n%2!=0 )
+            {
+                hqrndnormal2(state, ref v1, ref v2, _params);
+                x[n-1] = v1;
+            }
+        }
+
+
+        /*************************************************************************
+        Random number generator: matrix with random entries (normal distribution)
+
+        This function generates MxN random matrix.
+
+        State structure must be initialized with HQRNDRandomize() or HQRNDSeed().
+
+          -- ALGLIB --
+             Copyright 02.12.2009 by Bochkanov Sergey
+        *************************************************************************/
+        public static void hqrndnormalm(hqrndstate state,
+            int m,
+            int n,
+            ref double[,] x,
+            alglib.xparams _params)
+        {
+            int i = 0;
+            int j = 0;
+            int n2 = 0;
+            double v1 = 0;
+            double v2 = 0;
+
+            x = new double[0,0];
+
+            n2 = n/2;
+            x = new double[m, n];
+            for(i=0; i<=m-1; i++)
+            {
+                for(j=0; j<=n2-1; j++)
+                {
+                    hqrndnormal2(state, ref v1, ref v2, _params);
+                    x[i,2*j+0] = v1;
+                    x[i,2*j+1] = v2;
+                }
+                if( n%2!=0 )
+                {
+                    hqrndnormal2(state, ref v1, ref v2, _params);
+                    x[i,n-1] = v1;
+                }
+            }
         }
 
 
