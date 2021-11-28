@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net45;net47;net48;netstandard2.0;netstandard2.1;net5.0;net6.0</TargetFrameworks>
+        <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
         <Version>3.18.0</Version>
         <Authors>https://www.alglib.net/</Authors>
-        <Title>alglib.net</Title>
+        <Title>alglib.net with SIMD intrinsics</Title>
         <Company>ALGLIB Project</Company>
         <Copyright>ALGLIB Project</Copyright>
         <Description>ALGLIB is a cross-platform numerical analysis and data processing library</Description>
         <LicenseUrl>https://www.gnu.org/licenses/gpl-3.0.en.html</LicenseUrl>
         <PackageProjectUrl>https://www.alglib.net/</PackageProjectUrl>
         <RepositoryUrl>https://github.com/dariogriffo/alglib.net.gpl</RepositoryUrl>
-        <Product>ALGLIB for C# (managed)</Product>
+        <Product>ALGLIB for C# (unsafe with NET5 SIMD intrinsics)</Product>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
@@ -22,15 +22,18 @@
         <PackageReleaseNotes>https://github.com/dariogriffo/blob/main/RELEASE_NOTES.md</PackageReleaseNotes>
         <PackageLicenseFile>license.txt</PackageLicenseFile>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <DefineConstants>TRACE;ALGLIB_USE_SIMD</DefineConstants>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+
     <ItemGroup>
-        <None Include="license\license.txt" Pack="true" PackagePath="$(PackageLicenseFile)"/>
-        <None Include="images\icon.png" Pack="true" PackagePath="\"/>
+        <None Include="license\license.txt" Pack="true" PackagePath="$(PackageLicenseFile)" />
+        <None Include="images\icon.png" Pack="true" PackagePath="\" />
     </ItemGroup>
 
-    <!-- .NET 4.X -->
-    <ItemGroup Condition="'$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net47' OR '$(TargetFramework)' == 'net48'">
-        <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
-    </ItemGroup>
 
     <ItemGroup>
         <None Update="license.txt">
