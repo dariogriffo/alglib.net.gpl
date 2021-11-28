@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-## [3.18.0](https://github.com/dariogriffo/alglib.net/releases/tag/3.18.0)
+## [3.18.0](https://github.com/dariogriffo/alglib.net.gpl/releases/tag/3.18.0)
 
 The project now generates 2 nuget packages
 
