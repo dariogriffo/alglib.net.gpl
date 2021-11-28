@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
-        <Version>3.18.0</Version>
+        <Version>3.18.1</Version>
         <Authors>https://www.alglib.net/</Authors>
         <Title>alglib.net with SIMD intrinsics</Title>
         <Company>ALGLIB Project</Company>
@@ -19,7 +19,7 @@
     <PropertyGroup>
         <PackageIcon>icon.png</PackageIcon>
         <PackageTags>numerical-analysis data-processing</PackageTags>
-        <PackageReleaseNotes>https://github.com/dariogriffo/blob/main/RELEASE_NOTES.md</PackageReleaseNotes>
+        <PackageReleaseNotes>https://github.com/dariogriffo/alglib.net/blob/main/RELEASE_NOTES.md</PackageReleaseNotes>
         <PackageLicenseFile>license.txt</PackageLicenseFile>
     </PropertyGroup>
 
@@ -32,6 +32,7 @@
     <ItemGroup>
         <None Include="license\license.txt" Pack="true" PackagePath="$(PackageLicenseFile)" />
         <None Include="images\icon.png" Pack="true" PackagePath="\" />
+        <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
 
