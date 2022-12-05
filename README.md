@@ -3,7 +3,6 @@
 [![NuGet SIMD](https://img.shields.io/nuget/v/alglib.net.svg?style=flat)](https://www.nuget.org/packages/alglib.net.simd/) 
 [![GitHub license](https://img.shields.io/github/license/dariogriffo/alglib.net.gpl.svg)](https://github.com/dariogriffo/alglib.net.gpl/blob/master/LICENSE)
 
-
 # alglib.net.gpl
 A public mirror for https://www.alglib.net/
 

@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
-        <Version>3.18.2</Version>
+        <TargetFrameworks>net5.0;net6.0;net7.0</TargetFrameworks>
+        <Version>3.19.0</Version>
         <Authors>https://www.alglib.net/</Authors>
         <Title>alglib.net with SIMD intrinsics</Title>
         <Company>ALGLIB Project</Company>
@@ -20,7 +20,7 @@
     <PropertyGroup>
         <PackageIcon>icon.png</PackageIcon>
         <PackageTags>numerical-analysis data-processing</PackageTags>
-        <PackageReleaseNotes>https://github.com/dariogriffo/alglib.net.gpl/blob/main/RELEASE_NOTES.md</PackageReleaseNotes>
+	    <PackageReleaseNotes>https://github.com/dariogriffo/alglib.net.gpl/releases/tag/3.19.0</PackageReleaseNotes>
         <PackageLicenseFile>license.txt</PackageLicenseFile>
     </PropertyGroup>
 

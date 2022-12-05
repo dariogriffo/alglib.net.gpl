@@ -1,6 +1,6 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/xr1b6um13ox74o5r?svg=true)](https://ci.appveyor.com/project/dariogriffo/alglib-net-gpl)
-[![NuGet](https://img.shields.io/nuget/v/alglib.net.svg?style=flat)](https://www.nuget.org/packages/alglib.net/) 
-[![NuGet SIMD](https://img.shields.io/nuget/v/alglib.net.svg?style=flat)](https://www.nuget.org/packages/alglib.net.simd/) 
+[![NuGet](https://img.shields.io/nuget/v//alglib.net.simd.svg?style=flat)](https://www.nuget.org/packages//alglib.net.simd/) 
+[![NuGet SIMD](https://img.shields.io/nuget/v//alglib.net.simd.svg?style=flat)](https://www.nuget.org/packages/alglib.net.simd/) 
 [![GitHub license](https://img.shields.io/github/license/dariogriffo/alglib.net.gpl.svg)](https://github.com/dariogriffo/alglib.net.gpl/blob/master/LICENSE)
 
 

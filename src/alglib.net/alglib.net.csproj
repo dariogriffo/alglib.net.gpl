@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net45;net47;net48;netstandard2.0;netstandard2.1;net5.0;net6.0</TargetFrameworks>
-        <Version>3.18.2</Version>
+	    <TargetFrameworks>net45;net47;net48;netstandard2.0;netstandard2.1;net5.0;net6.0;net7.0</TargetFrameworks> 
+        <Version>3.19.0</Version>
         <Authors>https://www.alglib.net/</Authors>
         <Title>alglib.net</Title>
         <Company>ALGLIB Project</Company>
@@ -20,12 +20,13 @@
     <PropertyGroup>
         <PackageIcon>icon.png</PackageIcon>
         <PackageTags>numerical-analysis data-processing</PackageTags>
-        <PackageReleaseNotes>https://github.com/dariogriffo/alglib.net.gpl/blob/main/RELEASE_NOTES.md</PackageReleaseNotes>
+        <PackageReleaseNotes>https://github.com/dariogriffo/alglib.net.gpl/releases/tag/3.19.0</PackageReleaseNotes>
         <PackageLicenseFile>license.txt</PackageLicenseFile>
     </PropertyGroup>
     <ItemGroup>
         <None Include="license\license.txt" Pack="true" PackagePath="$(PackageLicenseFile)"/>
         <None Include="images\icon.png" Pack="true" PackagePath="\"/>
+        <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <!-- .NET 4.X -->

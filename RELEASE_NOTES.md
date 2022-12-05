@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+## [3.19.0](https://github.com/dariogriffo/alglib.net.gpl/releases/tag/3.19.0)
+
+- Added net7.0 target framework
+- Fast multiquadric spline interpolation and fitting.
+- Fast thin plate spline interpolation and fitting.
+- Fast biharmonic spline interpolation and fitting.
+- FIXED: instability in SLP solver.
+
 ## [3.18.0](https://github.com/dariogriffo/alglib.net.gpl/releases/tag/3.18.0)
 
 The project now generates 2 nuget packages
